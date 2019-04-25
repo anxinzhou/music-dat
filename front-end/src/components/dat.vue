@@ -51,25 +51,30 @@
       <el-col :span="8">
         <div class="upload-file-container">
           <el-table
-            :data="tableData"
+            :data="tableData.slice((currentPage-1)*pagesize,currentPage*pagesize)"
             stripe
             style="width: 100%">
             <el-table-column
               prop="fileName"
-              label="File Name"
-              width="180">
+              label="File Name">
             </el-table-column>
             <el-table-column
               prop="uploadTime"
-              label="Upload Time"
-              width="180">
+              label="Upload Time">
             </el-table-column>
             <el-table-column
               prop="fileSize"
               label="File Size">
             </el-table-column>
           </el-table>
-
+          <div style="text-align: center;margin-top: 30px;">
+            <el-pagination
+              background
+              layout="prev, pager, next"
+              :total="total"
+              @current-change="current_change">
+            </el-pagination>
+          </div>
         </div>
       </el-col>
 
@@ -115,7 +120,10 @@
             fileName: 'c.png',
             uploadTime: '2017-05-03 17:30',
             fileSize: '3 MB'
-          }]
+          }],
+        total: 0,
+        pagesize:3,
+        currentPage:1
       }
     },
     methods: {
@@ -134,14 +142,19 @@
         // })
         this.$refs.upload.submit();
       },
+      current_change:function(currentPage){
+        this.currentPage = currentPage;
+      }
     },
     beforeMount: function () {
       // console.log(this.$store.state.account)
+      this.total = this.tableData.length / this.pagesize * 10
       this.upLoadAdditionalData = {
         address: this.$cookies.get('account').address
       }
       this.httpPath = this.$store.state.config.httpPath
       this.upLoadDatPath = this.httpPath + "/file/dat"
+
     }
   }
 </script>
