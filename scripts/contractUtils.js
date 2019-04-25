@@ -47,12 +47,12 @@ program
             let contract = new web3.eth.Contract(abi)
             let dp = contract.deploy({
                 data: '0x' + bytecode,
-                arguments: !options.arguments ? JSON.parse(options.arguments) : []
+                arguments: !options.arguments ? [] : JSON.parse(options.arguments)
             })
             let tx = {
                 data: dp.encodeABI(),
                 from: account.address,
-                gas: "4500000",
+                gas: "3000000",
                 gasPrice: '0',
                 value: "0", // 1000 ether
             }
