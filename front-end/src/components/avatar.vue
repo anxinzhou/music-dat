@@ -74,6 +74,7 @@
       }
       this.httpPath = this.$store.state.config.httpPath
       this.upLoadDatPath = this.httpPath + "/file/avatar"
+      console.log("upLoadDatPath:",upLoadDatPath)
     }
   }
 </script>
