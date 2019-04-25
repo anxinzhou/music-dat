@@ -12,13 +12,13 @@ var O orm.Ormer
 func init() {
 	logs.Warn("initialize database")
 	dbUser:= beego.AppConfig.String("dbUser")
-	//dbPassword:= beego.AppConfig.String("dbPassword")
+	dbPassword:= beego.AppConfig.String("dbPassword")
 	dbUrls:= beego.AppConfig.String("dbUrls")
 	dbPort:=beego.AppConfig.String("dbPort")
 	dbName:=beego.AppConfig.String("dbName")
 	dbEngine:= beego.AppConfig.String("dbEngine")
 
-	dataSource:=dbUser+":"+"@"+"tcp("+dbUrls+":"+dbPort+")"+"/"+dbName
+	dataSource:=dbUser+":"+dbPassword+"@"+"tcp("+dbUrls+":"+dbPort+")"+"/"+dbName
 
 	orm.RegisterDriver("mysql",orm.DRMySQL)
 	err:=orm.RegisterDataBase("default",dbEngine,dataSource)
