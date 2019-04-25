@@ -1,0 +1,20 @@
+{
+  "name": "contract-util",
+  "version": "1.0.0",
+  "description": "deploy contract or generate keystore",
+  "main": "contractUtils.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "genkey": "contractUtils.js"
+  },
+  "author": "zx",
+  "license": "ISC",
+  "dependencies": {
+    "performance-now": "^2.1.0",
+    "solc": "^0.5.2",
+    "web3": "^1.0.0-beta.37",
+    "ws": "^6.1.2"
+  }
+}
