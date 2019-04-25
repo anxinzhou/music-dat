@@ -65,10 +65,10 @@ func (m *Manager) GetMPList(c *client.Client, bq *RQBaseInfo, data []byte) {
 
 	var thumbnail string
 	if nftType == "721-04" {   // music
-		thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+		thumbnail = beego.AppConfig.String("httpaddr")+ ":"+
 			beego.AppConfig.String("httpport") + "/file/dat/"
 	} else if nftType == "721-02" {  //avatar
-		thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+		thumbnail = beego.AppConfig.String("httpaddr")+ ":"+
 			beego.AppConfig.String("httpport") + "/file/avatar/"
 	} else {
 		err := errors.New("unknown supported type")

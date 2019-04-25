@@ -43,8 +43,9 @@ func (this *UploadController) Upload() {
 
 	//save file
 	var filePath string
+	var fileName string
 	if file != nil {
-		fileName := header.Filename
+		fileName = header.Filename
 		filePath = fileName   // TODO md5 for file name
 		err = this.SaveToFile("file", filePath)
 		if err != nil {
@@ -193,7 +194,7 @@ func (this *UploadController) Upload() {
 	mappingInfo:= &models.NftMappingTable{
 		NftLdefIndex: nftLdefIndex,
 		TypeId: typeId,
-		FileName:filePath,
+		FileName: fileName,
 		Key: "0x01",   //TODO use mk key to encrypt file
 		NftAdminId: nftAdminID,
 	}
