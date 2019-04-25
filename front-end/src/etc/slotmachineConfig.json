@@ -1,0 +1,43 @@
+{
+    "maxDifficulty": 9,
+    "pattern1": {
+
+        "reel1Segment": [5, 9, 12, 15, 19],
+        "reel2Segment": [2, 6, 10, 13, 19],
+        "reel3Segment": [3, 7, 11, 12, 19]
+    },
+    "pattern2": {
+        "reel1Segment": [5, 9, 12, 15, 18],
+        "reel2Segment": [2, 6, 10, 13, 18],
+        "reel3Segment": [3, 7, 11, 12, 18]
+    },
+    "pattern3": {
+        "reel1Segment": [6, 9, 12, 15, 18],
+        "reel2Segment": [3, 6, 10, 13, 18],
+        "reel3Segment": [4, 7, 11, 12, 18]
+    },
+    "icon": {
+        "0": "cherry",
+        "1": "orange",
+        "2": "bell",
+        "3": "seven",
+        "4": "mango",
+        "5": "bar"
+    },
+    "difficultySegment": [3, 6, 9],
+    "pattern": {
+        "0": "pattern1",
+        "1": "pattern2",
+        "2": "pattern3"
+    },
+    "award": {
+        "(bar){3}": 100,
+        "(seven){3}": 50,
+        "(bell){3}": 20,
+        "(mango){3}": 15,
+        "(orange){3}": 15,
+        "(cherry){3}": 10,
+        "(cherry){2}(?!cherry)": 5,
+        "cherry(?!(cherry){2})": 2
+    }
+}
