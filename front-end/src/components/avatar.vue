@@ -1,48 +1,82 @@
 <template>
     <section class="bg-light">
-      <div class="row-container">
-        <div class="intro text-center">
-          <img src="../assets/images/avatar.jpg">
-          <div>
-            <!--<h3> Market </h3>-->
-            <!--<br>-->
-            <!--<br>-->
-            <!--<b> With bridge</b>-->
-            <br>
-            <b> Create and sell your dat and avatar</b>
-            <!--<br>-->
-            <!--<b>between public and private chain</b>-->
-          </div>
-        </div>
 
-        <div class="wallet-container">
-          <div class=" bridge-item-container">
-            <div class="shop-avatar-info-container">
-              <div class="role-info-header">
-                Your current number of avatar
+
+      <el-row :gutter="20">
+
+        <el-col :span="8">
+          <div class="intro text-center">
+            <img src="../assets/images/avatar.jpg">
+            <div>
+              <!--<h3> Market </h3>-->
+              <!--<br>-->
+              <!--<br>-->
+              <!--<b> With bridge</b>-->
+              <br>
+              <b> Create and sell your dat and avatar</b>
+              <!--<br>-->
+              <!--<b>between public and private chain</b>-->
+            </div>
+          </div>
+        </el-col>
+
+        <el-col :span="8">
+          <div class="wallet-container">
+            <div class=" bridge-item-container">
+              <div class="shop-avatar-info-container">
+                <div class="role-info-header">
+                  Your current number of avatar
+                </div>
+                <div>
+                  1
+                </div>
               </div>
-              <div>
-                1
+            </div>
+            <div class="bridge-item-container">
+              <div class="token-container">
+                <el-upload
+                  class="upload-demo upload-dat"
+                  ref="upload"
+                  name="file"
+                  :action="upLoadDatPath"
+                  :data="upLoadAdditionalData"
+                  :auto-upload="false">
+                  <el-button slot="trigger" size="small" type="primary">select file</el-button>
+                  <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">upload to server</el-button>
+                  <div class="el-upload__tip" slot="tip">jpg/png files with a size less than 500kb</div>
+                </el-upload>
               </div>
             </div>
           </div>
-          <div class="bridge-item-container">
-            <div class="token-container">
-              <el-upload
-                class="upload-demo upload-dat"
-                ref="upload"
-                name="file"
-                :action="upLoadDatPath"
-                :data="upLoadAdditionalData"
-                :auto-upload="false">
-                <el-button slot="trigger" size="small" type="primary">select file</el-button>
-                <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">upload to server</el-button>
-                <div class="el-upload__tip" slot="tip">jpg/png files with a size less than 500kb</div>
-              </el-upload>
+
+        </el-col>
+
+        <el-col :span="8">
+            <div class="upload-file-container">
+              <el-table
+                :data="tableData"
+                stripe
+                style="width: 100%">
+                <el-table-column
+                  prop="fileName"
+                  label="File Name"
+                  width="180">
+                </el-table-column>
+                <el-table-column
+                  prop="uploadTime"
+                  label="Upload Time"
+                  width="180">
+                </el-table-column>
+                <el-table-column
+                  prop="fileSize"
+                  label="File Size">
+                </el-table-column>
+              </el-table>
+
             </div>
-          </div>
-        </div>
-      </div>
+          </el-col>
+      </el-row>
+
     </section>
 </template>
 <script>
@@ -60,6 +94,28 @@
           balance: undefined,
           publicEther: undefined
         },
+        tableData: [
+          {
+            fileName: 'a.jpg',
+            uploadTime: '2017-05-03 17:30',
+            fileSize: '3 MB'
+          }, {
+            fileName: 'df.jpg',
+            uploadTime: '2007-05-03 17:30',
+            fileSize: '4 MB'
+          }, {
+            fileName: 'dfs.mp3',
+            uploadTime: '2017-12-03 17:30',
+            fileSize: '45 MB'
+          }, {
+            fileName: 'this.jpg',
+            uploadTime: '2017-05-03 04:24',
+            fileSize: '567 KB'
+          }, {
+            fileName: 'c.png',
+            uploadTime: '2017-05-03 17:30',
+            fileSize: '3 MB'
+          }]
       }
     },
     methods: {
