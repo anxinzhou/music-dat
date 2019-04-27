@@ -3,6 +3,7 @@ package http
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"github.com/astaxie/beego"
 )
 
 const FILE_SAVING_PATH = "./resource/"
@@ -38,4 +39,13 @@ func init() {
 	if err!=nil {
 		panic(err)
 	}
+}
+
+func sendError(c beego.ControllerInterface,err error, statusCode int) {
+	controller:=c.(*beego.Controller)
+	controller.Ctx.ResponseWriter.ResponseWriter.WriteHeader(500)
+	controller.Data["json"] = &ErrorResponse{
+		Reason: err.Error(),
+	}
+	controller.ServeJSON()
 }

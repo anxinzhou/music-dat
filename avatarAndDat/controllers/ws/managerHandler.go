@@ -427,79 +427,111 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 		return
 	}
 
-	// update coin records
-	col:=models.MongoDB.Collection("users")
-	// update coin records
-	type fields struct {
-		Coin int `bson:"coin"`
-	}
-
-	idType:= req.AsUser.Type
-	var filter bson.M
-	if idType == WeChatId || idType == FBId {
-		filter=bson.M {
-			"uid": req.AsUser.AsId,
+	actionStatus:= req.ActionStatus
+	if actionStatus == ACTION_STATUS_PENDING {
+		purchaseInfo:=models.BerryPurchaseTable {
+			TransactionId:req.AppTranId,
 		}
-	} else if idType == PhoneOrEmailId {
-		filter=bson.M {
-			"username": req.AsUser.AsId,
+
+		// update coin records
+		col:=models.MongoDB.Collection("users")
+		// update coin records
+		type fields struct {
+			Coin int `bson:"coin"`
 		}
-	} else {
-		err:= errors.New("wrong type")
-		logs.Error(err.Error())
-		m.errorHandler(c, bq, err)
-		return
-	}
-	var queryResult fields
 
-	err=col.FindOne(context.Background(), filter, options.FindOne().SetProjection(bson.M{
-		"coin":true,
-	})).Decode(&queryResult)
-	if err!=nil {
-		logs.Error(err.Error())
-		m.errorHandler(c, bq, err)
-		return
-	}
-	logs.Debug("as id",req.AsUser.AsId,"coin number:",queryResult.Coin)
+		idType:= req.AsUser.Type
+		var filter bson.M
+		if idType == WeChatId || idType == FBId {
+			filter=bson.M {
+				"uid": req.AsUser.AsId,
+			}
+		} else if idType == PhoneOrEmailId {
+			filter=bson.M {
+				"username": req.AsUser.AsId,
+			}
+		} else {
+			err:= errors.New("wrong type")
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		var queryResult fields
+
+		err=col.FindOne(context.Background(), filter, options.FindOne().SetProjection(bson.M{
+			"coin":true,
+		})).Decode(&queryResult)
+		if err!=nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		logs.Debug("as id",req.AsUser.AsId,"coin number:",queryResult.Coin)
 
 
-	if err!=nil {
-		logs.Error(err.Error())
-		m.errorHandler(c, bq, err)
-		return
-	}
-	amount:= req.Amount
-	update:=bson.M {
+		if err!=nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		amount:= req.Amount
+		update:=bson.M {
 			"$set":bson.M {"coin":amount+queryResult.Coin},
 
-	}
-	_,err =col.UpdateOne(context.Background(),filter,update)
-	if err!=nil {
+		}
+		_,err =col.UpdateOne(context.Background(),filter,update)
+		if err!=nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		logs.Info("update success","after update, amount:",amount+queryResult.Coin)
+
+		models.O.Begin()
+		err:=models.O.Read(&purchaseInfo)
+		if err!=nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		purchaseInfo.Status = ACTION_STATUS_FINISH
+		_,err=models.O.Update(&purchaseInfo)
+		if err!=nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		models.O.Commit()
+		logs.Info("insert one record to purchase table")
+		m.wrapperAndSend(c,bq,&TokenPurchaseResponse{
+			RQBaseInfo: *bq,
+			ActionStatus: ACTION_STATUS_FINISH,
+		})
+		return
+	} else if actionStatus == ACTION_STATUS_FINISH {
+		purchaseInfo:= models.BerryPurchaseTable{
+			TransactionId: req.AppTranId,
+			RefillAsId: req.AsUser.AsId,
+			NumPurchased: req.Amount,
+			AppTranId: req.AppTranId,
+			AppId: req.AppId,
+			Status: ACTION_STATUS_PENDING,
+		}
+		_,err=models.O.Insert(&purchaseInfo)
+		if err!=nil {
+			logs.Emergency(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		m.wrapperAndSend(c,bq,&TokenPurchaseResponse{
+			RQBaseInfo: *bq,
+			ActionStatus: ACTION_STATUS_PENDING,
+		})
+		return
+	} else {
+		err:=errors.New("unknow action status")
 		logs.Error(err.Error())
-		m.errorHandler(c, bq, err)
+		m.errorHandler(c,bq,err)
 		return
 	}
-	logs.Debug("update success","after update, amount:",amount+queryResult.Coin)
-
-
-	purchaseInfo:= models.BerryPurchaseTable{
-		TransactionId: req.AppTranId,
-		RefillAsId: req.AsUser.AsId,
-		NumPurchased: amount,
-		AppTranId: req.AppTranId,
-		AppId: req.AppId,
-	}
-
-	//TODO incase insert fail
-	_,err=models.O.Insert(&purchaseInfo)
-	if err!=nil {
-		logs.Emergency(err.Error())
-		m.errorHandler(c, bq, err)
-		return
-	}
-	logs.Debug("insert one to purchase table")
-	m.wrapperAndSend(c,bq,&TokenPurchaseResponse{
-		RQBaseInfo: *bq,
-		Status: 1,  //TODO cache uncompleted transaction
-	})
 }

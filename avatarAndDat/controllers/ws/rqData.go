@@ -7,6 +7,12 @@ const (
 	PhoneOrEmailId
 )
 
+// action status
+const (
+	ACTION_STATUS_FINISH = 1
+	ACTION_STATUS_PENDING = 2
+)
+
 type ConnectErrorResponse struct {
 	Reason string `json:"reason"`
 }
@@ -22,6 +28,7 @@ type RQBaseInfo struct {
 	ActId string `json:"actId"`
 }
 
+// MP_LIST
 type MpListRequest struct {
 	RQBaseInfo
 	SupportedType string `json:"supportedType"`
@@ -42,13 +49,12 @@ type MpListNFTInfo struct {
 	Qty int `json:"qty"`
 }
 
-// mp_list
 type MpListResponse struct {
 	RQBaseInfo
 	NftTranData []*MpListNFTInfo `json:"nftData"`
 }
 
-// TODO purchase_confirm
+// PURCHASE_CONFIRM
 type AsUserPurchaseConfirmInfo struct {
 	AsId string `json:"asId"`
 	AsWallet string `json:"asWallet"`
@@ -84,7 +90,7 @@ type PurchaseConfirmResponse struct {
 	NftTranData []*NftPurchaseResponseInfo `json:"nftTranData"`
 }
 
-// TODO token_purchase
+// TOKEN_PURCHASE
 type AsUserPurchaseInfo struct {
 	AsId string `json:"asId"`
 	Type int `json:"type"`
@@ -98,14 +104,15 @@ type TokenPurchaseRequest struct {
 	AppTranId string `json:"appTranId"`
 	AppId string `json:"appId"`
 	Amount int `json:"amount"`
+	ActionStatus int `json:"actionStatus"`
 }
 
 type TokenPurchaseResponse struct {
 	RQBaseInfo
-	Status int `json:"status"`
+	ActionStatus int `json:"actionStatus"`
 }
 
-//TODO nft_show
+//NFT_SHOW
 type NftShowAsUserInfo struct {
 	AsId string `json:"asId"`
 	AsWallet string `json:"asWallet"`
@@ -125,6 +132,8 @@ type NftShowResponse struct {
 	NftLdefIndex string `json:"nftLdefIndex"`
 	DecSource string `json:"decSource"`
 }
+
+// Item Details
 
 type ItemDetailsRequestNftInfo struct {
 	NftLdefIndex string `json:"nftLdefIndex"`
@@ -156,3 +165,49 @@ type ItemDetailResponse struct {
 	NftTranData []*ItemDetailsResponseNftInfo `json:"nftTranData"`
 }
 
+// TOTAL NFT
+
+type AsUserNFTRequest struct {
+	AsId string `json:"asId"`
+	AsWallet string `json:"asWallet"`
+}
+
+type TotalNFTRequest struct {
+	RQBaseInfo
+	AsUser *AsUserNFTRequest `json:"asUser"`
+}
+
+type TotalNFTResponse struct {
+	RQBaseInfo
+	Count int `json:"count"`
+}
+
+// LIST_NFT
+
+type AsUserListNFTRequest struct {
+	AsId string `json:"asId"`
+	AsWallet string `json:"asWallet"`
+}
+
+type ListNFTRequest struct {
+	RQBaseInfo
+	AsUser *AsUserListNFTRequest `json:""`
+}
+
+type NFTInfoListRes struct {
+	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
+	NftName string `json:"nftName"`
+	NftValue int `json:"nftValue" orm:"column(price)"`
+	ActiveTicker string `json:"activeTicker"`
+	NftLifeIndex int64 `json:"nftLifeIndex"`
+	NftPowerIndex int64 `json:"nftPowerIndex"`
+	NftLdefIndex string `json:"nftLdefIndex"`
+	NftCharacId string `json:"nftCharacId"`
+	Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
+	Qty int `json:"qty"`
+}
+
+type ListNFTResponse struct {
+	RQBaseInfo
+	NftTranData []*NFTInfoListRes `json:"nftTranData"`
+}
