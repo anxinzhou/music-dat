@@ -42,7 +42,7 @@ func init() {
 	beego.Router("/admin",&http.AdminController{},"get:Get;post:Login")
 	beego.Router("/file/:kind(avatar|dat)",upLoadController,"get:Get;post:Upload")
 	beego.Router("/balance/:user:string",nftBalanceController)
-	beego.Router("/nftList/:user:string/:kind(avatar|dat)",nftListController)
+	beego.Router("/nftList/:user:string",nftListController)
 }
 
 

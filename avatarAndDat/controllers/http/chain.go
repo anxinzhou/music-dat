@@ -55,7 +55,6 @@ type nftListResponse struct {
 
 func (this *NftListController) Get() {
 	user := this.Ctx.Input.Param(":user")
-	kind := this.Ctx.Input.Param(":kind")
 	logs.Debug("user",user,"query nft list")
 	nftContract:=this.C.smartContract.(*nft.NFT)
 	nftList,err:= nftContract.TokensOfUser(common.HexToAddress(user))
@@ -95,10 +94,10 @@ func (this *NftListController) Get() {
 		}
 
 		var thumbnail string
-		if kind == NAME_NFT_MUSIC {   // music
+		if nftResponseInfo.SupportedType == NAME_NFT_MUSIC {   // music
 			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
 				beego.AppConfig.String("httpport") + "/resource/market/dat/"
-		} else if kind == NAME_NFT_AVATAR {  //avatar
+		} else if nftResponseInfo.SupportedType == NAME_NFT_AVATAR {  //avatar
 			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
 				beego.AppConfig.String("httpport") + "/resource/market/avatar/"
 		} else {
