@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/xxRanger/blockchainUtil/chain"
 	"github.com/xxRanger/blockchainUtil/contract"
-	"github.com/xxRanger/blockchainUtil/contract/bridgeToken"
+	"github.com/xxRanger/blockchainUtil/contract/nft"
 	"github.com/xxRanger/blockchainUtil/sender"
 	"io/ioutil"
 )
@@ -43,6 +43,8 @@ func loadFile(file string, v interface{}) error {
 	return err
 }
 
+type contractInitFunc func(address common.Address) contract.Contract
+
 func NewChainHandler(config *ChainConfig) (*ChainHandler, error) {
 	// eth client
 	client, err := chain.NewEthClient(config.Port)
@@ -59,12 +61,12 @@ func NewChainHandler(config *ChainConfig) (*ChainHandler, error) {
 	managerAccount.BindEthClient(client,sender.CHAIN_KIND_PUBLIC)
 
 	// eth contract
-	bridgeTokenContract := bridgeToken.NewBridgeToken(common.HexToAddress(config.ContractAddress))
-	bridgeTokenContract.BindClient(client)
+	smartContract := nft.NewNFT(common.HexToAddress(config.ContractAddress)) //TODO use interface to general init contract
+	smartContract.BindClient(client)
 
 	handler := &ChainHandler{
 		ManagerAccount:      managerAccount,
-		Contract: bridgeTokenContract,
+		Contract: smartContract,
 		Client:              client,
 	}
 	return handler, nil

@@ -48,6 +48,10 @@ func (m* Manager) ChainHandler() *ChainHandler{
 
 func (m *Manager) Init() {
 	m.RegisterHandler("mp_list",m.GetMPList)
+	m.RegisterHandler("NFT_purchase_confirm",m.PurchaseConfirmHandler)
+	m.RegisterHandler("item_details", m.ItemDetailsHandler)
+	m.RegisterHandler("NFT_display",m.NFTDisplayHandler)
+	m.RegisterHandler("tokenbuy_paid",m.TokenBuyPaidHandler)
 }
 
 //func (m *Manager) DisPatchMsg() {

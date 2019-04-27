@@ -1,5 +1,12 @@
 package ws
 
+const (
+	GuestId = iota
+	WeChatId
+	FBId
+	PhoneOrEmailId
+)
+
 type ConnectErrorResponse struct {
 	Reason string `json:"reason"`
 }
@@ -22,10 +29,10 @@ type MpListRequest struct {
 	Offset int `json:"offset"`
 }
 
-type NFTInfo struct {
+type MpListNFTInfo struct {
 	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
 	NftName string `json:"nftName"`
-	NftValue float64 `json:"nftValue" orm:"column(price)"`
+	NftValue int `json:"nftValue" orm:"column(price)"`
 	ActiveTicker string `json:"activeTicker"`
 	NftLifeIndex int64 `json:"nftLifeIndex"`
 	NftPowerIndex int64 `json:"nftPowerIndex"`
@@ -35,7 +42,117 @@ type NFTInfo struct {
 	Qty int `json:"qty"`
 }
 
+// mp_list
 type MpListResponse struct {
 	RQBaseInfo
-	NftData []*NFTInfo `json:"nftData"`
+	NftTranData []*MpListNFTInfo `json:"nftData"`
 }
+
+// TODO purchase_confirm
+type AsUserPurchaseConfirmInfo struct {
+	AsId string `json:"asId"`
+	AsWallet string `json:"asWallet"`
+	Type int `json:"type"`
+}
+
+type PurchaseNftInfo struct {
+	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
+	NftName string `json:"nftName"`
+	NftValue int `json:"nftValue" orm:"column(price)"`
+	ActiveTicker string `json:"activeTicker"`
+	NftLifeIndex int64 `json:"nftLifeIndex"`
+	NftPowerIndex int64 `json:"nftPowerIndex"`
+	NftLdefIndex string `json:"nftLdefIndex"`
+	NftCharacId string `json:"nftCharacId"`
+	Qty int `json:"qty"`
+}
+
+type PurchaseConfirmRequest struct {
+	RQBaseInfo
+	AsUser *AsUserPurchaseConfirmInfo `json:"asUser"`
+	PackedKeys string `json:"packedKeys"`
+	NftTranData []*PurchaseNftInfo `json:"nftTranData"`
+}
+
+type NftPurchaseResponseInfo struct {
+	NftLdefIndex string `json:"nftLdefIndex"`
+	Status int `json:"status"`
+}
+
+type PurchaseConfirmResponse struct {
+	RQBaseInfo
+	NftTranData []*NftPurchaseResponseInfo `json:"nftTranData"`
+}
+
+// TODO token_purchase
+type AsUserPurchaseInfo struct {
+	AsId string `json:"asId"`
+	Type int `json:"type"`
+	AsWallet string `json:"asWallet"`
+	PackedKeys string `json:"packedKeys"`
+}
+
+type TokenPurchaseRequest struct {
+	RQBaseInfo
+	AsUser *AsUserPurchaseInfo `json:"asUser"`
+	AppTranId string `json:"appTranId"`
+	AppId string `json:"appId"`
+	Amount int `json:"amount"`
+}
+
+type TokenPurchaseResponse struct {
+	RQBaseInfo
+	Status int `json:"status"`
+}
+
+//TODO nft_show
+type NftShowAsUserInfo struct {
+	AsId string `json:"asId"`
+	AsWallet string `json:"asWallet"`
+	PackedKeys string `json:"packedKeys"`
+}
+
+type NftShowRequest struct {
+	RQBaseInfo
+	AsUser *NftShowAsUserInfo `json:"asUser"`
+	TranAddress string `json:"tranAddress"`
+	NftLdefIndex string `json:"nftLdefIndex"`
+	SupportedType string `json:"supportedType"`
+}
+
+type NftShowResponse struct {
+	RQBaseInfo
+	NftLdefIndex string `json:"nftLdefIndex"`
+	DecSource string `json:"decSource"`
+}
+
+type ItemDetailsRequestNftInfo struct {
+	NftLdefIndex string `json:"nftLdefIndex"`
+	SupportedType string `json:"supportedType"`
+}
+
+type ItemDetailsRequest struct {
+	RQBaseInfo
+	NftTranData []*ItemDetailsRequestNftInfo `json:"nftTranData"`
+}
+
+type ItemDetailsResponseNftInfo struct {
+	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
+	NftName string `json:"nftName"`
+	NftValue int `json:"nftValue" orm:"column(price)"`
+	ActiveTicker string `json:"activeTicker"`
+	NftLifeIndex int64 `json:"nftLifeIndex"`
+	NftPowerIndex int64 `json:"nftPowerIndex"`
+	NftLdefIndex string `json:"nftLdefIndex"`
+	NftCharacId string `json:"nftCharacId"`
+	ShortDesc string `json:"shortDesc" orm:"column(short_description)"`
+	LongDesc string `json:"longDesc" orm:"column(long_description)"`
+	Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
+	Qty int `json:"qty"`
+}
+
+type ItemDetailResponse struct {
+	RQBaseInfo
+	NftTranData []*ItemDetailsResponseNftInfo `json:"nftTranData"`
+}
+

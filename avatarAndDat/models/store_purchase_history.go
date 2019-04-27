@@ -7,7 +7,8 @@ type StorePurchaseHistroy struct {
 	ASID string
 	TransactionAddress string
 	NFTName string
-	TotalPaid float64 `orm:"digits(12);decimals(4)"`
+	TotalPaid int
 	NFTLdefIndex string
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
+	Status int
 }

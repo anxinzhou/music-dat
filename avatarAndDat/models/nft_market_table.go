@@ -4,7 +4,7 @@ type NftMarketTable struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	MpId string
 	NftAdminId string
-	Price float64 `orm:"digits(12);decimals(4)"`
+	Price int
 	Qty int
 	NumSold int
 	Active bool
