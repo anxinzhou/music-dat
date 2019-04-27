@@ -1,9 +1,12 @@
 package http
 
 import (
+	"errors"
+	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/xxRanger/blockchainUtil/contract/nft"
+	"github.com/xxRanger/music-dat/avatarAndDat/models"
 )
 
 type NftBalanceController struct {
@@ -51,49 +54,66 @@ type nftListResponse struct {
 }
 
 func (this *NftListController) Get() {
-	//user := this.Ctx.Input.Param(":user")
-	//kind := this.Ctx.Input.Param(":kind")
-	//logs.Debug("user",user,"query nft list")
-	//nftContract:=this.C.smartContract.(*nft.NFT)
-	//nftList,err:= nftContract.TokensOfUser(common.HexToAddress(user))
-	//if err!=nil {
-	//	logs.Error(err.Error())
-	//	sendError(this,err,500)
-	//	return
-	//}
-	//
-	//nftLdefIndexs:=make([]string,len(nftList))
-	//for i,tokenId:= range nftList {
-	//	ldef,err:= nftContract.LdefIndexOfToken(tokenId)
-	//	if err!=nil {
-	//		logs.Error(err.Error())
-	//		sendError(this,err,500)
-	//		return
-	//	}
-	//	nftLdefIndexs[i] = ldef
-	//}
-	//nftTranResponseData:= make([]*nftInfoListRes,len(nftList))
-	//
-	//r := models.O.Raw(`
-	//	select ni.nft_type, ni.nft_name,
-	//	mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
-	//	ni.nft_charac_id,mp.file_name,mk.qty from
-	//	nft_market_table as mk,
-	//	nft_mapping_table as mp,
-	//	nft_info_table as ni,
-	//	nft_item_admin as na
-	//	where mk.nft_ldef_index = mp.nft_ldef_index and mk.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id and  ni.nft_ldef_index = ? `, nftLdefIndex)
-	//var nftResponseInfo ItemDetailsResponseNftInfo
-	//err = r.QueryRow(&nftResponseInfo)
-	//if err!=nil {
-	//	logs.Error(err.Error())
-	//	m.errorHandler(c, bq, err)
-	//	return
-	//}
-	//
-	//res:= &nftListResponse{
-	//	NftTranData: nftTranResponseData,
-	//}
-	//this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
-	//this.Data["json"]= &res
+	user := this.Ctx.Input.Param(":user")
+	kind := this.Ctx.Input.Param(":kind")
+	logs.Debug("user",user,"query nft list")
+	nftContract:=this.C.smartContract.(*nft.NFT)
+	nftList,err:= nftContract.TokensOfUser(common.HexToAddress(user))
+	if err!=nil {
+		logs.Error(err.Error())
+		sendError(this,err,500)
+		return
+	}
+
+	nftLdefIndexs:=make([]string,len(nftList))
+	for i,tokenId:= range nftList {
+		ldef,err:= nftContract.LdefIndexOfToken(tokenId)
+		if err!=nil {
+			logs.Error(err.Error())
+			sendError(this,err,500)
+			return
+		}
+		nftLdefIndexs[i] = ldef
+	}
+	nftTranResponseData:= make([]*nftInfoListRes,len(nftList))
+	for i,nftLdefIndex:= range nftLdefIndexs {
+		r := models.O.Raw(`
+		select ni.nft_type, ni.nft_name,
+		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
+		ni.nft_charac_id,mp.file_name,mk.qty from
+		nft_market_table as mk,
+		nft_mapping_table as mp,
+		nft_info_table as ni,
+		nft_item_admin as na
+		where mk.nft_ldef_index = mp.nft_ldef_index and mk.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id and  ni.nft_ldef_index = ? `, nftLdefIndex)
+		var nftResponseInfo nftInfoListRes
+		err = r.QueryRow(&nftResponseInfo)
+		if err!=nil {
+			logs.Error(err.Error())
+			sendError(this,err,500)
+			return
+		}
+
+		var thumbnail string
+		if kind == NAME_NFT_MUSIC {   // music
+			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+				beego.AppConfig.String("httpport") + "/resource/market/dat/"
+		} else if kind == NAME_NFT_AVATAR {  //avatar
+			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+				beego.AppConfig.String("httpport") + "/resource/market/avatar/"
+		} else {
+			err := errors.New("unknown supported type")
+			logs.Error(err.Error())
+			sendError(this,err,400)
+			return
+		}
+		nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
+		nftTranResponseData[i] = &nftResponseInfo
+	}
+
+	res:= &nftListResponse{
+		NftTranData: nftTranResponseData,
+	}
+	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
+	this.Data["json"]= &res
 }
