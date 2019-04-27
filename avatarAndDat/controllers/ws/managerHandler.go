@@ -225,12 +225,12 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 			}
 			responseNftTranData[i] = nftPurchaseResponseInfo
 			storeInfo:=&models.StorePurchaseHistroy{
-				PurchaseID:purchaseId,
-				ASID:asId,
+				PurchaseId:purchaseId,
+				AsId:asId,
 				TransactionAddress:tx.Hash().Hex(),
-				NFTName:nftName,
+				NftName:nftName,
 				TotalPaid:totalPaid,
-				NFTLdefIndex:nftLdefIndex,
+				NftLdefIndex:nftLdefIndex,
 				Status: status,
 			}
 			toBeInsert[i] = storeInfo
