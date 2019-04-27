@@ -428,7 +428,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 	}
 
 	actionStatus:= req.ActionStatus
-	if actionStatus == ACTION_STATUS_PENDING {
+	if actionStatus == ACTION_STATUS_FINISH {
 		purchaseInfo:=models.BerryPurchaseTable {
 			TransactionId:req.AppTranId,
 		}
@@ -508,7 +508,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 			ActionStatus: ACTION_STATUS_FINISH,
 		})
 		return
-	} else if actionStatus == ACTION_STATUS_FINISH {
+	} else if actionStatus == ACTION_STATUS_PENDING {
 		purchaseInfo:= models.BerryPurchaseTable{
 			TransactionId: req.AppTranId,
 			RefillAsId: req.AsUser.AsId,
