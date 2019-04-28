@@ -17,6 +17,8 @@ contract DAT {
     mapping (uint256 => address) private _tokenOwner;
     mapping (uint256 => NFT) private _tokenInfo;
     mapping (address => uint256) private _ownedTokensCount;
+    mapping (address => uint256[]) private _ownedTokens;
+    mapping (uint256 => uint256) private _ownedTokensMapping; // use to record index in _ownedTokens
 
     constructor () public {
 
@@ -58,6 +60,8 @@ contract DAT {
                 publicKey: public_key
             }
         );
+        _ownedTokensMapping[token_id] = _ownedTokens[to].length;
+        _ownedTokens[to].push(token_id);
         _tokenInfo[token_id] = m;
         _tokenOwner[token_id] = to;
         _ownedTokensCount[to] += 1 ;
@@ -80,10 +84,38 @@ contract DAT {
         require(_exists(token_id));
         return _tokenInfo[token_id].nftLdefIndex;
     }
+    
+    function tokensOfUser(address user) external view returns (uint256[] memory) {
+        return _ownedTokens[user];
+    }
 
     function transfer(address to, uint256 token_id) public {
         address from = msg.sender;
         require(ownerOf(token_id) == from);
+        require(to != address(0));
+        
+        uint256 index = _ownedTokensMapping[token_id];
+        if(_ownedTokens[from].length == 1) {
+            // only one token 
+            delete _ownedTokens[from][index];
+        } else {
+            // more than one token,move last element to empty slot;
+            uint256 indexOfLastOne = _ownedTokens[from].length - 1;
+            delete _ownedTokens[from][index];
+            _ownedTokens[from][index] = _ownedTokens[from][indexOfLastOne];
+        }
+        _ownedTokens[from].length--;
+        
+        _ownedTokensCount[from]-=1;
+        _ownedTokensCount[to]+=1;
+        
+        // set token to new owner 
+        _ownedTokensMapping[token_id] = _ownedTokens[to].length;
+        _ownedTokens[to].push(token_id);
+        _tokenOwner[token_id] = to;
+    }
+    
+    function delegateTransfer(address from,  address to, uint256 token_id) public {
         require(to != address(0));
 
         _ownedTokensCount[from]-=1;
