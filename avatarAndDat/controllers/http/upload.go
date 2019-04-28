@@ -149,9 +149,6 @@ func (this *UploadController) Upload() {
 		}
 	}
 
-	user := this.GetString("address")
-	logs.Info("address of user", user, "kind of creating", kind)
-
 	// create nft
 	var (
 		nftType        string
@@ -169,11 +166,38 @@ func (this *UploadController) Upload() {
 	// TODO
 	price:= 1
 	qty:=100
+	//
+	//type payload struct {
+	//	Address string `json:"address"`
+	//	ShortDesc string `json:"shortDesc"`
+	//	LongDesc string `json:"longDesc"`
+	//	NftName string `json:"nftName"`
+	//}
 
-	// get input from user
+	//var p payload
+	//pData,err:=ioutil.ReadAll(this.Ctx.Request.Body)
+	//if err!=nil {
+	//	logs.Error(err.Error())
+	//	sendError(this,err,400)
+	//	return
+	//}
+	//err=json.Unmarshal(pData,&p)
+	//if err!=nil {
+	//	logs.Error(err.Error())
+	//	sendError(this,err,400)
+	//	return
+	//}
+	//user:= p.Address
+	//nftName = p.NftName
+	//shortDesc = p.ShortDesc
+	//longDesc = p.LongDesc
+
+	user := this.GetString("address")
+	//// get input from user
 	nftName = this.GetString("nftName")
 	shortDesc = this.GetString("shortDesc")
 	longDesc = this.GetString("longDesc")
+	logs.Info("address of user", user, "kind of creating", kind)
 	logs.Debug("name",nftName)
 	logs.Debug("shortDesc",shortDesc)
 	logs.Debug("longDesc",longDesc)
