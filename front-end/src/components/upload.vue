@@ -9,15 +9,21 @@
         <el-col :span="8" :offset="2">
           <div class="description">
             <span>Name:</span>
-            <el-input placeholder="Name" v-model="datName" label="Name"></el-input>
+            <el-input placeholder="Name" v-model="datName" label="Name"
+                      @change="datNameChange"
+            ></el-input>
           </div>
           <div class="description">
             <span>Short Description:</span>
-            <el-input placeholder="Short Description" type="textarea" v-model="datShortDesc" label="Name"></el-input>
+            <el-input placeholder="Short Description" type="textarea" v-model="datShortDesc" label="Name"
+                      @change="datShortDescChange"
+            ></el-input>
           </div>
           <div class="description">
             <span>Long Description:</span>
-            <el-input placeholder="Long Description" rows=4 type="textarea" v-model="datLongDesc" label="Name"></el-input>
+            <el-input placeholder="Long Description" rows=4 type="textarea" v-model="datLongDesc" label="Name"
+                      @change="datLongDescChange"
+            ></el-input>
           </div>
           <el-upload
             ref="uploadDat"
@@ -36,15 +42,19 @@
         <el-col :span="8" :offset="2">
           <div class="description">
             <span>Name:</span>
-            <el-input placeholder="Name" v-model="avatarName" label="Name"></el-input>
+            <el-input placeholder="Name" v-model="avatarName" label="Name" @change="avatarNameChange"></el-input>
           </div>
           <div class="description">
             <span>Short Description:</span>
-            <el-input placeholder="Short Description" type="textarea" v-model="avatarShortDesc" label="Name"></el-input>
+            <el-input placeholder="Short Description" type="textarea" v-model="avatarShortDesc" label="Name"
+                      @change="avatarShortDescChange"
+            ></el-input>
           </div>
           <div class="description">
             <span>Long Description:</span>
-            <el-input placeholder="Long Description" rows=4 type="textarea" v-model="avatarLongDesc" label="Name"></el-input>
+            <el-input placeholder="Long Description" rows=4 type="textarea" v-model="avatarLongDesc" label="Name"
+                      @change="avatarLongDescChange"
+            ></el-input>
           </div>
           <el-upload
             ref="uploadAvatar"
@@ -182,22 +192,14 @@
     },
     methods: {
       submitDat: function () {
-        this.uploadDatAdditionalData = {
-          address: this.address,
-          shortDesc: this.datShortDesc,
-          longDesc: this.datLongDesc,
-          nftName: this.datName,
-        };
-        this.$refs.uploadDat.submit();
+        this.$nextTick(() => {
+          this.$refs.uploadDat.submit();
+        })
       },
       submitAvatar: function () {
-        this.uploadAvatarAdditionalData = {
-          address: this.address,
-          shortDesc: this.avatarShortDesc,
-          longDesc: this.avatarLongDesc,
-          nftName: this.avatarName,
-        };
-        this.$refs.uploadAvatar.submit();
+        this.$nextTick(() => {
+          this.$refs.uploadAvatar.submit();
+        });
       },
       uploadDatSuccessHook: function (res, file, fileList) {
         this.totalNFT += 1;
@@ -252,18 +254,41 @@
       current_change: function (currentPage) {
         this.currentPage = currentPage
       },
+      avatarNameChange: function () {
+        this.$set(this.uploadAvatarAdditionalData, 'nftName', this.avatarName);
+      },
+      avatarShortDescChange: function () {
+        this.$set(this.uploadAvatarAdditionalData, 'shortDesc', this.avatarShortDesc);
+      },
+      avatarLongDescChange: function () {
+        this.$set(this.uploadAvatarAdditionalData, 'longDesc', this.avatarLongDesc);
+      },
+      datNameChange: function () {
+        this.$set(this.uploadDatAdditionalData, 'nftName', this.datName);
+      },
+      datShortDescChange: function () {
+        this.$set(this.uploadDatAdditionalData, 'shortDesc', this.datShortDesc);
+      },
+      datLongDescChange: function () {
+        this.$set(this.uploadDatAdditionalData, 'longDesc', this.datLongDesc);
+      }
     },
     created: function () {
       // console.log(this.$store.state.account)
       // init variables
       let address = this.$cookies.get('account').address;
-      console.log("address:",address);
+      console.log("address:", address);
       this.address = address;
       this.httpPath = this.$store.state.config.httpPath;
       this.uploadDatPath = this.httpPath + "/file/dat";
       this.uploadAvatarPath = this.httpPath + "/file/avatar";
       this.total = this.tableData.length / this.pagesize * 10;
-
+      this.uploadDatAdditionalData = {
+        address: this.address,
+      };
+      this.uploadAvatarAdditionalData = {
+        address: this.address,
+      };
       // get total nft
       this.getTotalNFT(address);
       // get nft list of user from market place
@@ -272,7 +297,7 @@
   }
 </script>
 <style scoped>
-  .description{
+  .description {
     margin-bottom: 20px;
   }
 </style>
