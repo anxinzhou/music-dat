@@ -123,6 +123,7 @@ func (this *UploadController) Upload() {
 	logs.Debug("saving file", fileName, "to", cipherSavingPath)
 
 	// resize image and save
+	var marketFilePath string = ""
 	if kind == NAME_NFT_AVATAR {
 		originImage, _, err := image.Decode(bytes.NewReader(data))
 		if err != nil {
@@ -132,6 +133,7 @@ func (this *UploadController) Upload() {
 		}
 		newImage := resize.Resize(200, 200, originImage, resize.Lanczos3)
 		filePath := path.Join(MARKET_PATH, NAME_NFT_AVATAR, fileName)
+		marketFilePath = filePath
 		out, err := os.Create(filePath)
 		defer out.Close()
 		if err != nil {
@@ -160,7 +162,28 @@ func (this *UploadController) Upload() {
 		nftPowerIndex  *big.Int
 		nftCharacterId string
 		publicKey      []byte
+		shortDesc string
+		longDesc string
 	)
+
+	// TODO
+	price:= 1
+	qty:=100
+
+	// get input from user
+	nftName = this.GetString("nftName")
+	shortDesc = this.GetString("shortDesc")
+	longDesc = this.GetString("longDesc")
+
+	// rand set power and life of nft
+	nftPowerIndex = big.NewInt(int64(smallRandInt()))
+	nftLifeIndex = big.NewInt(int64(smallRandInt()))
+
+	// rand set character id
+	nftCharacterId = strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10)
+	h = md5.New()
+	io.WriteString(h, nftLdefIndex)
+	nftCharacterId = new(big.Int).SetBytes(h.Sum(nil)[:4]).String()
 
 	// generate random nftLdefIndex
 	nftLdefIndex = strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10)
@@ -171,20 +194,12 @@ func (this *UploadController) Upload() {
 	publicKey = []byte("2213")
 	if kind == NAME_NFT_AVATAR {
 		nftType = TYPE_NFT_AVATAR
-		nftName = "Turtle yellow"
 		nftLdefIndex = "A" + nftLdefIndex
-		distIndex = "0"
-		nftLifeIndex = big.NewInt(100)
-		nftPowerIndex = big.NewInt(100)
-		nftCharacterId = "MGM09-G73673"
+		distIndex = "0"   // TODO
 	} else if kind == NAME_NFT_MUSIC {
 		nftType = TYPE_NFT_MUSIC
-		nftName = "IP693794957349"
 		nftLdefIndex = "M" + nftLdefIndex
 		distIndex = "0"
-		nftLifeIndex = big.NewInt(0)
-		nftPowerIndex = big.NewInt(0)
-		nftCharacterId = ""
 		// create nft
 	}
 	logs.Info("nftLdefindex", nftLdefIndex)
@@ -281,11 +296,11 @@ func (this *UploadController) Upload() {
 		MpId:         mpId,
 		NftLdefIndex: nftLdefIndex,
 		NftAdminId:   nftAdminID,
-		Price:        1,   //TODO set price
-		Qty:          100, // TODO All for selling
+		Price:        price,   //TODO set price
+		Qty:          qty, // TODO All for selling
 		NumSold:      0,   // already sold
 		Active:       true,
-		ActiveTicker: "berry",
+		ActiveTicker: ACTIVE_TICKER,
 	}
 	_, err = models.O.Insert(marketInfo)
 	if err != nil {
@@ -299,9 +314,9 @@ func (this *UploadController) Upload() {
 	// store admin table to database
 	nftAdminInfo:= &models.NftItemAdmin{
 		NftAdminId: nftAdminID,
-		ShortDescription:"todo", //TODO
-		LongDescription: "todo", //TODO
-		NumDistribution: 100, //TODO
+		ShortDescription:shortDesc, //TODO
+		LongDescription: longDesc, //TODO
+		NumDistribution: qty, //TODO
 	}
 	_,err = models.O.Insert(nftAdminInfo)
 	if err!=nil {
@@ -314,5 +329,21 @@ func (this *UploadController) Upload() {
 	models.O.Commit()
 	logs.Debug("insert all success, return")
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
+	res:= &nftInfoListRes{
+		ActiveTicker:ACTIVE_TICKER,
+		LongDesc:longDesc,
+		ShortDesc:shortDesc,
+		NftCharacId: nftCharacterId,
+		NftLdefIndex:nftLdefIndex,
+		NftLifeIndex: nftLifeIndex.Int64(),
+		NftName: nftName, //todo
+		NftPowerIndex: nftPowerIndex.Int64(),
+		NftValue: price,
+		Qty: qty,
+		SupportedType: nftType,
+		Thumbnail: marketFilePath,
+	}
+	this.Data["json"] = res
+	this.ServeJSON()
 	return
 }

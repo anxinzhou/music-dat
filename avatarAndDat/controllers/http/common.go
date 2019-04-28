@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"github.com/astaxie/beego"
+	"math/rand"
 )
 
 const FILE_SAVING_PATH = "./resource/"
@@ -21,6 +22,11 @@ const (
 const (
 	NAME_NFT_AVATAR = "avatar"
 	NAME_NFT_MUSIC = "dat"
+)
+
+// ACTIVE_TICKER
+const (
+	ACTIVE_TICKER = "berry"
 )
 
 var (
@@ -48,4 +54,8 @@ func sendError(c beego.ControllerInterface,err error, statusCode int) {
 		Reason: err.Error(),
 	}
 	controller.ServeJSON()
+}
+
+func smallRandInt() int {
+	return int(rand.Int31())%75 + 26    //26 to 100
 }

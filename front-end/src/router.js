@@ -65,15 +65,30 @@ router.beforeEach((to, from, next) => {
     //     }
     // }
 
-
+    let hasAccount = Vue.cookies.isKey('account');
+    let isLogined = Vue.cookies.isKey('access-token');
     if (to.name==='Mnemonic') {
-        if(Vue.cookies.isKey('account')) {
+        if(hasAccount) {
           next('/');
         } else {
           next();
         }
+    } else if (to.name === 'Login') {
+        if(hasAccount && isLogined) {
+          next('/');
+        } else if(isLogined){
+          next('/mnemonic');
+        } else {
+          next();
+        }
     } else {
-      next();
+        if (!isLogined) {
+          next('/login')
+        }else if(!hasAccount) {
+          next('/mnemonic')
+        } else {
+          next();
+        }
     }
 });
 

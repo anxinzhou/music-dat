@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
+	"github.com/astaxie/beego/orm"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/xxRanger/blockchainUtil/contract/nft"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
@@ -19,17 +20,26 @@ type nftBalanceResponse struct {
 
 func (this *NftBalanceController) Get() {
 	user := this.Ctx.Input.Param(":user")
-	nftContract:= this.C.smartContract.(*nft.NFT)
+	nftContract,ok := this.C.smartContract.(*nft.NFT)
+	logs.Debug("contract address",nftContract.Address())
+	if !ok {
+		err:= errors.New("can not convert smart contract")
+		sendError(this,err,500)
+		return
+	}
+	logs.Debug("user",user,"query balance")
 	count,err:= nftContract.BalanceOf(common.HexToAddress(user))
 	if err!=nil {
 		logs.Error(err.Error())
 		sendError(this,err,500)
 		return
 	}
-	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
+	logs.Debug("balance of user",count)
 	this.Data["json"]= &nftBalanceResponse{
 		Count: int(count.Int64()),
 	}
+	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
+	this.ServeJSON()
 }
 
 type NftListController struct {
@@ -45,6 +55,8 @@ type nftInfoListRes struct {
 	NftPowerIndex int64 `json:"nftPowerIndex"`
 	NftLdefIndex string `json:"nftLdefIndex"`
 	NftCharacId string `json:"nftCharacId"`
+	ShortDesc string `json:"shortDesc" orm:"column(short_description)"`
+	LongDesc string `json:"longDesc" orm:"column(long_description)"`
 	Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
 	Qty int `json:"qty"`
 }
@@ -72,14 +84,16 @@ func (this *NftListController) Get() {
 			sendError(this,err,500)
 			return
 		}
+		//logs.Info("ldefIndex",ldef)
 		nftLdefIndexs[i] = ldef
 	}
-	nftTranResponseData:= make([]*nftInfoListRes,len(nftList))
-	for i,nftLdefIndex:= range nftLdefIndexs {
+	nftTranResponseData:= make([]*nftInfoListRes,0,len(nftList))
+
+	for _,nftLdefIndex:= range nftLdefIndexs {
 		r := models.O.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
-		ni.nft_charac_id,mp.file_name,mk.qty from
+		ni.nft_charac_id,na.short_description, na.long_description,mp.file_name,mk.qty from
 		nft_market_table as mk,
 		nft_mapping_table as mp,
 		nft_info_table as ni,
@@ -88,16 +102,21 @@ func (this *NftListController) Get() {
 		var nftResponseInfo nftInfoListRes
 		err = r.QueryRow(&nftResponseInfo)
 		if err!=nil {
-			logs.Error(err.Error())
-			sendError(this,err,500)
-			return
+			if err==orm.ErrNoRows {
+				logs.Debug(err.Error())
+				continue
+			} else {
+				logs.Error(err.Error())
+				sendError(this,err,500)
+				return
+			}
 		}
 
 		var thumbnail string
-		if nftResponseInfo.SupportedType == NAME_NFT_MUSIC {   // music
+		if nftResponseInfo.SupportedType == TYPE_NFT_MUSIC {   // music
 			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
 				beego.AppConfig.String("httpport") + "/resource/market/dat/"
-		} else if nftResponseInfo.SupportedType == NAME_NFT_AVATAR {  //avatar
+		} else if nftResponseInfo.SupportedType == TYPE_NFT_AVATAR {  //avatar
 			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
 				beego.AppConfig.String("httpport") + "/resource/market/avatar/"
 		} else {
@@ -107,7 +126,7 @@ func (this *NftListController) Get() {
 			return
 		}
 		nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
-		nftTranResponseData[i] = &nftResponseInfo
+		nftTranResponseData = append(nftTranResponseData,&nftResponseInfo)
 	}
 
 	res:= &nftListResponse{
@@ -115,4 +134,5 @@ func (this *NftListController) Get() {
 	}
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 	this.Data["json"]= &res
+	this.ServeJSON()
 }

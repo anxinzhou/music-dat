@@ -40,6 +40,7 @@ func NewChainHelper() *ChainHelper {
 	account.BindEthClient(c,sender.CHAIN_KIND_PRIVATE)
 	contractAddress:= beego.AppConfig.String("contractAddress")
 	smartContract:= nft.NewNFT(common.HexToAddress(contractAddress))
+	smartContract.BindClient(c)
 	return &ChainHelper{
 		account:account,
 		smartContract: smartContract,

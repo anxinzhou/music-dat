@@ -1,0 +1,5 @@
+avatarAndDat/avatarAndDat
+*.jpg
+*.mp3
+node_modules
+.idea

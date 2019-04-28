@@ -33,7 +33,6 @@
         </div>
 </template>
 <script>
-    // import {createAccount} from "../assets/js/tx";
     export default {
     data() {
         return {
@@ -44,14 +43,7 @@
     },
     methods: {
         signin: function () {
-            // console.log("sign in")
-            // this.axios.post(`${this.$store.state.config.httpPath}/admin`,{
-            //    email: email,
-            //    password: password,
-            // }).then(res=>{
-            //   console.log(res.data)
-            //   this.$router.replace('/')
-            // }).catch(console.log)
+           this.$cookies.set("access-token",'todo');
            this.$router.replace('/mnemonic')
         }
     },
