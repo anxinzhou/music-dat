@@ -257,10 +257,11 @@
       // console.log(this.$store.state.account)
       // init variables
       let address = this.$cookies.get('account').address;
+      console.log("address:",address);
       this.address = address;
       this.httpPath = this.$store.state.config.httpPath;
-      this.uploadDatPath = this.httpPath + "/file/avatar";
-      this.uploadAvatarPath = this.httpPath + "/file/dat";
+      this.uploadDatPath = this.httpPath + "/file/dat";
+      this.uploadAvatarPath = this.httpPath + "/file/avatar";
       this.total = this.tableData.length / this.pagesize * 10;
 
       // get total nft

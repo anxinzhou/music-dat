@@ -174,7 +174,9 @@ func (this *UploadController) Upload() {
 	nftName = this.GetString("nftName")
 	shortDesc = this.GetString("shortDesc")
 	longDesc = this.GetString("longDesc")
-
+	logs.Debug("name",nftName)
+	logs.Debug("shortDesc",shortDesc)
+	logs.Debug("longDesc",longDesc)
 	// rand set power and life of nft
 	nftPowerIndex = big.NewInt(int64(smallRandInt()))
 	nftLifeIndex = big.NewInt(int64(smallRandInt()))
