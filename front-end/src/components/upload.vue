@@ -7,6 +7,9 @@
 
 
         <el-col :span="8" :offset="2">
+          <div class="uploadTitle">
+            <span >Music NFT</span>
+          </div>
           <div class="description">
             <span>Name:</span>
             <el-input placeholder="Name" v-model="datName" label="Name"
@@ -40,6 +43,9 @@
         </el-col>
 
         <el-col :span="8" :offset="2">
+          <div class="uploadTitle">
+            <span >Avatar NFT</span>
+          </div>
           <div class="description">
             <span>Name:</span>
             <el-input placeholder="Name" v-model="avatarName" label="Name" @change="avatarNameChange"></el-input>
@@ -98,9 +104,13 @@
           </el-row>
         </el-col>
       </el-row>
-
+      <el-row class="marketPlaceTitle">
+        <el-col :offset="1">
+          Market Place Active Listings
+        </el-col>
+      </el-row>
       <el-row :gutter="20">
-        <el-col :span=24>
+        <el-col :span=24 :offset="1">
           <div class="upload-file-container">
             <el-table
               :data="tableData.slice((currentPage-1)*pagesize,currentPage*pagesize)"
@@ -299,5 +309,13 @@
 <style scoped>
   .description {
     margin-bottom: 20px;
+  }
+  .uploadTitle {
+    font-size: 1.5rem;
+    margin-bottom: 50px;
+  }
+  .marketPlaceTitle {
+    font-size: 1.5rem;
+    margin-bottom: 50px;
   }
 </style>
