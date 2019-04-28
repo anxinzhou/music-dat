@@ -225,12 +225,12 @@
         el.longDesc = nftData.longDesc;
         if (nftData.supportedType === '721-04') {
           el.nftType = "Dat"
-          el.nftPowerIndex = nftData.nftPowerIndex;
-          el.nftLifeIndex = nftData.nftLifeIndex;
-        } else if (nftData.supportedType === '721-02') {
-          el.nftType = "Avatar"
           el.nftPowerIndex = "/"
           el.nftLifeIndex = "/"
+        } else if (nftData.supportedType === '721-02') {
+          el.nftType = "Avatar"
+          el.nftPowerIndex = nftData.nftPowerIndex;
+          el.nftLifeIndex = nftData.nftLifeIndex;
         }
         return el;
       },
