@@ -488,7 +488,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 		}
 		amount:= req.Amount
 		update:=bson.M {
-			"$set":bson.M {"coin":amount+currentBalance},
+			"$set":bson.M {"coin":strconv.Itoa(amount+currentBalance)},
 
 		}
 		_,err =col.UpdateOne(context.Background(),filter,update)
