@@ -123,7 +123,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 
 	col:=models.MongoDB.Collection("users")
 	type fields struct {
-		Coin int `bson:"coin"`
+		Coin string `bson:"coin"`
 	}
 
 	idType:= req.AsUser.Type
@@ -153,7 +153,12 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 		m.errorHandler(c, bq, err)
 		return
 	}
-	currentBalance:= queryResult.Coin
+	currentBalance,err:= strconv.Atoi(queryResult.Coin)
+	if err!=nil {
+		logs.Error(err.Error())
+		m.errorHandler(c,bq,err)
+		return
+	}
 	logs.Debug("as id",req.AsUser.AsId,"current balance:",currentBalance)
 
 	// currentBalance must be larger than total price of nft
@@ -258,8 +263,9 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 	models.O.Commit()
 	// update balance of user   TODO  in case update fail
 	finalBalance:= currentBalance - needToPay
+
 	update:=bson.M {
-		"$set":bson.M {"coin":finalBalance},
+		"$set":bson.M {"coin":strconv.Itoa(finalBalance)},
 
 	}
 	_,err =col.UpdateOne(context.Background(),filter,update)
