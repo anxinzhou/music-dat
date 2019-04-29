@@ -443,7 +443,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 		col:=models.MongoDB.Collection("users")
 		// update coin records
 		type fields struct {
-			Coin int `bson:"coin"`
+			Coin string `bson:"coin"`
 		}
 
 		idType:= req.AsUser.Type
@@ -480,9 +480,15 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 			m.errorHandler(c, bq, err)
 			return
 		}
+		currentBalance,err:= strconv.Atoi(queryResult.Coin)
+		if err!=nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
 		amount:= req.Amount
 		update:=bson.M {
-			"$set":bson.M {"coin":amount+queryResult.Coin},
+			"$set":bson.M {"coin":amount+currentBalance},
 
 		}
 		_,err =col.UpdateOne(context.Background(),filter,update)
@@ -491,10 +497,10 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 			m.errorHandler(c, bq, err)
 			return
 		}
-		logs.Info("update success","after update, amount:",amount+queryResult.Coin)
+		logs.Info("update success","after update, amount:",amount+currentBalance)
 
 		models.O.Begin()
-		err:=models.O.Read(&purchaseInfo)
+		err=models.O.Read(&purchaseInfo)
 		if err!=nil {
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
