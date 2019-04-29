@@ -114,10 +114,10 @@ func (this *NftListController) Get() {
 
 		var thumbnail string
 		if nftResponseInfo.SupportedType == TYPE_NFT_MUSIC {   // music
-			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+			thumbnail = beego.AppConfig.String("prefix")+beego.AppConfig.String("hostaddr")+ ":"+
 				beego.AppConfig.String("fileport") + "/resource/market/dat/"
 		} else if nftResponseInfo.SupportedType == TYPE_NFT_AVATAR {  //avatar
-			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+			thumbnail = beego.AppConfig.String("prefix")+beego.AppConfig.String("hostaddr")+ ":"+
 				beego.AppConfig.String("fileport") + "/resource/market/avatar/"
 		} else {
 			err := errors.New("unknown supported type")

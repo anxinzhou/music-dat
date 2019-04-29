@@ -89,10 +89,10 @@ func (m *Manager) GetMPList(c *client.Client, bq *RQBaseInfo, data []byte) {
 
 	var thumbnail string
 	if nftType == TYPE_NFT_MUSIC {   // music
-		thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+		thumbnail = beego.AppConfig.String("prefix")+beego.AppConfig.String("hostaddr")+ ":"+
 			beego.AppConfig.String("fileport") + "/resource/market/dat/"
 	} else if nftType == TYPE_NFT_AVATAR {  //avatar
-		thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+		thumbnail = beego.AppConfig.String("prefix")+beego.AppConfig.String("hostaddr")+ ":"+
 			beego.AppConfig.String("fileport") + "/resource/market/avatar/"
 	} else {
 		err := errors.New("unknown supported type")
@@ -317,10 +317,10 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, bq *RQBaseInfo, data []by
 		}
 		var thumbnail string
 		if nftType == TYPE_NFT_MUSIC {   // music
-			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+			thumbnail = beego.AppConfig.String("prefix")+beego.AppConfig.String("hostaddr")+ ":"+
 				beego.AppConfig.String("fileport") + "/resource/market/dat/"
 		} else if nftType == TYPE_NFT_AVATAR {  //avatar
-			thumbnail = beego.AppConfig.String("hostaddr")+ ":"+
+			thumbnail = beego.AppConfig.String("prefix")+beego.AppConfig.String("hostaddr")+ ":"+
 				beego.AppConfig.String("fileport") + "/resource/market/avatar/"
 		} else {
 			err := errors.New("unknown supported type")
@@ -418,7 +418,7 @@ func (m *Manager) NFTDisplayHandler(c *client.Client, bq *RQBaseInfo, data []byt
 	m.wrapperAndSend(c,bq,NftShowResponse{
 		RQBaseInfo:*bq,
 		NftLdefIndex: nftLdefIndex,
-		DecSource: beego.AppConfig.String("hostaddr")+ ":"+
+		DecSource: beego.AppConfig.String("prefix")+beego.AppConfig.String("hostaddr")+ ":"+
 			beego.AppConfig.String("fileport")+"/"+decryptedFilePath,
 	})
 }
