@@ -6,6 +6,8 @@ from flask.ext.session import Session
 
 from py_backend.model.core import *
 
+db.create_all()
+
 
 @app.route('/')
 def hello_world():
@@ -13,5 +15,4 @@ def hello_world():
 
 
 if __name__ == '__main__':
-    db.create_all()
     app.run()
