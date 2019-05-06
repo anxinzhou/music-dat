@@ -210,6 +210,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 				m.errorHandler(c, bq, err)
 				return
 			}
+			logs.Debug("purchase owner address",ownerAddress)
 			// delete from market user table if balance is zero
 			_,err=models.O.QueryTable("market_user_table").Filter("wallet_id", ownerAddress).Update(
 				orm.Params{
@@ -266,6 +267,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 		}(i, itemDetail)
 	}
 	wg.Wait()
+	logs.Debug("length to be insert",len(toBeInsert))
 	num, err := models.O.InsertMulti(len(toBeInsert), toBeInsert)
 	if err != nil {
 		models.O.Rollback()
@@ -580,7 +582,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, bq *RQBaseInfo, data [
 		return
 	}
 	r := models.O.Raw(`
-		select wallet_id from market_user_table where count!=0`)
+		select wallet_id from market_user_table where count>0`)
 	var walletIdList []MarketUserWallet
 	_, err = r.QueryRows(&walletIdList)
 	if err != nil {
@@ -679,7 +681,7 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, bq *RQBaseInfo, data [
 	}
 
 	// balance of user
-	balance := len(nftList)
+	balance := len(nftTranResponseData)
 
 	res := &UserMarketInfoResponse{
 		RQBaseInfo:  *bq,
