@@ -1,8 +1,8 @@
-=============== May 4, 2019 (HKT) ===============
-22:15:41.854020 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-22:15:41.875771 db@open opening
-22:15:41.879262 version@stat F·[] S·0B[] Sc·[]
-22:15:41.888601 db@janitor F·2 G·0
-22:15:41.889913 db@open done T·12.538777ms
-22:15:41.896186 db@close closing
-22:15:41.916184 db@close done T·19.874575ms
+=============== May 5, 2019 (HKT) ===============
+14:56:45.142486 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:56:45.164359 db@open opening
+14:56:45.166224 version@stat F·[] S·0B[] Sc·[]
+14:56:45.175828 db@janitor F·2 G·0
+14:56:45.179654 db@open done T·15.255405ms
+14:56:45.186098 db@close closing
+14:56:45.212279 db@close done T·26.177444ms

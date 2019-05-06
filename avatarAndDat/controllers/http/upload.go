@@ -229,37 +229,7 @@ func (this *UploadController) Upload() {
 		// create nft
 	}
 	logs.Info("nftLdefindex", nftLdefIndex)
-	// if unsuccessful to create nft, delete file
-	tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
-	if err != nil {
-		logs.Error(err.Error())
-		sendError(this,err, 500)
-		return
-	}
 
-	logs.Warn("create nft, tokenId", tokenId)
-	txErr := this.C.account.SendFunction(this.C.smartContract,
-		nil,
-		nft.FuncMint,
-		common.HexToAddress(user),
-		tokenId,
-		nftType,
-		nftName,
-		nftLdefIndex,
-		distIndex,
-		nftLifeIndex,
-		nftPowerIndex,
-		nftCharacterId,
-		publicKey,
-	)
-	err = <-txErr
-	if err != nil {
-		logs.Error(err.Error())
-		sendError(this,err, 500)
-		return
-	}
-	logs.Debug("create nft success")
-	// TODO in case update database fail while create nft success
 	models.O.Begin()   //start transaction
 	// store nft info to database
 
@@ -352,6 +322,52 @@ func (this *UploadController) Upload() {
 		return
 	}
 	logs.Debug("insert nftadmin table from", user, "to db")
+
+	// if unsuccessful to create nft, delete file
+	tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
+	if err != nil {
+		logs.Error(err.Error())
+		sendError(this,err, 500)
+		return
+	}
+	// insert to wallet address table
+	walletInfo:= &models.MarketUserTable{
+		WalletId: user,
+		Count: 1,
+	}
+	_,err=models.O.InsertOrUpdate(walletInfo,"count=count+1")
+	if err!=nil {
+		models.O.Rollback()
+		logs.Error(err.Error())
+		sendError(this,err,500)
+		return
+	}
+	logs.Debug("insert to wallet address table success")
+
+	logs.Warn("create nft, tokenId", tokenId)
+	txErr := this.C.account.SendFunction(this.C.smartContract,
+		nil,
+		nft.FuncMint,
+		common.HexToAddress(user),
+		tokenId,
+		nftType,
+		nftName,
+		nftLdefIndex,
+		distIndex,
+		nftLifeIndex,
+		nftPowerIndex,
+		nftCharacterId,
+		publicKey,
+	)
+	err = <-txErr
+	if err != nil {
+		models.O.Rollback()
+		logs.Error(err.Error())
+		sendError(this,err, 500)
+		return
+	}
+	logs.Debug("create nft success")
+
 	models.O.Commit()
 	logs.Debug("insert all success, return")
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)

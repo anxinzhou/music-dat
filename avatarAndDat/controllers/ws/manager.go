@@ -52,6 +52,8 @@ func (m *Manager) Init() {
 	m.RegisterHandler("item_details", m.ItemDetailsHandler)
 	m.RegisterHandler("NFT_display",m.NFTDisplayHandler)
 	m.RegisterHandler("tokenbuy_paid",m.TokenBuyPaidHandler)
+	m.RegisterHandler("market_user_list",m.MarketUserListHandler)
+	m.RegisterHandler("user_market_info",m.UserMarketInfoHandler)
 }
 
 //func (m *Manager) DisPatchMsg() {

@@ -211,3 +211,47 @@ type ListNFTResponse struct {
 	RQBaseInfo
 	NftTranData []*NFTInfoListRes `json:"nftTranData"`
 }
+
+
+// list of market user
+
+type MarketUserListRequest struct {
+	RQBaseInfo
+}
+
+type MarketUserWallet struct {
+	WalletId string `json:"walletId" orm:"column(wallet_id)"`
+}
+
+type MarketUserListResponse struct {
+	RQBaseInfo
+	WalletIdList []*MarketUserWallet `json:"walletIdList"`
+}
+
+// user market info
+
+type nftInfoListRes struct {
+	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
+	NftName string `json:"nftName"`
+	NftValue int `json:"nftValue" orm:"column(price)"`
+	ActiveTicker string `json:"activeTicker"`
+	NftLifeIndex int64 `json:"nftLifeIndex"`
+	NftPowerIndex int64 `json:"nftPowerIndex"`
+	NftLdefIndex string `json:"nftLdefIndex"`
+	NftCharacId string `json:"nftCharacId"`
+	ShortDesc string `json:"shortDesc" orm:"column(short_description)"`
+	LongDesc string `json:"longDesc" orm:"column(long_description)"`
+	Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
+	Qty int `json:"qty"`
+}
+
+type UserMarketInfoRequest struct {
+	RQBaseInfo
+	WalletId string `json:"walletId"`
+}
+
+type UserMarketInfoResponse struct {
+	RQBaseInfo
+	TotalNFT int `json:"totalNFT"`
+	NftTranData []*nftInfoListRes `json:"nftTranData"`
+}
