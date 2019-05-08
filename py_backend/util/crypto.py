@@ -7,6 +7,8 @@ import typing
 
 KEY = b'\x05\xc0\xed\x93D\x1d\x8ef\xf44%$\x81\xc79K'
 PAD = b'\0'
+ENCRYPT_PATH = '../res/encrypted'
+PLAINTEXT_PATH = '../res/plaintext'
 
 
 def padding(s):
@@ -30,14 +32,14 @@ def decrypt(ciphertext, key):
 def encrypt_file(in_file: typing.BinaryIO, filename: str, key: bytes = KEY):
     plaintext = in_file.read()
     enc = encrypt(plaintext, key)
-    with open(filename + '.enc', 'wb') as out_file:
+    with open(ENCRYPT_PATH + filename + '.enc', 'wb') as out_file:
         out_file.write(enc)
     return True
 
 
 def decrypt_file(filename, key: bytes = KEY):
-    with open(filename, 'rb') as in_file:
+    with open(ENCRYPT_PATH + filename, 'rb') as in_file:
         cipher_text = in_file.read()
         dec = decrypt(cipher_text, key)
-        with open(filename[:-4], 'wb') as out_file:
+        with open(PLAINTEXT_PATH + filename[:-4], 'wb') as out_file:
             out_file.write(dec)

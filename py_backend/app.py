@@ -6,6 +6,7 @@ from flask_session import Session
 from configparser import ConfigParser
 from model.core import *
 from util.crypto import encrypt_file, decrypt_file
+from util.image import resize_to_object
 from werkzeug.utils import secure_filename
 
 config_file = ConfigParser()
@@ -20,6 +21,8 @@ db.create_all()
 
 # define upload file folders
 app.config['UPLOAD_FOLDER'] = './upload'
+
+
 # define a set of permitted file format
 # ALLOWED_EXTENSION = {'jpg', 'jpeg', 'png', 'gif', 'mp3', 'bmp'}
 
@@ -54,11 +57,8 @@ def file_upload_handler(kind):
     f = request.files['file']
     file_name = secure_filename(f.filename)
     if kind == 'avatar':
-        pass
-    elif kind == 'dat':
-        pass
-    else:
-        assert False, 'unknown file type'
+        f = resize_to_object(f, file_name)
+    encrypt_file(f, file_name)
 
 
 @app.route('/balance/<user>')
