@@ -26,14 +26,14 @@ func (this *NftBalanceController) Get() {
 	logs.Debug("contract address", nftContract.Address())
 	if !ok {
 		err := errors.New("can not convert smart contract")
-		sendError(this, err, 500)
+		sendError(&this.Controller, err, 500)
 		return
 	}
 	logs.Debug("user", user, "query balance")
 	count, err := nftContract.BalanceOf(common.HexToAddress(user))
 	if err != nil {
 		logs.Error(err.Error())
-		sendError(this, err, 500)
+		sendError(&this.Controller, err, 500)
 		return
 	}
 	logs.Debug("balance of user", count)
@@ -74,7 +74,7 @@ func (this *NftListController) Get() {
 	nftList, err := nftContract.TokensOfUser(common.HexToAddress(user))
 	if err != nil {
 		logs.Error(err.Error())
-		sendError(this, err, 500)
+		sendError(&this.Controller, err, 500)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (this *NftListController) Get() {
 		ldef, err := nftContract.LdefIndexOfToken(tokenId)
 		if err != nil {
 			logs.Error(err.Error())
-			sendError(this, err, 500)
+			sendError(&this.Controller, err, 500)
 			return
 		}
 		//logs.Info("ldefIndex",ldef)
@@ -109,7 +109,7 @@ func (this *NftListController) Get() {
 				continue
 			} else {
 				logs.Error(err.Error())
-				sendError(this, err, 500)
+				sendError(&this.Controller, err, 500)
 				return
 			}
 		}
@@ -124,7 +124,7 @@ func (this *NftListController) Get() {
 		} else {
 			err := errors.New("unknown supported type")
 			logs.Error(err.Error())
-			sendError(this, err, 400)
+			sendError(&this.Controller, err, 400)
 			return
 		}
 		nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
@@ -153,7 +153,7 @@ func (this *RewardController) RewardDat() {
 	if err != nil {
 		models.O.Rollback()
 		logs.Error(err.Error())
-		sendError(this, err, 500)
+		sendError(&this.Controller, err, 500)
 		return
 	}
 	var res nftListResponse
@@ -180,7 +180,7 @@ func (this *RewardController) RewardDat() {
 			if err != nil {
 				models.O.Rollback()
 				logs.Error(err.Error())
-				sendError(this, err, 500)
+				sendError(&this.Controller, err, 500)
 				return
 			}
 
@@ -193,7 +193,7 @@ func (this *RewardController) RewardDat() {
 				models.O.Rollback()
 				err:= errors.New("Unknown type")
 				logs.Error(err.Error())
-				sendError(this, err, 500)
+				sendError(&this.Controller, err, 500)
 				return
 			}
 			//nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail // TODO appending file name
@@ -204,7 +204,7 @@ func (this *RewardController) RewardDat() {
 			//if err != nil {
 			//	models.O.Rollback()
 			//	logs.Error(err.Error())
-			//	sendError(this, err, 500)
+			//	sendError(&this.Controller, err, 500)
 			//	return
 			//}
 
@@ -215,7 +215,7 @@ func (this *RewardController) RewardDat() {
 			if err != nil {
 				models.O.Rollback()
 				logs.Error(err.Error())
-				sendError(this, err, 500)
+				sendError(&this.Controller, err, 500)
 				return
 			}
 			_, txErr := this.C.account.SendFunction2(nftContract,
@@ -228,7 +228,7 @@ func (this *RewardController) RewardDat() {
 			if err != nil {
 				models.O.Rollback()
 				logs.Error(err.Error())
-				sendError(this, err, 500)
+				sendError(&this.Controller, err, 500)
 				return
 			}
 		}(i, mk)

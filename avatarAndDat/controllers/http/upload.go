@@ -49,7 +49,7 @@ func (this *UploadController) Upload() {
 	fileName = new(big.Int).SetBytes(h.Sum(nil)[:8]).String()
 	if err != nil {
 		logs.Error(err.Error())
-		sendError(this,err,400)
+		sendError(&this.Controller,err,400)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (this *UploadController) Upload() {
 			break;
 		} else if err != nil {
 			logs.Error(err.Error())
-			sendError(this,err, 500)
+			sendError(&this.Controller,err, 500)
 			return
 		} else {
 			dataBuffer.Write(buffer[:n])
@@ -84,7 +84,7 @@ func (this *UploadController) Upload() {
 	nonce := make([]byte, aesgcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		logs.Error(err.Error())
-		sendError(this,err, 500)
+		sendError(&this.Controller,err, 500)
 		return
 	}
 	cipherText := aesgcm.Seal(nonce, nonce, data, nil)
@@ -117,7 +117,7 @@ func (this *UploadController) Upload() {
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
 		logs.Error(err.Error())
-		sendError(this,err, 500)
+		sendError(&this.Controller,err, 500)
 		return
 	}
 	logs.Debug("saving file", fileName, "to", cipherSavingPath)
@@ -128,7 +128,7 @@ func (this *UploadController) Upload() {
 		originImage, _, err := image.Decode(bytes.NewReader(data))
 		if err != nil {
 			logs.Error(err.Error())
-			sendError(this,err, 500)
+			sendError(&this.Controller,err, 500)
 			return
 		}
 		newImage := resize.Resize(200, 200, originImage, resize.Lanczos3)
@@ -138,13 +138,13 @@ func (this *UploadController) Upload() {
 		defer out.Close()
 		if err != nil {
 			logs.Error(err.Error())
-			sendError(this,err, 500)
+			sendError(&this.Controller,err, 500)
 			return
 		}
 		err = jpeg.Encode(out, newImage, nil)
 		if err != nil {
 			logs.Error(err.Error())
-			sendError(this,err, 500)
+			sendError(&this.Controller,err, 500)
 			return
 		}
 	}
@@ -178,13 +178,13 @@ func (this *UploadController) Upload() {
 	//pData,err:=ioutil.ReadAll(this.Ctx.Request.Body)
 	//if err!=nil {
 	//	logs.Error(err.Error())
-	//	sendError(this,err,400)
+	//	sendError(&this.Controller,err,400)
 	//	return
 	//}
 	//err=json.Unmarshal(pData,&p)
 	//if err!=nil {
 	//	logs.Error(err.Error())
-	//	sendError(this,err,400)
+	//	sendError(&this.Controller,err,400)
 	//	return
 	//}
 	//user:= p.Address
@@ -246,7 +246,7 @@ func (this *UploadController) Upload() {
 	_, err = models.O.Insert(nftInfo)
 	if err != nil {
 		logs.Error(err.Error())
-		sendError(this,err, 500)
+		sendError(&this.Controller,err, 500)
 		return
 	}
 	logs.Info("insert nft info from", user, "to db, number:")
@@ -282,7 +282,7 @@ func (this *UploadController) Upload() {
 	if err != nil {
 		models.O.Rollback()
 		logs.Error(err.Error())
-		sendError(this,err, 500)
+		sendError(&this.Controller,err, 500)
 		return
 	}
 	logs.Debug("insert mapping info from", user, "to db, number:")
@@ -302,7 +302,7 @@ func (this *UploadController) Upload() {
 	if err != nil {
 		models.O.Rollback()
 		logs.Error(err.Error())
-		sendError(this,err, 500)
+		sendError(&this.Controller,err, 500)
 		return
 	}
 	logs.Debug("insert marketplace info from", user, "to db")
@@ -318,7 +318,7 @@ func (this *UploadController) Upload() {
 	if err!=nil {
 		models.O.Rollback()
 		logs.Error(err.Error())
-		sendError(this,err,500)
+		sendError(&this.Controller,err,500)
 		return
 	}
 	logs.Debug("insert nftadmin table from", user, "to db")
@@ -327,7 +327,7 @@ func (this *UploadController) Upload() {
 	tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
 	if err != nil {
 		logs.Error(err.Error())
-		sendError(this,err, 500)
+		sendError(&this.Controller,err, 500)
 		return
 	}
 	// insert to wallet address table
@@ -339,7 +339,7 @@ func (this *UploadController) Upload() {
 	if err!=nil {
 		models.O.Rollback()
 		logs.Error(err.Error())
-		sendError(this,err,500)
+		sendError(&this.Controller,err,500)
 		return
 	}
 	logs.Debug("insert to wallet address table success")
@@ -363,7 +363,7 @@ func (this *UploadController) Upload() {
 	if err != nil {
 		models.O.Rollback()
 		logs.Error(err.Error())
-		sendError(this,err, 500)
+		sendError(&this.Controller,err, 500)
 		return
 	}
 	logs.Debug("create nft success")
