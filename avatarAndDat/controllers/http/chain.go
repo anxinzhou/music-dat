@@ -146,7 +146,7 @@ type RewardController struct {
 func (this *RewardController) RewardDat() {
 	user := this.Ctx.Input.Param(":user")
 	models.O.Begin()
-	qs := models.O.QueryTable("nft_market_table")
+	qs := models.O.QueryTable("nft_market_table").Filter("nft_ldef_index__contains","M").Limit(1)
 	var mks []models.NftMarketTable
 	rewardAccount := 1
 	_, err := qs.Limit(rewardAccount).All(&mks)
@@ -183,6 +183,22 @@ func (this *RewardController) RewardDat() {
 				sendError(this, err, 500)
 				return
 			}
+
+			nftType:= nftResponseInfo.SupportedType
+			var thumbnail string
+			if nftType == TYPE_NFT_MUSIC { // music
+				thumbnail = beego.AppConfig.String("prefix") + beego.AppConfig.String("hostaddr") + ":" +
+					beego.AppConfig.String("fileport") + "/resource/default/"
+			} else {
+				models.O.Rollback()
+				err:= errors.New("Unknown type")
+				logs.Error(err.Error())
+				sendError(this, err, 500)
+				return
+			}
+			//nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail // TODO appending file name
+			nftResponseInfo.Thumbnail = thumbnail + "music.png"
+
 			nftInfoList[i] = &nftResponseInfo
 			_, err = models.O.Delete(&mk)
 			if err != nil {
@@ -207,7 +223,7 @@ func (this *RewardController) RewardDat() {
 				nft.FuncDelegateTransfer,
 				common.HexToAddress(ownerAddress),
 				common.HexToAddress(user),
-				tokenId)
+				tokenId)    // TODO redis to cache unsuccessful transaction
 			err = <-txErr
 			if err != nil {
 				models.O.Rollback()
