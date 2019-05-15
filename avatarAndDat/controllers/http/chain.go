@@ -200,13 +200,13 @@ func (this *RewardController) RewardDat() {
 			nftResponseInfo.Thumbnail = thumbnail + "music.png"
 
 			nftInfoList[i] = &nftResponseInfo
-			_, err = models.O.Delete(&mk)
-			if err != nil {
-				models.O.Rollback()
-				logs.Error(err.Error())
-				sendError(this, err, 500)
-				return
-			}
+			//_, err = models.O.Delete(&mk)  //TODO comment for testing
+			//if err != nil {
+			//	models.O.Rollback()
+			//	logs.Error(err.Error())
+			//	sendError(this, err, 500)
+			//	return
+			//}
 
 			tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
 
