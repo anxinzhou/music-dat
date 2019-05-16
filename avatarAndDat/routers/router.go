@@ -38,14 +38,20 @@ func init() {
 	nftListController.C = chainHelper
 	rewardController:= &http.RewardController{}
 	rewardController.C = chainHelper
+	childrenOfNFTController := &http.ChildrenOfNFTController{}
+	childrenOfNFTController.C = chainHelper
+	numOfChildrenController:= &http.NumOfChildrenController{}
+	numOfChildrenController.C = chainHelper
 
 	beego.Router("/", &http.MainController{})
 	beego.Router("/ws", wsHandler)
 	beego.Router("/admin",&http.AdminController{},"get:Get;post:Login")
-	beego.Router("/file/:kind(avatar|dat)",upLoadController,"get:Get;post:Upload")
+	beego.Router("/file/:kind(avatar|dat|other)",upLoadController,"get:Get;post:Upload")
 	beego.Router("/balance/:user:string",nftBalanceController)
 	beego.Router("/nftList/:user:string",nftListController)
 	beego.Router("/rewardDat/:user:string",rewardController,"get:RewardDat")
+	beego.Router("/nfts/:parentIndex:string/children", childrenOfNFTController)
+	beego.Router("/nfts/:parentIndex:string/balance", numOfChildrenController)
 }
 
 

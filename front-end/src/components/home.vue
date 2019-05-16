@@ -13,6 +13,9 @@
       <div class="collapse navbar-collapse" id="navbarResponsive">
         <ul class="navbar-nav  ml-auto">
           <li class="nav-item text-uppercase">
+            <a class="nav-link" href="#" v-scroll-to="'#page-top'">Home</a>
+          </li>
+          <li class="nav-item text-uppercase">
             <a class="nav-link" href="#" v-scroll-to="'#upload'">Market</a>
           </li>
         </ul>
@@ -56,14 +59,6 @@
           el.classList.remove('navbar-shrink')
         }
       }
-
-      // // set user address from cookie
-      // let userAddr = document.getElementById('user-addr')
-      // if (this.$cookies.isKey('account')) {
-      //   userAddr.innerText = 'Address: '  + this.$cookies.get('account').address
-      // } else {
-      //   userAddr.innerText = 'Not Logged in'
-      // }
 
       window.addEventListener('scroll', scrollHandle)
     },

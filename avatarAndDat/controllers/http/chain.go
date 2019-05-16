@@ -2,7 +2,6 @@ package http
 
 import (
 	"errors"
-	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"github.com/ethereum/go-ethereum/common"
@@ -114,19 +113,7 @@ func (this *NftListController) Get() {
 			}
 		}
 
-		var thumbnail string
-		if nftResponseInfo.SupportedType == TYPE_NFT_MUSIC { // music
-			thumbnail = beego.AppConfig.String("prefix") + beego.AppConfig.String("hostaddr") + ":" +
-				beego.AppConfig.String("fileport") + "/resource/market/dat/"
-		} else if nftResponseInfo.SupportedType == TYPE_NFT_AVATAR { //avatar
-			thumbnail = beego.AppConfig.String("prefix") + beego.AppConfig.String("hostaddr") + ":" +
-				beego.AppConfig.String("fileport") + "/resource/market/avatar/"
-		} else {
-			err := errors.New("unknown supported type")
-			logs.Error(err.Error())
-			sendError(&this.Controller, err, 400)
-			return
-		}
+		thumbnail:= PathPrefixOfNFT(nftResponseInfo.SupportedType,PATH_KIND_MARKET)
 		nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
 		nftTranResponseData = append(nftTranResponseData, &nftResponseInfo)
 	}
@@ -185,17 +172,7 @@ func (this *RewardController) RewardDat() {
 			}
 
 			nftType:= nftResponseInfo.SupportedType
-			var thumbnail string
-			if nftType == TYPE_NFT_MUSIC { // music
-				thumbnail = beego.AppConfig.String("prefix") + beego.AppConfig.String("hostaddr") + ":" +
-					beego.AppConfig.String("fileport") + "/resource/default/"
-			} else {
-				models.O.Rollback()
-				err:= errors.New("Unknown type")
-				logs.Error(err.Error())
-				sendError(&this.Controller, err, 500)
-				return
-			}
+			thumbnail := PathPrefixOfNFT(nftType, PATH_KIND_DEFAULT)
 			//nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail // TODO appending file name
 			nftResponseInfo.Thumbnail = thumbnail + "music.png"
 
@@ -236,5 +213,73 @@ func (this *RewardController) RewardDat() {
 	wg.Wait()
 	models.O.Commit()
 	this.Data["json"] = res
+	this.ServeJSON()
+}
+
+type NumOfChildrenController struct {
+	ContractController
+}
+
+type NumOfChildrenRes struct {
+	Count int `json:"count"`
+}
+
+func (this *NumOfChildrenController) Get() {
+	parentIndex := this.Ctx.Input.Param(":parentIndex")
+	r := models.O.Raw(`
+		select count(a.nft_ldef_index) as num 
+		from nft_mapping_table as a,
+		nft_market_table as b 
+		where a.nft_parent_ldef = ? and a.nft_ldef_index = b.nft_ldef_index `, parentIndex)
+	type CountQuery struct {
+		Num int
+	}
+	var queryResult CountQuery
+	err:=r.QueryRow(&queryResult)
+	if err!=nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 500)
+		return
+	}
+
+	res:=&NumOfChildrenRes{
+		Count: queryResult.Num,
+	}
+
+	this.Data["json"]=res
+	this.ServeJSON()
+}
+
+type ChildrenOfNFTController struct {
+	ContractController
+}
+
+func (this *ChildrenOfNFTController) Get() {
+	parentIndex := this.Ctx.Input.Param(":parentIndex")
+
+	r := models.O.Raw(`
+		select ni.nft_type, ni.nft_name,
+		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
+		ni.nft_charac_id,na.short_description, na.long_description,mp.file_name,mk.qty from
+		nft_market_table as mk,
+		nft_mapping_table as mp,
+		nft_info_table as ni,
+		nft_item_admin as na
+		where mp.nft_parent_ldef= ? and mk.nft_ldef_index = mp.nft_ldef_index and mp.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id`, parentIndex)
+	nftResponseInfo:= []*nftInfoListRes{}
+	_,err := r.QueryRows(&nftResponseInfo)
+	if err != nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 500)
+		return
+	}
+
+	thumbnail := PathPrefixOfNFT(TYPE_NFT_OTHER, PATH_KIND_MARKET)
+	for _,nftInfo:= range nftResponseInfo {
+		nftInfo.Thumbnail = thumbnail + nftInfo.Thumbnail
+	}
+	var res nftListResponse
+	res.NftTranData = nftResponseInfo
+	this.Data["json"] = &res
 	this.ServeJSON()
 }

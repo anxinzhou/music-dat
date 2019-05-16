@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"crypto/rand"
+	"errors"
 	"github.com/astaxie/beego/logs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/nfnt/resize"
@@ -46,7 +47,8 @@ func (this *UploadController) Upload() {
 	fileName := header.Filename
 	h := md5.New()
 	io.WriteString(h, fileName)
-	fileName = new(big.Int).SetBytes(h.Sum(nil)[:8]).String()
+	io.WriteString(h, strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10))
+	fileName = new(big.Int).SetBytes(h.Sum(nil)[:10]).String()
 	if err != nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller,err,400)
@@ -57,6 +59,8 @@ func (this *UploadController) Upload() {
 		fileName = fileName + ".jpg"
 	} else if kind == NAME_NFT_MUSIC {
 		fileName = fileName + ".mp3"
+	} else if kind == NAME_NFT_OTHER {
+		fileName = fileName + ".jpg"
 	} else {
 		panic("unexpected kind name")
 	}
@@ -89,7 +93,7 @@ func (this *UploadController) Upload() {
 	}
 	cipherText := aesgcm.Seal(nonce, nonce, data, nil)
 
-	//test
+	//test cipher
 	//nonce,ct := cipherText[:aesgcm.NonceSize()],cipherText[aesgcm.NonceSize():]
 	//plainText,err:=aesgcm.Open(nil,nonce,ct,nil)
 	//if err!=nil{
@@ -110,10 +114,10 @@ func (this *UploadController) Upload() {
 		cipherSavingPath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_AVATAR, fileName)
 	} else if kind == NAME_NFT_MUSIC {
 		cipherSavingPath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_MUSIC, fileName)
-	} else {
-		logs.Error("unexpected type")
-		panic(err)
+	} else if kind == NAME_NFT_OTHER {
+		cipherSavingPath = path.Join(ENCRYPTION_FILE_PATH,NAME_NFT_OTHER,fileName)
 	}
+
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
 		logs.Error(err.Error())
@@ -124,7 +128,7 @@ func (this *UploadController) Upload() {
 
 	// resize image and save
 	var marketFilePath string = ""
-	if kind == NAME_NFT_AVATAR {
+	if kind == NAME_NFT_AVATAR || kind == NAME_NFT_OTHER {
 		originImage, _, err := image.Decode(bytes.NewReader(data))
 		if err != nil {
 			logs.Error(err.Error())
@@ -132,7 +136,13 @@ func (this *UploadController) Upload() {
 			return
 		}
 		newImage := resize.Resize(200, 200, originImage, resize.Lanczos3)
-		filePath := path.Join(MARKET_PATH, NAME_NFT_AVATAR, fileName)
+		var filePath string
+		if kind == NAME_NFT_AVATAR {
+			filePath = path.Join(MARKET_PATH, NAME_NFT_AVATAR, fileName)
+		} else if kind == NAME_NFT_OTHER {
+			filePath = path.Join(MARKET_PATH, NAME_NFT_OTHER, fileName)
+		}
+
 		marketFilePath = filePath
 		out, err := os.Create(filePath)
 		defer out.Close()
@@ -161,36 +171,13 @@ func (this *UploadController) Upload() {
 		publicKey      []byte
 		shortDesc string
 		longDesc string
+		nftParentLdef string
+		typeId string
 	)
 
 	// TODO
 	price:= 1
 	qty:=100
-	//
-	//type payload struct {
-	//	Address string `json:"address"`
-	//	ShortDesc string `json:"shortDesc"`
-	//	LongDesc string `json:"longDesc"`
-	//	NftName string `json:"nftName"`
-	//}
-
-	//var p payload
-	//pData,err:=ioutil.ReadAll(this.Ctx.Request.Body)
-	//if err!=nil {
-	//	logs.Error(err.Error())
-	//	sendError(&this.Controller,err,400)
-	//	return
-	//}
-	//err=json.Unmarshal(pData,&p)
-	//if err!=nil {
-	//	logs.Error(err.Error())
-	//	sendError(&this.Controller,err,400)
-	//	return
-	//}
-	//user:= p.Address
-	//nftName = p.NftName
-	//shortDesc = p.ShortDesc
-	//longDesc = p.LongDesc
 
 	user := this.GetString("address")
 	//// get input from user
@@ -215,18 +202,27 @@ func (this *UploadController) Upload() {
 	nftLdefIndex = strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10)
 	h = md5.New()
 	io.WriteString(h, nftLdefIndex)
-	nftLdefIndex = new(big.Int).SetBytes(h.Sum(nil)[:4]).String()
+	nftLdefIndex = new(big.Int).SetBytes(h.Sum(nil)[:6]).String()
 	// random public key TODO
 	publicKey = []byte("2213")
 	if kind == NAME_NFT_AVATAR {
 		nftType = TYPE_NFT_AVATAR
 		nftLdefIndex = "A" + nftLdefIndex
 		distIndex = "0"   // TODO
+		typeId = "01"
 	} else if kind == NAME_NFT_MUSIC {
 		nftType = TYPE_NFT_MUSIC
 		nftLdefIndex = "M" + nftLdefIndex
 		distIndex = "0"
+		typeId = "02"
 		// create nft
+	} else if kind == NAME_NFT_OTHER {
+		nftType = TYPE_NFT_OTHER
+		nftLdefIndex = "O" + nftLdefIndex
+		distIndex = "0"
+		typeId = "05"
+		nftParentLdef = this.GetString("parent")
+		logs.Debug("parent ldef index",nftParentLdef)
 	}
 	logs.Info("nftLdefindex", nftLdefIndex)
 
@@ -252,12 +248,6 @@ func (this *UploadController) Upload() {
 	logs.Info("insert nft info from", user, "to db, number:")
 
 	// store mapping info to database
-	var typeId string
-	if kind == "avatar" {
-		typeId = "01"
-	} else {
-		typeId = "02"
-	}
 
 	nftAdminID := strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10)
 	h = md5.New()
@@ -270,6 +260,7 @@ func (this *UploadController) Upload() {
 		FileName:     fileName,
 		Key:          "0x01", //TODO use mk key to encrypt file
 		NftAdminId:   nftAdminID,
+		NftParentLdef: nftParentLdef,
 	}
 
 	// generate random market place id
@@ -368,7 +359,14 @@ func (this *UploadController) Upload() {
 	}
 	logs.Debug("create nft success")
 
-	models.O.Commit()
+	err = models.O.Commit()
+	if err!=nil {
+		models.O.Rollback()
+		err:=errors.New("commit to database fail")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err, 500)
+		return
+	}
 	logs.Debug("insert all success, return")
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 	res:= &nftInfoListRes{

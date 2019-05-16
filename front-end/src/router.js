@@ -28,7 +28,7 @@ const router = new Router({
         component:() =>
             import ('@/components/home'),
         meta: {
-            title: 'secdev-demo',
+            title: 'alpha',
             requireAuth: true
         }
     }, {
@@ -44,8 +44,16 @@ const router = new Router({
       name: 'Mnemonic',
       component: ()=>import('@/components/mnemonic.vue'),
       meta: {
-        title:'110',
+        title:'alpha',
         requireAuth: false
+      }
+    },{
+      path: '/child/:nftLdefIndex',
+      name: 'Child',
+      component: ()=>import('@/components/child.vue'),
+      meta: {
+        title: 'alpha',
+        requireAuth: false,
       }
     }]
 });

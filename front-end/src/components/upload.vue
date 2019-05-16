@@ -115,7 +115,8 @@
             <el-table
               :data="tableData.slice((currentPage-1)*pagesize,currentPage*pagesize)"
               stripe
-              style="width: 100%">
+              style="width: 100%"
+              @row-click="rowChild">
               <el-table-column :min-width="40"
                                prop="nftType"
                                label="Type">
@@ -202,14 +203,10 @@
     },
     methods: {
       submitDat: function () {
-        this.$nextTick(() => {
           this.$refs.uploadDat.submit();
-        })
       },
       submitAvatar: function () {
-        this.$nextTick(() => {
           this.$refs.uploadAvatar.submit();
-        });
       },
       uploadDatSuccessHook: function (res, file, fileList) {
         this.totalNFT += 1;
@@ -281,6 +278,11 @@
       },
       datLongDescChange: function () {
         this.$set(this.uploadDatAdditionalData, 'longDesc', this.datLongDesc);
+      },
+      rowChild: function(row,col,e) {
+          let nftLdefIndex = row.nftLdefIndex;
+          console.log(nftLdefIndex);
+          this.$router.replace(`/child/${nftLdefIndex}`)
       }
     },
     created: function () {

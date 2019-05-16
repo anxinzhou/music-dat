@@ -11,3 +11,10 @@ type NftMarketTable struct {
 	ActiveTicker string
 }
 
+func (this *NftMarketTable) TableIndex() [][]string {
+	return [][]string {
+		[]string{"NftAdminId"},
+	}
+}
+
+
