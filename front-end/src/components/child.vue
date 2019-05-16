@@ -39,7 +39,7 @@
 
             <el-col :span="14" :offset="5">
               <div class="uploadTitle">
-                <span>Child NFT</span>
+                <span>Children NFT</span>
               </div>
               <div class="description">
                 <span>Name:</span>
@@ -104,7 +104,7 @@
       </el-row>
       <el-row class="marketPlaceTitle">
         <el-col :offset="1">
-          Child NFT
+          Children NFT
         </el-col>
       </el-row>
       <el-row :gutter="20">
