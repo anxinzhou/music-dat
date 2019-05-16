@@ -238,6 +238,10 @@
           el.nftType = "Avatar"
           el.nftPowerIndex = nftData.nftPowerIndex;
           el.nftLifeIndex = nftData.nftLifeIndex;
+        } else if (nftData.supportedType === "721-05") {
+          el.nftType = "Other"
+          el.nftPowerIndex = "/"
+          el.nftLifeIndex = "/"
         }
         return el;
       },
@@ -281,8 +285,9 @@
       },
       rowChild: function(row,col,e) {
           let nftLdefIndex = row.nftLdefIndex;
-          console.log(nftLdefIndex);
-          this.$router.replace(`/child/${nftLdefIndex}`)
+          if (row.nftType !== "Other") {
+            this.$router.push(`/child/${nftLdefIndex}`);
+          }
       }
     },
     created: function () {
