@@ -39,7 +39,7 @@
 
             <el-col :span="14" :offset="5">
               <div class="uploadTitle">
-                <span>Music NFT</span>
+                <span>Child NFT</span>
               </div>
               <div class="description">
                 <span>Name:</span>
