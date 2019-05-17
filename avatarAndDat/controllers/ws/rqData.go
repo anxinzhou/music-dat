@@ -102,6 +102,7 @@ type TokenPurchaseRequest struct {
 	RQBaseInfo
 	AsUser *AsUserPurchaseInfo `json:"asUser"`
 	AppTranId string `json:"appTranId"`
+	TransactionId string `json:"transactionId"`
 	AppId string `json:"appId"`
 	Amount int `json:"amount"`
 	ActionStatus int `json:"actionStatus"`
@@ -110,6 +111,7 @@ type TokenPurchaseRequest struct {
 type TokenPurchaseResponse struct {
 	RQBaseInfo
 	ActionStatus int `json:"actionStatus"`
+	TransactionId string `json:"appTranId"`
 }
 
 //NFT_SHOW

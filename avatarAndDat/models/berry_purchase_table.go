@@ -11,3 +11,9 @@ type BerryPurchaseTable struct {
 	AppId string
 	Status int
 }
+
+func (this *BerryPurchaseTable) TableIndex() [][]string {
+	return [][]string {
+		[]string{"AppTranId"},
+	}
+}

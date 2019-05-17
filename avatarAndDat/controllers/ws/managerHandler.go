@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"github.com/astaxie/beego"
@@ -442,7 +444,30 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 	actionStatus := req.ActionStatus
 	if actionStatus == ACTION_STATUS_FINISH {
 		purchaseInfo := models.BerryPurchaseTable{
-			TransactionId: req.AppTranId,
+			TransactionId: req.TransactionId,
+		}
+
+		models.O.Begin()
+		err = models.O.Read(&purchaseInfo)
+		if err != nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		if purchaseInfo.Status != ACTION_STATUS_PENDING {
+			err:= errors.New("action in wrong status")
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		purchaseInfo.AppTranId = req.AppTranId
+		purchaseInfo.Status = ACTION_STATUS_FINISH
+		_, err = models.O.Update(&purchaseInfo)
+		if err != nil {
+			models.O.Rollback()
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
 		}
 
 		// update coin records
@@ -463,6 +488,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 				"username": req.AsUser.AsId,
 			}
 		} else {
+			models.O.Rollback()
 			err := errors.New("wrong type")
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
@@ -474,19 +500,16 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 			"coin": true,
 		})).Decode(&queryResult)
 		if err != nil {
+			models.O.Rollback()
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
 		}
 		logs.Debug("as id", req.AsUser.AsId, "coin number:", queryResult.Coin)
 
-		if err != nil {
-			logs.Error(err.Error())
-			m.errorHandler(c, bq, err)
-			return
-		}
 		currentBalance, err := strconv.Atoi(queryResult.Coin)
 		if err != nil {
+			models.O.Rollback()
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
@@ -497,26 +520,13 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 		}
 		_, err = col.UpdateOne(context.Background(), filter, update)
 		if err != nil {
+			models.O.Rollback()
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
 		}
 		logs.Info("update success", "after update, amount:", amount+currentBalance)
 
-		models.O.Begin()
-		err = models.O.Read(&purchaseInfo)
-		if err != nil {
-			logs.Error(err.Error())
-			m.errorHandler(c, bq, err)
-			return
-		}
-		purchaseInfo.Status = ACTION_STATUS_FINISH
-		_, err = models.O.Update(&purchaseInfo)
-		if err != nil {
-			logs.Error(err.Error())
-			m.errorHandler(c, bq, err)
-			return
-		}
 		models.O.Commit()
 		logs.Info("insert one record to purchase table")
 		m.wrapperAndSend(c, bq, &TokenPurchaseResponse{
@@ -525,11 +535,18 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 		})
 		return
 	} else if actionStatus == ACTION_STATUS_PENDING {
+		appTranIdBytes:= make([]byte,32)
+		_,err:=rand.Read(appTranIdBytes)
+		if err!=nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		appTranId:= hex.EncodeToString(appTranIdBytes)
 		purchaseInfo := models.BerryPurchaseTable{
-			TransactionId: req.AppTranId,
+			TransactionId: appTranId,
 			RefillAsId:    req.AsUser.AsId,
 			NumPurchased:  req.Amount,
-			AppTranId:     req.AppTranId,
 			AppId:         req.AppId,
 			Status:        ACTION_STATUS_PENDING,
 		}
@@ -542,6 +559,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 		m.wrapperAndSend(c, bq, &TokenPurchaseResponse{
 			RQBaseInfo:   *bq,
 			ActionStatus: ACTION_STATUS_PENDING,
+			TransactionId: appTranId,
 		})
 		return
 	} else {
