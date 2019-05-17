@@ -71,7 +71,7 @@ func PathPrefixOfNFT(nftType string, pathKind string) string {
 		pathPrefix= path.Join(pathPrefix,PATH_KIND_PUBLIC)
 	case PATH_KIND_DEFAULT:
 		pathPrefix= path.Join(pathPrefix,PATH_KIND_DEFAULT)
-		return pathPrefix
+		return pathPrefix+ "/"
 	default:
 		panic("wrong path kind")
 	}
@@ -85,7 +85,7 @@ func PathPrefixOfNFT(nftType string, pathKind string) string {
 	default:
 		panic("wrong nft type")
 	}
-	return pathPrefix
+	return pathPrefix + "/"
 }
 
 func sendError(c beego.ControllerInterface,err error, statusCode int) {

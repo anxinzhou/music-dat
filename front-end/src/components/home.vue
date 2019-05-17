@@ -3,7 +3,7 @@
   <body id="page-top">
   <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
     <div class="container">
-      <a class="navbar-brand  js-scroll-trigger" href="#" v-scroll-to="'#page-top'">Alphaslot</a>
+      <a class="navbar-brand  js-scroll-trigger" href="#" v-scroll-to="'#page-top'">AlphaBrain</a>
       <p id="user-addr" class="js-scroll-trigger user-addr" href="#" v-scroll-to="'#page-top'"></p>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
               aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
