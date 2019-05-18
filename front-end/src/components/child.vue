@@ -66,7 +66,7 @@
                 :data="uploadOtherAdditionalData"
                 :on-success="uploadOtherSuccessHook"
                 :auto-upload="false">
-                <el-button slot="trigger" size="small" type="primary">select music file</el-button>
+                <el-button slot="trigger" size="small" type="primary">select data file</el-button>
                 <el-button style="margin-left: 10px;" size="small" type="success" @click="submitOther">upload to server
                 </el-button>
                 <div class="el-upload__tip" slot="tip">Upload music file <b>one at a time</b></div>
@@ -79,7 +79,22 @@
       </a>
 
     <section class="bg-white">
-
+      <el-row style="margin-bottom: 50px;">
+        <!--          <img src="../assets/images/avatar.jpg">-->
+        <el-col :span="6" :offset="2">
+          <el-row type="flex" align="middle">
+            <el-col :span="12">
+              <b>User Name: </b>
+            </el-col>
+            <el-col :span="6">
+              <span style="font-size: 0.8rem">{{username}}</span>
+            </el-col>
+            <el-col :span="2" :offset="4">
+              <img :src="avatarUrl" style="width: 100px;"/>
+            </el-col>
+          </el-row>
+        </el-col>
+      </el-row>
       <el-row style="margin-bottom: 100px;">
         <el-col :span="6" :offset="2">
           <el-row>
@@ -183,6 +198,9 @@
         total: 0,
         pagesize: 10,
         currentPage: 1,
+        nickName: undefined,
+        avatarUrl: undefined,
+        username: undefined,
       }
     },
     methods: {
@@ -238,6 +256,9 @@
       },
     },
     created: function () {
+      this.username = this.$cookies.get('username');
+      this.nickName = this.$cookies.get('nickName');
+      this.avatarUrl = this.$cookies.get('avatarUrl');
       let address = this.$cookies.get('account').address;
       console.log("address:", address);
       this.parent = this.$route.params.nftLdefIndex;

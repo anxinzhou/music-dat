@@ -579,7 +579,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, bq *RQBaseInfo, data [
 		return
 	}
 	r := models.O.Raw(`
-		select wallet_id from market_user_table where count>0`)
+		select wallet_id,username,count,user_icon_url from market_user_table where count>0`)
 	var walletIdList []MarketUserWallet
 	_, err = r.QueryRows(&walletIdList)
 	if err != nil {

@@ -7,6 +7,7 @@ type NftMappingTable struct {
 	Key string
 	NftAdminId string
 	NftParentLdef string
+	IconFileName string
 }
 
 func (this *NftMappingTable) TableIndex() [][]string {

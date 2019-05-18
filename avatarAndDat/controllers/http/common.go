@@ -1,11 +1,19 @@
 package http
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/md5"
+	"encoding/hex"
 	"github.com/astaxie/beego"
+	"io"
+	"math/big"
 	"math/rand"
+	"mime/multipart"
 	"path"
+	"strconv"
+	"time"
 )
 
 const FILE_SAVING_PATH = "./resource/"
@@ -32,12 +40,23 @@ const (
 	ACTIVE_TICKER = "berry"
 )
 
+// base file path
+const (
+	BASE_FILE_PATH = "resource"
+)
+
 // path kind
 const (
 	PATH_KIND_MARKET = "market"
 	PATH_KIND_PUBLIC = "public"
 	PATH_KIND_ENCRYPT = "encrypt"
 	PATH_KIND_DEFAULT = "default"
+	PATH_KIND_USER_ICON = "userIcon"
+)
+
+// login type
+const (
+	LOGIN_TYPE_USERNAME = 3
 )
 
 
@@ -59,6 +78,39 @@ func init() {
 	}
 }
 
+func ReadFileFromRequest(file multipart.File) ([]byte, error){
+	var dataBuffer bytes.Buffer
+	buffer := make([]byte, 1024)
+	n, err := file.Read(buffer)
+	for {
+		if err == io.EOF {
+			dataBuffer.Write(buffer[:n])
+			break;
+		} else if err != nil {
+			return nil,err
+		} else {
+			dataBuffer.Write(buffer[:n])
+			n, err = file.Read(buffer)
+		}
+	}
+	data := dataBuffer.Bytes()
+	return data,nil
+}
+
+// one to one mapping
+func UserIconPathFromUserName(username string) string {
+	h:=md5.New()
+	io.WriteString(h,username)
+	return hex.EncodeToString(h.Sum(nil))+".jpg"
+}
+
+func RandomPathFromFileName(fileName string) string {
+	h := md5.New()
+	io.WriteString(h, fileName)
+	io.WriteString(h, strconv.FormatInt(time.Now().UnixNano()|rand.Int63(), 10))
+	return new(big.Int).SetBytes(h.Sum(nil)[:10]).String()
+}
+
 func PathPrefixOfNFT(nftType string, pathKind string) string {
 	pathPrefix := beego.AppConfig.String("prefix") + beego.AppConfig.String("hostaddr") + ":" +
 		beego.AppConfig.String("fileport") +"/resource"
@@ -71,6 +123,9 @@ func PathPrefixOfNFT(nftType string, pathKind string) string {
 		pathPrefix= path.Join(pathPrefix,PATH_KIND_PUBLIC)
 	case PATH_KIND_DEFAULT:
 		pathPrefix= path.Join(pathPrefix,PATH_KIND_DEFAULT)
+		return pathPrefix+ "/"
+	case PATH_KIND_USER_ICON:
+		pathPrefix = path.Join(pathPrefix,PATH_KIND_USER_ICON)
 		return pathPrefix+ "/"
 	default:
 		panic("wrong path kind")
@@ -90,7 +145,7 @@ func PathPrefixOfNFT(nftType string, pathKind string) string {
 
 func sendError(c beego.ControllerInterface,err error, statusCode int) {
 	controller:=c.(*beego.Controller)
-	controller.Ctx.ResponseWriter.ResponseWriter.WriteHeader(500)
+	controller.Ctx.ResponseWriter.ResponseWriter.WriteHeader(statusCode)
 	controller.Data["json"] = &ErrorResponse{
 		Reason: err.Error(),
 	}

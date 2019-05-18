@@ -35,6 +35,14 @@ func init() {
 			}
 		}
 	}
+	err:=makeDir(path.Join(pathPrefix,"default"))
+	if err!=nil {
+		panic(err)
+	}
+	err=makeDir(path.Join(pathPrefix,"userIcon"))
+	if err!=nil {
+		panic(err)
+	}
 }
 
 func main() {

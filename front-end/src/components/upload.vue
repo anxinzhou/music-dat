@@ -1,15 +1,47 @@
 <template>
   <div>
-    <section class="bg-light">
+    <section class="bg-white">
+      <el-row>
 
-
-      <el-row :gutter="20" justify="space-around" align="middle">
-
-
-        <el-col :span="8" :offset="2">
-          <div class="uploadTitle">
-            <span >Music NFT</span>
+        <el-col :span="8" :offset="4">
+          <div style="margin-bottom: 100px;">
+            <span class="selectTitle"><b>Select NFT Type to Upload</b></span>
           </div>
+          <el-select v-model="selectedType" class="nftSelect"
+          >
+            <el-option
+              v-for="op in uploadOptions"
+              :value="op.type"
+              :label="op.label"
+              >
+            </el-option>
+          </el-select>
+        </el-col>
+
+
+        <el-col :span="6" :offset="1" v-if="selectedType==='dat'">
+          <el-row type="flex" align="middle">
+            <el-col :span="12">
+              <div class="uploadTitle">
+                <span>Music NFT</span>
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <el-upload
+                class="avatar-uploader"
+                :show-file-list="false"
+                :auto-upload="false"
+                action=""
+                :on-change="previewMusicAvatar">
+                <img v-if="imageUrl" :src="imageUrl" class="avatar" style="width: 150px;height: 150px;">
+                <el-row v-else class="el-upload" type="flex" align="middle">
+                  <el-col style="height: 100%">
+                    <span class="el-icon-plus avatar-uploader-icon" style="margin-top: 42%"></span>
+                  </el-col>
+                </el-row>
+              </el-upload>
+            </el-col>
+          </el-row>
           <div class="description">
             <span>Name:</span>
             <el-input placeholder="Name" v-model="datName" label="Name"
@@ -42,10 +74,14 @@
           </el-upload>
         </el-col>
 
-        <el-col :span="8" :offset="2">
-          <div class="uploadTitle">
-            <span >Avatar NFT</span>
-          </div>
+        <el-col :span="6" :offset="1" v-if="selectedType==='avatar'">
+          <el-row type="flex" align="middle">
+            <el-col>
+              <div class="uploadTitle">
+                <span>Photo NFT</span>
+              </div>
+            </el-col>
+          </el-row>
           <div class="description">
             <span>Name:</span>
             <el-input placeholder="Name" v-model="avatarName" label="Name" @change="avatarNameChange"></el-input>
@@ -76,14 +112,63 @@
             <div class="el-upload__tip" slot="tip">Upload image <b>one at a time</b></div>
           </el-upload>
         </el-col>
+
+        <el-col :span="6" :offset="1" v-if="selectedType==='other'">
+          <div class="uploadTitle">
+            <span>Other NFT</span>
+          </div>
+          <div class="description">
+            <span>Name:</span>
+            <el-input placeholder="Name" v-model="otherName" label="Name" @change="otherNameChange"></el-input>
+          </div>
+          <div class="description">
+            <span>Short Description:</span>
+            <el-input placeholder="Short Description" type="textarea" v-model="otherShortDesc" label="Name"
+                      @change="otherShortDescChange"
+            ></el-input>
+          </div>
+          <div class="description">
+            <span>Long Description:</span>
+            <el-input placeholder="Long Description" rows=4 type="textarea" v-model="otherLongDesc" label="Name"
+                      @change="otherLongDescChange"
+            ></el-input>
+          </div>
+          <el-upload
+            ref="uploadOther"
+            name="file"
+            list-type="picture"
+            :action="uploadOtherPath"
+            :on-success="uploadOtherSuccessHook"
+            :data="uploadOtherAdditionalData"
+            :auto-upload="false">
+            <el-button slot="trigger" size="small" type="primary">select data file</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="success" @click="submitOther">upload to server
+            </el-button>
+            <div class="el-upload__tip" slot="tip">Upload image <b>one at a time</b></div>
+          </el-upload>
+        </el-col>
       </el-row>
-
     </section>
-    <section class="bg-white">
-
-      <el-row style="margin-bottom: 100px;">
+    <section class="bg-light">
+      <el-row style="margin-bottom: 50px;">
         <!--          <img src="../assets/images/avatar.jpg">-->
         <el-col :span="6" :offset="2">
+          <el-row type="flex" align="middle">
+            <el-col :span="12">
+              <b>User Name: </b>
+            </el-col>
+            <el-col :span="6">
+              <span style="font-size: 0.8rem">{{username}}</span>
+            </el-col>
+            <el-col :span="2" :offset="4">
+              <img :src="avatarUrl" style="width: 100px;"/>
+            </el-col>
+          </el-row>
+        </el-col>
+      </el-row>
+      <el-row style="margin-bottom: 100px;">
+        <!--          <img src="../assets/images/avatar.jpg">-->
+        <el-col :span="6" :offset="1">
           <el-row>
             <el-col :span="12">
               <b>Wallet Address: </b>
@@ -182,13 +267,18 @@
       return {
         avatarName: '',
         datName: '',
+        otherName: '',
         avatarShortDesc: '',
         datShortDesc: '',
+        otherShortDesc: '',
         avatarLongDesc: '',
         datLongDesc: '',
+        otherLongDesc: '',
         fileList: [],
         uploadDatPath: undefined,
         uploadDatAdditionalData: undefined,
+        uploadOtherPath: undefined,
+        uploadOtherAdditionalData: undefined,
         uploadAvatarPath: undefined,
         uploadAvatarAdditionalData: undefined,
         httpPath: undefined,
@@ -199,14 +289,36 @@
         pagesize: 10,
         currentPage: 1,
         nftList: undefined,
+        nickName: undefined,
+        avatarUrl: undefined,
+        username: undefined,
+        imageUrl: undefined,
+        selectedType: undefined,
+        uploadOptions: [
+          {
+            "type": "dat",
+            "label": "Music NFT"
+          },
+          {
+            "type": "avatar",
+            "label": "Photo NFT"
+          },
+          {
+            "type": "other",
+            "label": "Other NFT"
+          }
+        ]
       }
     },
     methods: {
       submitDat: function () {
-          this.$refs.uploadDat.submit();
+        this.$refs.uploadDat.submit();
       },
       submitAvatar: function () {
-          this.$refs.uploadAvatar.submit();
+        this.$refs.uploadAvatar.submit();
+      },
+      submitOther: function () {
+        this.$refs.uploadOther.submit();
       },
       uploadDatSuccessHook: function (res, file, fileList) {
         this.totalNFT += 1;
@@ -220,8 +332,14 @@
         this.tableData = [el].concat(this.tableData);
         this.$refs.uploadAvatar.clearFiles();
       },
+      uploadOtherSuccessHook: function (res, file, fileList) {
+        this.totalNFT += 1;
+        let el = this.setNFTFromResponse(res);
+        this.tableData = [el].concat(this.tableData);
+        this.$refs.uploadOther.clearFiles();
+      },
       setNFTFromResponse: function (nftData) {
-        let el = {}
+        let el = {};
         el.nftLdefIndex = nftData.nftLdefIndex;
         el.nftName = nftData.nftName;
         el.nftCharacId = nftData.nftCharacId;
@@ -283,33 +401,61 @@
       datLongDescChange: function () {
         this.$set(this.uploadDatAdditionalData, 'longDesc', this.datLongDesc);
       },
-      rowChild: function(row,col,e) {
-          let nftLdefIndex = row.nftLdefIndex;
-          if (row.nftType !== "Other") {
-            this.$router.push(`/child/${nftLdefIndex}`);
-          }
-      }
+      otherNameChange: function () {
+        this.$set(this.uploadOtherAdditionalData, 'nftName', this.otherName);
+      },
+      otherShortDescChange: function () {
+        this.$set(this.uploadOtherAdditionalData, 'shortDesc', this.otherShortDesc);
+      },
+      otherLongDescChange: function () {
+        this.$set(this.uploadOtherAdditionalData, 'longDesc', this.otherLongDesc);
+      },
+      rowChild: function (row, col, e) {
+        let nftLdefIndex = row.nftLdefIndex;
+        if (row.nftType !== "Other") {
+          this.$router.push(`/child/${nftLdefIndex}`);
+        }
+      },
+      previewMusicAvatar: function (file, fileList) {
+        if (file !== undefined) {
+          this.$set(this.uploadDatAdditionalData, 'icon', file.raw);
+          this.imageUrl = URL.createObjectURL(file.raw);
+        } else {
+          this.$delete(this.uploadDatAdditionalData, 'icon');
+          this.imageUrl = undefined;
+        }
+      },
     },
     created: function () {
       // console.log(this.$store.state.account)
       // init variables
+      this.username = this.$cookies.get('username');
+      this.nickName = this.$cookies.get('nickName');
+      this.avatarUrl = this.$cookies.get('avatarUrl');
       let address = this.$cookies.get('account').address;
       console.log("address:", address);
       this.address = address;
       this.httpPath = this.$store.state.config.httpPath;
       this.uploadDatPath = this.httpPath + "/file/dat";
       this.uploadAvatarPath = this.httpPath + "/file/avatar";
+      this.uploadOtherPath = this.httpPath + "/file/other";
       this.total = this.tableData.length / this.pagesize * 10;
-      this.uploadDatAdditionalData = {
+
+      let uploadBaseObject = {
         address: this.address,
+        username: this.username,
       };
-      this.uploadAvatarAdditionalData = {
-        address: this.address,
-      };
+
+      this.uploadDatAdditionalData = Object.assign({}, uploadBaseObject);
+      this.uploadAvatarAdditionalData = Object.assign({}, uploadBaseObject);
+      this.uploadOtherAdditionalData = Object.assign({}, uploadBaseObject);
       // get total nft
       this.getTotalNFT(address);
       // get nft list of user from market place
       this.getNFTList(address);
+
+      // set default select item
+      this.selectedType = this.uploadOptions[0].type;
     }
   }
 </script>
@@ -317,12 +463,38 @@
   .description {
     margin-bottom: 20px;
   }
+
   .uploadTitle {
     font-size: 1.5rem;
     margin-bottom: 50px;
   }
+
   .marketPlaceTitle {
     font-size: 1.5rem;
     margin-bottom: 50px;
+  }
+
+  .avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    width: 150px;
+    height: 150px;
+    justify-content: center;
+  }
+
+  .avatar-uploader .el-upload:hover {
+    border-color: #409EFF;
+  }
+
+  .selectTitle {
+    font-size: 1.5rem;
+    margin-bottom: 100px;
+  }
+
+  .nftSelect {
+
   }
 </style>

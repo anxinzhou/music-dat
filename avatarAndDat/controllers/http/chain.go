@@ -143,9 +143,31 @@ func (this *RewardController) RewardDat() {
 		sendError(&this.Controller, err, 500)
 		return
 	}
-	var res nftListResponse
-	nftInfoList := make([]*nftInfoListRes, len(mks))
+
+	type nftInfoQuery struct {
+		SupportedType string `json:"supportedType" orm:"column(nft_type)"`
+		NftName       string `json:"nftName"`
+		NftValue      int    `json:"nftValue" orm:"column(price)"`
+		ActiveTicker  string `json:"activeTicker"`
+		NftLifeIndex  int64  `json:"nftLifeIndex"`
+		NftPowerIndex int64  `json:"nftPowerIndex"`
+		NftLdefIndex  string `json:"nftLdefIndex"`
+		NftCharacId   string `json:"nftCharacId"`
+		ShortDesc     string `json:"shortDesc" orm:"column(short_description)"`
+		LongDesc      string `json:"longDesc" orm:"column(long_description)"`
+		Thumbnail     string `json:"thumbnail" orm:"column(icon_file_name)"`
+		Qty           int    `json:"qty"`
+	}
+
+	type response struct {
+		NftTranData []*nftInfoQuery `json:"nftTranData"`
+	}
+
+	var res response
+	nftInfoList := make([]*nftInfoQuery, len(mks))
 	res.NftTranData = nftInfoList
+
+
 	wg := sync.WaitGroup{}
 	for i, mk := range mks {
 		wg.Add(1)
@@ -156,13 +178,13 @@ func (this *RewardController) RewardDat() {
 			r := models.O.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
-		ni.nft_charac_id,na.short_description, na.long_description,mp.file_name,mk.qty from
+		ni.nft_charac_id,na.short_description, na.long_description,mp.icon_file_name,mk.qty from
 		nft_market_table as mk,
 		nft_mapping_table as mp,
 		nft_info_table as ni,
 		nft_item_admin as na
 		where mk.nft_ldef_index = mp.nft_ldef_index and mk.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id and  ni.nft_ldef_index = ? `, nftLdefIndex)
-			var nftResponseInfo nftInfoListRes
+			var nftResponseInfo nftInfoQuery
 			err = r.QueryRow(&nftResponseInfo)
 			if err != nil {
 				models.O.Rollback()
@@ -172,9 +194,9 @@ func (this *RewardController) RewardDat() {
 			}
 
 			nftType:= nftResponseInfo.SupportedType
-			thumbnail := PathPrefixOfNFT(nftType, PATH_KIND_DEFAULT)
-			//nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail // TODO appending file name
-			nftResponseInfo.Thumbnail = thumbnail + "music.png"
+			thumbnail := PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
+			nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
+			//nftResponseInfo.Thumbnail = thumbnail + "music.png"
 
 			nftInfoList[i] = &nftResponseInfo
 			//_, err = models.O.Delete(&mk)  //TODO comment for testing

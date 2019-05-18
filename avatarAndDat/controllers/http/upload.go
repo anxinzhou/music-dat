@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"github.com/astaxie/beego/logs"
+	"github.com/astaxie/beego/orm"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/nfnt/resize"
 	"github.com/xxRanger/blockchainUtil/contract/nft"
@@ -44,45 +45,31 @@ func (this *UploadController) Get() {
 func (this *UploadController) Upload() {
 	kind := this.Ctx.Input.Param(":kind")
 	file, header, err := this.GetFile("file")
-	fileName := header.Filename
-	h := md5.New()
-	io.WriteString(h, fileName)
-	io.WriteString(h, strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10))
-	fileName = new(big.Int).SetBytes(h.Sum(nil)[:10]).String()
 	if err != nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller,err,400)
 		return
 	}
 
+	fileNamePrefix := RandomPathFromFileName(header.Filename)
+	var fileName string
 	if kind == NAME_NFT_AVATAR {
-		fileName = fileName + ".jpg"
+		fileName = fileNamePrefix + ".jpg"
 	} else if kind == NAME_NFT_MUSIC {
-		fileName = fileName + ".mp3"
+		fileName = fileNamePrefix + ".mp3"
 	} else if kind == NAME_NFT_OTHER {
-		fileName = fileName + ".jpg"
+		fileName = fileNamePrefix + ".jpg"
 	} else {
 		panic("unexpected kind name")
 	}
 
 	// calculate ciphertext
-	var dataBuffer bytes.Buffer
-	buffer := make([]byte, 1024)
-	n, err := file.Read(buffer)
-	for {
-		if err == io.EOF {
-			dataBuffer.Write(buffer[:n])
-			break;
-		} else if err != nil {
-			logs.Error(err.Error())
-			sendError(&this.Controller,err, 500)
-			return
-		} else {
-			dataBuffer.Write(buffer[:n])
-			n, err = file.Read(buffer)
-		}
+	data,err:= ReadFileFromRequest(file)
+	if err!=nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err, 500)
+		return
 	}
-	data := dataBuffer.Bytes()
 
 	logs.Debug("len of data", len(data))
 	nonce := make([]byte, aesgcm.NonceSize())
@@ -92,20 +79,6 @@ func (this *UploadController) Upload() {
 		return
 	}
 	cipherText := aesgcm.Seal(nonce, nonce, data, nil)
-
-	//test cipher
-	//nonce,ct := cipherText[:aesgcm.NonceSize()],cipherText[aesgcm.NonceSize():]
-	//plainText,err:=aesgcm.Open(nil,nonce,ct,nil)
-	//if err!=nil{
-	//	panic(err)
-	//}
-	//if bytes.Compare(plainText,data) !=0 {
-	//	logs.Emergency("can not pass test")
-	//	return
-	//} else {
-	//	logs.Emergency("pass test")
-	//	return
-	//}
 
 	// saving ciphertext
 	logs.Debug("saving ciphertext")
@@ -127,7 +100,7 @@ func (this *UploadController) Upload() {
 	logs.Debug("saving file", fileName, "to", cipherSavingPath)
 
 	// resize image and save
-	var marketFilePath string = ""
+	var marketFileName string = fileName
 	if kind == NAME_NFT_AVATAR || kind == NAME_NFT_OTHER {
 		originImage, _, err := image.Decode(bytes.NewReader(data))
 		if err != nil {
@@ -143,7 +116,44 @@ func (this *UploadController) Upload() {
 			filePath = path.Join(MARKET_PATH, NAME_NFT_OTHER, fileName)
 		}
 
-		marketFilePath = filePath
+		out, err := os.Create(filePath)
+		defer out.Close()
+		if err != nil {
+			logs.Error(err.Error())
+			sendError(&this.Controller,err, 500)
+			return
+		}
+		err = jpeg.Encode(out, newImage, nil)
+		if err != nil {
+			logs.Error(err.Error())
+			sendError(&this.Controller,err, 500)
+			return
+		}
+	} else if kind == NAME_NFT_MUSIC {
+		iconFile,iconFileHeader,err:= this.GetFile("icon")
+		if err!=nil {
+			logs.Error(err.Error())
+			sendError(&this.Controller,err, 500)
+			return
+		}
+		iconFileName:= RandomPathFromFileName(iconFileHeader.Filename)+".jpg"
+		marketFileName = iconFileName
+		data,err:= ReadFileFromRequest(iconFile)
+		if err!=nil {
+			logs.Error(err.Error())
+			sendError(&this.Controller,err, 500)
+			return
+		}
+
+		originImage, _, err := image.Decode(bytes.NewReader(data))
+		if err != nil {
+			logs.Error(err.Error())
+			sendError(&this.Controller,err, 500)
+			return
+		}
+		newImage := resize.Resize(80, 80, originImage, resize.Lanczos3)
+		filePath := path.Join(MARKET_PATH, NAME_NFT_MUSIC, iconFileName)
+
 		out, err := os.Create(filePath)
 		defer out.Close()
 		if err != nil {
@@ -194,7 +204,7 @@ func (this *UploadController) Upload() {
 
 	// rand set character id
 	nftCharacterId = strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10)
-	h = md5.New()
+	h := md5.New()
 	io.WriteString(h, nftLdefIndex)
 	nftCharacterId = new(big.Int).SetBytes(h.Sum(nil)[:4]).String()
 
@@ -261,6 +271,7 @@ func (this *UploadController) Upload() {
 		Key:          "0x01", //TODO use mk key to encrypt file
 		NftAdminId:   nftAdminID,
 		NftParentLdef: nftParentLdef,
+		IconFileName: marketFileName,
 	}
 
 	// generate random market place id
@@ -322,11 +333,9 @@ func (this *UploadController) Upload() {
 		return
 	}
 	// insert to wallet address table
-	walletInfo:= &models.MarketUserTable{
-		WalletId: user,
-		Count: 1,
-	}
-	_,err=models.O.InsertOrUpdate(walletInfo,"count=count+1")
+	_,err = models.O.QueryTable("market_user_table").Filter("walletId",user).Update(orm.Params{
+		"count": orm.ColValue(orm.ColAdd,1),
+	})
 	if err!=nil {
 		models.O.Rollback()
 		logs.Error(err.Error())
@@ -381,7 +390,7 @@ func (this *UploadController) Upload() {
 		NftValue: price,
 		Qty: qty,
 		SupportedType: nftType,
-		Thumbnail: marketFilePath,
+		Thumbnail: marketFileName,
 	}
 	this.Data["json"] = res
 	this.ServeJSON()

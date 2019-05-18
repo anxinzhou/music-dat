@@ -219,10 +219,15 @@ type ListNFTResponse struct {
 
 type MarketUserListRequest struct {
 	RQBaseInfo
+	Page int `json:"page"` //TODO
+	Offet int `json:"offset"`  //TODO
 }
 
 type MarketUserWallet struct {
 	WalletId string `json:"walletId" orm:"column(wallet_id)"`
+	Username string `json:"username"`
+	Count int `json:"count"`
+	Thumbnail string `json:"thumbnail" orm:"column(user_icon_url)"`
 }
 
 type MarketUserListResponse struct {
