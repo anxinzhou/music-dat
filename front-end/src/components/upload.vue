@@ -152,7 +152,7 @@
     <section class="bg-light">
       <el-row style="margin-bottom: 50px;">
         <!--          <img src="../assets/images/avatar.jpg">-->
-        <el-col :span="6" :offset="2">
+        <el-col :span="7" :offset="2">
           <el-row type="flex" align="middle">
             <el-col :span="12">
               <b>User Name: </b>
@@ -168,7 +168,7 @@
       </el-row>
       <el-row style="margin-bottom: 100px;">
         <!--          <img src="../assets/images/avatar.jpg">-->
-        <el-col :span="6" :offset="1">
+        <el-col :span="7" :offset="2">
           <el-row>
             <el-col :span="12">
               <b>Wallet Address: </b>
