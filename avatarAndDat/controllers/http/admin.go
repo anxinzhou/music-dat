@@ -194,7 +194,7 @@ func (this *ImportWalletController) ImportWallet() {
 		Username: username,
 		UserIconUrl: iconFilePath,
 	}
-	_,err=models.O.Insert(walletInfo)
+	_,_,err=models.O.ReadOrCreate(walletInfo,"walletId")
 	if err!=nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller,err,500)
