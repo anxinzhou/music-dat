@@ -46,6 +46,7 @@
       importWallet: function () {
         // console.log(this.mnemonic)
         let httpPath =  this.$store.state.config.httpPath;
+        this.mnemonic = this.mnemonic.replace(/\s+/g,' ').replace(/^\s+|\s+$/,'');
         let account = createWallet(this.mnemonic);
         let username = this.$cookies.get('username');
         this.axios.post(`${httpPath}/wallet`,{

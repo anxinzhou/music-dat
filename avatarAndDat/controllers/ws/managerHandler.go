@@ -594,6 +594,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, bq *RQBaseInfo, data [
 
 	wl:=make([]*MarketUserWallet, len(walletIdList))
 	for i,_:=range wl {
+		walletIdList[i].Thumbnail = PathPrefixOfNFT("",PATH_KIND_USER_ICON) + walletIdList[i].Thumbnail
 		wl[i] = &walletIdList[i]
 	}
 

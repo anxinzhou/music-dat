@@ -192,7 +192,6 @@ func (this *RewardController) RewardDat() {
 				sendError(&this.Controller, err, 500)
 				return
 			}
-
 			nftType:= nftResponseInfo.SupportedType
 			thumbnail := PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
 			nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail

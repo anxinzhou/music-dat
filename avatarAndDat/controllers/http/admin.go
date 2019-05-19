@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
+	"github.com/astaxie/beego/orm"
 	"github.com/nfnt/resize"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -186,20 +187,33 @@ func (this *ImportWalletController) ImportWallet() {
 		sendError(&this.Controller,err,500)
 		return
 	}
-	iconFilePath:=path.Join(PathPrefixOfNFT("",PATH_KIND_USER_ICON),iconFileName)
-	logs.Debug("icon file path",iconFilePath)
+	logs.Debug("icon file path",iconFileName)
 	walletInfo:= &models.MarketUserTable{
 		WalletId: walletId,
 		Count: 0,
 		Username: username,
-		UserIconUrl: iconFilePath,
+		UserIconUrl: iconFileName,
 	}
-	_,_,err=models.O.ReadOrCreate(walletInfo,"walletId")
-	if err!=nil {
-		logs.Error(err.Error())
-		sendError(&this.Controller,err,500)
-		return
+
+	models.O.Begin()         //TODO single sql
+	err = models.O.Read(walletInfo)
+	if err != nil {
+		if err!= orm.ErrNoRows {
+			models.O.Rollback()
+			logs.Error(err.Error())
+			sendError(&this.Controller,err,500)
+			return
+		} else {
+			_,err:=models.O.Insert(walletInfo)
+			if err!=nil {
+				models.O.Rollback()
+				logs.Error(err.Error())
+				sendError(&this.Controller,err,500)
+				return
+			}
+		}
 	}
+	models.O.Commit()
 	logs.Info("insert to market user table","username",username)
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 	return

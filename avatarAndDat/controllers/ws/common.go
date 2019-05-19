@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"github.com/astaxie/beego"
-	"path"
 )
 
 const FILE_SAVING_PATH = "./resource/"
@@ -37,6 +36,7 @@ const (
 	PATH_KIND_PUBLIC = "public"
 	PATH_KIND_ENCRYPT = "encrypt"
 	PATH_KIND_DEFAULT = "default"
+	PATH_KIND_USER_ICON = "userIcon"
 )
 
 
@@ -47,27 +47,30 @@ var (
 
 func PathPrefixOfNFT(nftType string, pathKind string) string {
 	pathPrefix := beego.AppConfig.String("prefix") + beego.AppConfig.String("hostaddr") + ":" +
-		beego.AppConfig.String("fileport") +"/resource"
+		beego.AppConfig.String("fileport") +"/resource/"
 	switch pathKind {
 	case PATH_KIND_MARKET:
-		pathPrefix = path.Join(pathPrefix,PATH_KIND_MARKET)
+		pathPrefix = pathPrefix+PATH_KIND_MARKET
 	case PATH_KIND_ENCRYPT:
-		pathPrefix = path.Join(pathPrefix,PATH_KIND_ENCRYPT)
+		pathPrefix = pathPrefix+PATH_KIND_ENCRYPT
 	case PATH_KIND_PUBLIC:
-		pathPrefix= path.Join(pathPrefix,PATH_KIND_PUBLIC)
+		pathPrefix= pathPrefix+PATH_KIND_PUBLIC
 	case PATH_KIND_DEFAULT:
-		pathPrefix= path.Join(pathPrefix,PATH_KIND_DEFAULT)
+		pathPrefix= pathPrefix+PATH_KIND_DEFAULT
+		return pathPrefix+ "/"
+	case PATH_KIND_USER_ICON:
+		pathPrefix = pathPrefix+PATH_KIND_USER_ICON
 		return pathPrefix+ "/"
 	default:
 		panic("wrong path kind")
 	}
 	switch nftType {
 	case TYPE_NFT_AVATAR:
-		pathPrefix = path.Join(pathPrefix,NAME_NFT_AVATAR)
+		pathPrefix = pathPrefix + NAME_NFT_AVATAR
 	case TYPE_NFT_MUSIC:
-		pathPrefix = path.Join(pathPrefix,NAME_NFT_MUSIC)
+		pathPrefix = pathPrefix+NAME_NFT_MUSIC
 	case TYPE_NFT_OTHER:
-		pathPrefix = path.Join(pathPrefix,NAME_NFT_OTHER)
+		pathPrefix = pathPrefix+NAME_NFT_OTHER
 	default:
 		panic("wrong nft type")
 	}
