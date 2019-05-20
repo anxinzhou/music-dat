@@ -115,31 +115,31 @@ func PathPrefixOfNFT(nftType string, pathKind string) string {
 		beego.AppConfig.String("fileport") +"/resource/"
 	switch pathKind {
 	case PATH_KIND_MARKET:
-		pathPrefix = pathPrefix+PATH_KIND_MARKET
+		pathPrefix = pathPrefix+PATH_KIND_MARKET + "/"
 	case PATH_KIND_ENCRYPT:
-		pathPrefix = pathPrefix+PATH_KIND_ENCRYPT
+		pathPrefix = pathPrefix+PATH_KIND_ENCRYPT + "/"
 	case PATH_KIND_PUBLIC:
-		pathPrefix= pathPrefix+PATH_KIND_PUBLIC
+		pathPrefix= pathPrefix+PATH_KIND_PUBLIC + "/"
 	case PATH_KIND_DEFAULT:
-		pathPrefix= pathPrefix+PATH_KIND_DEFAULT
-		return pathPrefix+ "/"
+		pathPrefix= pathPrefix+PATH_KIND_DEFAULT + "/"
+		return pathPrefix
 	case PATH_KIND_USER_ICON:
-		pathPrefix = pathPrefix+PATH_KIND_USER_ICON
-		return pathPrefix+ "/"
+		pathPrefix = pathPrefix+PATH_KIND_USER_ICON + "/"
+		return pathPrefix
 	default:
 		panic("wrong path kind")
 	}
 	switch nftType {
 	case TYPE_NFT_AVATAR:
-		pathPrefix = pathPrefix + NAME_NFT_AVATAR
+		pathPrefix = pathPrefix + NAME_NFT_AVATAR + "/"
 	case TYPE_NFT_MUSIC:
-		pathPrefix = pathPrefix+NAME_NFT_MUSIC
+		pathPrefix = pathPrefix+NAME_NFT_MUSIC + "/"
 	case TYPE_NFT_OTHER:
-		pathPrefix = pathPrefix+NAME_NFT_OTHER
+		pathPrefix = pathPrefix+NAME_NFT_OTHER + "/"
 	default:
 		panic("wrong nft type")
 	}
-	return pathPrefix + "/"
+	return pathPrefix
 }
 
 func sendError(c beego.ControllerInterface,err error, statusCode int) {
