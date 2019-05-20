@@ -69,9 +69,10 @@ func (m *Manager) GetMPList(c *client.Client, bq *RQBaseInfo, data []byte) {
 	//offset := req.Offset
 
 	nftType := req.SupportedType
-	logs.Info("nft type", nftType)
-	// TODO can use prepare to optimize query
-	r := models.O.Raw(`
+	logs.Debug("nft type", nftType)
+	if nftType == TYPE_NFT_OTHER || nftType == TYPE_NFT_AVATAR {
+		// TODO can use prepare to optimize query
+		r := models.O.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
 		ni.nft_charac_id,  mp.file_name, mk.qty 
@@ -80,27 +81,88 @@ func (m *Manager) GetMPList(c *client.Client, bq *RQBaseInfo, data []byte) {
 		and mk.nft_ldef_index = ni.nft_ldef_index 
 		and ni.nft_type = ? `, nftType)
 
-	var nftInfos []MpListNFTInfo
-	_, err = r.QueryRows(&nftInfos)
-	if err != nil {
+		var nftInfos []MpListNFTInfo
+		_, err = r.QueryRows(&nftInfos)
+		if err != nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		length := len(nftInfos)
+		nis := make([]*MpListNFTInfo, length)
+
+		thumbnail:= PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
+		for i := 0; i < length; i++ {
+			logs.Info("thumbnail:", nftInfos[i].Thumbnail)
+			nftInfos[i].Thumbnail = thumbnail + nftInfos[i].Thumbnail //appending file name
+			nis[i] = &nftInfos[i]
+		}
+
+		m.wrapperAndSend(c, bq, &MpListResponse{
+			RQBaseInfo:  *bq,
+			NftTranData: nis,
+		})
+	} else if nftType == TYPE_NFT_MUSIC {
+		type MpListDatInfo struct {
+			SupportedType string `json:"supportedType" orm:"column(nft_type)"`
+			NftName string `json:"nftName"`
+			NftValue int `json:"nftValue" orm:"column(price)"`
+			ActiveTicker string `json:"activeTicker"`
+			NftLifeIndex int64 `json:"nftLifeIndex"`
+			NftPowerIndex int64 `json:"nftPowerIndex"`
+			NftLdefIndex string `json:"nftLdefIndex"`
+			NftCharacId string `json:"nftCharacId"`
+			Thumbnail string `json:"thumbnail" orm:"column(icon_file_name)"`
+			Qty int `json:"qty"`
+		}
+
+		r := models.O.Raw(`
+		select ni.nft_type, ni.nft_name,
+		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
+		ni.nft_charac_id,  mp.icon_file_name, mk.qty 
+		from nft_market_table as mk, nft_mapping_table as mp,
+		nft_info_table as ni where mk.nft_ldef_index = mp.nft_ldef_index 
+		and mk.nft_ldef_index = ni.nft_ldef_index 
+		and ni.nft_type = ? `, nftType)
+
+		var nftInfos []MpListDatInfo
+		_, err = r.QueryRows(&nftInfos)
+		if err != nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		length := len(nftInfos)
+		nis := make([]*MpListNFTInfo, length)
+
+		thumbnail:= PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
+		for i := 0; i < length; i++ {
+			logs.Info("thumbnail:", nftInfos[i].Thumbnail)
+			nftInfos[i].Thumbnail = thumbnail + nftInfos[i].Thumbnail //appending file name
+			nis[i] = &MpListNFTInfo {
+				SupportedType:nftInfos[i].SupportedType,
+				NftName:nftInfos[i].NftName,
+				NftValue: nftInfos[i].NftValue,
+				ActiveTicker: nftInfos[i].ActiveTicker,
+				NftLifeIndex:nftInfos[i].NftLifeIndex,
+				NftPowerIndex:nftInfos[i].NftPowerIndex,
+				NftLdefIndex:nftInfos[i].NftLdefIndex,
+				NftCharacId:nftInfos[i].NftCharacId,
+				Thumbnail:nftInfos[i].Thumbnail,
+				Qty:nftInfos[i].Qty,
+			}
+		}
+
+		m.wrapperAndSend(c, bq, &MpListResponse{
+			RQBaseInfo:  *bq,
+			NftTranData: nis,
+		})
+	} else {
+		err:= errors.New("unknow type")
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
 		return
 	}
-	length := len(nftInfos)
-	nis := make([]*MpListNFTInfo, length)
-
-	thumbnail:= PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
-	for i := 0; i < length; i++ {
-		logs.Info("thumbnail:", nftInfos[i].Thumbnail)
-		nftInfos[i].Thumbnail = thumbnail + nftInfos[i].Thumbnail //appending file name
-		nis[i] = &nftInfos[i]
-	}
-
-	m.wrapperAndSend(c, bq, &MpListResponse{
-		RQBaseInfo:  *bq,
-		NftTranData: nis,
-	})
 }
 
 func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data []byte) {
