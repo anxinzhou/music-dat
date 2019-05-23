@@ -3,7 +3,9 @@ package ws
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"errors"
 	"github.com/astaxie/beego"
+	"time"
 )
 
 const FILE_SAVING_PATH = "./resource/"
@@ -75,6 +77,41 @@ func PathPrefixOfNFT(nftType string, pathKind string) string {
 		panic("wrong nft type")
 	}
 	return pathPrefix
+}
+
+func nftResInfoFromNftInfo(nftInfo *NFTInfo) (*nftInfoListRes,error) {
+	nftResInfo := &nftInfoListRes{
+		SupportedType: nftInfo.SupportedType,
+		NftName:       nftInfo.NftName,
+		NftValue:      nftInfo.NftValue,
+		ActiveTicker:  nftInfo.ActiveTicker,
+		NftLifeIndex:  nftInfo.NftLifeIndex,
+		NftPowerIndex: nftInfo.NftPowerIndex,
+		NftLdefIndex:  nftInfo.NftLdefIndex,
+		ShortDesc:     nftInfo.ShortDesc,
+		LongDesc:      nftInfo.LongDesc,
+		Thumbnail:     nftInfo.FileName,
+		Qty:           nftInfo.Qty,
+	}
+	nftType := nftResInfo.SupportedType
+	prefix := PathPrefixOfNFT(nftResInfo.SupportedType, PATH_KIND_MARKET)
+	if nftType == TYPE_NFT_AVATAR || nftType == TYPE_NFT_OTHER {
+		nftResInfo.Thumbnail = prefix + nftInfo.FileName
+	} else if nftType == TYPE_NFT_MUSIC {
+		nftResInfo.Thumbnail = prefix + nftInfo.IconFileName
+	} else {
+		err := errors.New("unexpected type")
+		return nil,err
+	}
+	return nftResInfo,nil
+}
+
+func chinaTimeFromTimeStamp(timestamp time.Time) string {
+	timeLocaltion,err:= time.LoadLocation("Asia/Shanghai")
+	if err!=nil {
+		panic(err)
+	}
+	return timestamp.In(timeLocaltion).Format("2006-01-02T15:04:05")
 }
 
 func init() {

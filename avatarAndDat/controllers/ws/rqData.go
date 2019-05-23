@@ -13,6 +13,12 @@ const (
 	ACTION_STATUS_PENDING = 2
 )
 
+// shopping cart operation
+const (
+	SHOPPING_CART_ADD = 0
+	SHOPPING_CART_DELETE = 1
+)
+
 type ConnectErrorResponse struct {
 	Reason string `json:"reason"`
 }
@@ -261,4 +267,65 @@ type UserMarketInfoResponse struct {
 	RQBaseInfo
 	TotalNFT int `json:"totalNFT"`
 	NftTranData []*nftInfoListRes `json:"nftTranData"`
+}
+
+type NFTInfo struct {
+	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
+	NftName string `json:"nftName"`
+	NftValue int `json:"nftValue" orm:"column(price)"`
+	ActiveTicker string `json:"activeTicker"`
+	NftLifeIndex int64 `json:"nftLifeIndex"`
+	NftPowerIndex int64 `json:"nftPowerIndex"`
+	NftLdefIndex string `json:"nftLdefIndex"`
+	NftCharacId string `json:"nftCharacId"`
+	ShortDesc string `json:"shortDesc" orm:"column(short_description)"`
+	LongDesc string `json:"longDesc" orm:"column(long_description)"`
+	FileName string `json:"fileName" orm:"column(file_name)"`
+	IconFileName string `json:"iconFileName" orm:"column(icon_file_name)"`
+	Qty int `json:"qty"`
+}
+
+type NFTPurchaseHistoryRequest struct {
+	RQBaseInfo
+	UserName string `json:"userName"`
+}
+
+type NFTPurchaseRecord struct {
+	PurchaseId string `json:"purchaseId"`
+	TransactionAddress string `json:"transactionAddress"`
+	WalletId string `json:"walletId"`
+	NftTranData *nftInfoListRes `json:"nftTranData"`
+	Timestamp string `json:"timeStamp"`
+	Status int `json:"status"`
+}
+
+type NFTPurchaseHistoryResponse struct {
+	RQBaseInfo
+	PurchaseList []*NFTPurchaseRecord `json:"purchaseList"`
+}
+
+type ShoppingCartChangeRequest struct {
+	RQBaseInfo
+	Username string `json:"username"`
+	Operation int `json:"operation"` // 0 for add 1 for delete
+	NFTList []string `json:"nftList"`
+}
+
+type ShoppingCartChangeResponse struct {
+	RQBaseInfo
+}
+
+type ShoppingCartListRequest struct {
+	RQBaseInfo
+	Username string `json:"username"`
+}
+
+type ShoppingCartRecord struct {
+	NftTranData *nftInfoListRes `json:"nftTranData"`
+	Timestamp string `json:"timestamp"`
+}
+
+type ShoppingCartListResponse struct {
+	RQBaseInfo
+	NftList []*ShoppingCartRecord `json:"nftList"`
 }

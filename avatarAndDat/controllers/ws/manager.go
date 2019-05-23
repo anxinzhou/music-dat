@@ -54,6 +54,9 @@ func (m *Manager) Init() {
 	m.RegisterHandler("tokenbuy_paid",m.TokenBuyPaidHandler)
 	m.RegisterHandler("market_user_list",m.MarketUserListHandler)
 	m.RegisterHandler("user_market_info",m.UserMarketInfoHandler)
+	m.RegisterHandler("nft_purchase_history",m.NFTPurchaseHistoryHandler)
+	m.RegisterHandler("nft_shopping_cart_change", m.ShoppingCartChangeHandler)
+	m.RegisterHandler("nft_shopping_cart_list",m.ShoppingCartListHandler)
 }
 
 //func (m *Manager) DisPatchMsg() {

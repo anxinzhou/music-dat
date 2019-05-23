@@ -70,99 +70,58 @@ func (m *Manager) GetMPList(c *client.Client, bq *RQBaseInfo, data []byte) {
 
 	nftType := req.SupportedType
 	logs.Debug("nft type", nftType)
-	if nftType == TYPE_NFT_OTHER || nftType == TYPE_NFT_AVATAR {
-		// TODO can use prepare to optimize query
-		r := models.O.Raw(`
+
+	// TODO can use prepare to optimize query
+	r := models.O.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
-		ni.nft_charac_id,  mp.file_name, mk.qty 
+		ni.nft_charac_id,  mp.file_name, mp.icon_file_name, mk.qty 
 		from nft_market_table as mk, nft_mapping_table as mp,
 		nft_info_table as ni where mk.nft_ldef_index = mp.nft_ldef_index 
 		and mk.nft_ldef_index = ni.nft_ldef_index 
 		and ni.nft_type = ? `, nftType)
+	var nftInfos []NFTInfo
 
-		var nftInfos []MpListNFTInfo
-		_, err = r.QueryRows(&nftInfos)
-		if err != nil {
-			logs.Error(err.Error())
-			m.errorHandler(c, bq, err)
-			return
-		}
-		length := len(nftInfos)
-		nis := make([]*MpListNFTInfo, length)
-
-		thumbnail:= PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
-		for i := 0; i < length; i++ {
-			logs.Info("thumbnail:", nftInfos[i].Thumbnail)
-			nftInfos[i].Thumbnail = thumbnail + nftInfos[i].Thumbnail //appending file name
-			nis[i] = &nftInfos[i]
-		}
-
-		m.wrapperAndSend(c, bq, &MpListResponse{
-			RQBaseInfo:  *bq,
-			NftTranData: nis,
-		})
-	} else if nftType == TYPE_NFT_MUSIC {
-		type MpListDatInfo struct {
-			SupportedType string `json:"supportedType" orm:"column(nft_type)"`
-			NftName string `json:"nftName"`
-			NftValue int `json:"nftValue" orm:"column(price)"`
-			ActiveTicker string `json:"activeTicker"`
-			NftLifeIndex int64 `json:"nftLifeIndex"`
-			NftPowerIndex int64 `json:"nftPowerIndex"`
-			NftLdefIndex string `json:"nftLdefIndex"`
-			NftCharacId string `json:"nftCharacId"`
-			Thumbnail string `json:"thumbnail" orm:"column(icon_file_name)"`
-			Qty int `json:"qty"`
-		}
-
-		r := models.O.Raw(`
-		select ni.nft_type, ni.nft_name,
-		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
-		ni.nft_charac_id,  mp.icon_file_name, mk.qty 
-		from nft_market_table as mk, nft_mapping_table as mp,
-		nft_info_table as ni where mk.nft_ldef_index = mp.nft_ldef_index 
-		and mk.nft_ldef_index = ni.nft_ldef_index 
-		and ni.nft_type = ? `, nftType)
-
-		var nftInfos []MpListDatInfo
-		_, err = r.QueryRows(&nftInfos)
-		if err != nil {
-			logs.Error(err.Error())
-			m.errorHandler(c, bq, err)
-			return
-		}
-		length := len(nftInfos)
-		nis := make([]*MpListNFTInfo, length)
-
-		thumbnail:= PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
-		for i := 0; i < length; i++ {
-			logs.Info("thumbnail:", nftInfos[i].Thumbnail)
-			nftInfos[i].Thumbnail = thumbnail + nftInfos[i].Thumbnail //appending file name
-			nis[i] = &MpListNFTInfo {
-				SupportedType:nftInfos[i].SupportedType,
-				NftName:nftInfos[i].NftName,
-				NftValue: nftInfos[i].NftValue,
-				ActiveTicker: nftInfos[i].ActiveTicker,
-				NftLifeIndex:nftInfos[i].NftLifeIndex,
-				NftPowerIndex:nftInfos[i].NftPowerIndex,
-				NftLdefIndex:nftInfos[i].NftLdefIndex,
-				NftCharacId:nftInfos[i].NftCharacId,
-				Thumbnail:nftInfos[i].Thumbnail,
-				Qty:nftInfos[i].Qty,
-			}
-		}
-
-		m.wrapperAndSend(c, bq, &MpListResponse{
-			RQBaseInfo:  *bq,
-			NftTranData: nis,
-		})
-	} else {
-		err:= errors.New("unknow type")
+	_, err = r.QueryRows(&nftInfos)
+	if err != nil {
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
 		return
 	}
+	length := len(nftInfos)
+	nis := make([]*MpListNFTInfo, length)
+
+	prefix := PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
+	for i := 0; i < length; i++ {
+		nftInfo := &nftInfos[i]
+		nftResInfo := &MpListNFTInfo{
+			SupportedType: nftInfo.SupportedType,
+			NftName:       nftInfo.NftName,
+			NftValue:      nftInfo.NftValue,
+			ActiveTicker:  nftInfo.ActiveTicker,
+			NftLifeIndex:  nftInfo.NftLifeIndex,
+			NftPowerIndex: nftInfo.NftPowerIndex,
+			NftLdefIndex:  nftInfo.NftLdefIndex,
+			Thumbnail:     nftInfo.FileName,
+			Qty:           nftInfo.Qty,
+		}
+		if nftType == TYPE_NFT_AVATAR || nftType == TYPE_NFT_OTHER {
+			nftResInfo.Thumbnail = prefix + nftInfo.FileName
+		} else if nftType == TYPE_NFT_MUSIC {
+			nftResInfo.Thumbnail = prefix + nftInfo.IconFileName
+		} else {
+			err := errors.New("unexpected type")
+			logs.Emergency(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		nis[i] = nftResInfo
+	}
+
+	m.wrapperAndSend(c, bq, &MpListResponse{
+		RQBaseInfo:  *bq,
+		NftTranData: nis,
+	})
 }
 
 func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data []byte) {
@@ -254,6 +213,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 			nftLdefIndex := itemDetail.NftLdefIndex
 			tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
 			totalPaid := itemDetail.NftValue
+			activeTicker:= itemDetail.ActiveTicker
 			nftName := itemDetail.NftName
 			ownerAddress, err := m.chainHandler.Contract.(*nft.NFT).OwnerOf(tokenId)
 			if err != nil {
@@ -262,14 +222,14 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 				m.errorHandler(c, bq, err)
 				return
 			}
-			logs.Debug("purchase owner address",ownerAddress)
+			logs.Debug("purchase owner address", ownerAddress)
 			// delete from market user table if balance is zero
-			_,err=models.O.QueryTable("market_user_table").Filter("wallet_id", ownerAddress).Update(
+			_, err = models.O.QueryTable("market_user_table").Filter("wallet_id", ownerAddress).Update(
 				orm.Params{
 					"count": orm.ColValue(orm.ColAdd, -1),
 				},
 			)
-			if err!=nil {
+			if err != nil {
 				models.O.Rollback()
 				logs.Emergency(err.Error())
 				m.errorHandler(c, bq, err)
@@ -298,10 +258,12 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 			storeInfo := &models.StorePurchaseHistroy{
 				PurchaseId:         purchaseId,
 				AsId:               asId,
+				WalletId:           walletAddress,
 				TransactionAddress: tx.Hash().Hex(),
 				NftName:            nftName,
 				TotalPaid:          totalPaid,
 				NftLdefIndex:       nftLdefIndex,
+				ActiveTicker: 		activeTicker,
 				Status:             status,
 			}
 			toBeInsert[i] = storeInfo
@@ -319,7 +281,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 		}(i, itemDetail)
 	}
 	wg.Wait()
-	logs.Debug("length to be insert",len(toBeInsert))
+	logs.Debug("length to be insert", len(toBeInsert))
 	num, err := models.O.InsertMulti(len(toBeInsert), toBeInsert)
 	if err != nil {
 		models.O.Rollback()
@@ -394,7 +356,7 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, bq *RQBaseInfo, data []by
 			m.errorHandler(c, bq, err)
 			return
 		}
-		thumbnail:= PathPrefixOfNFT(nftType,PATH_KIND_MARKET)
+		thumbnail := PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
 		nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail // appending file name
 		nftResponseTranData[i] = &nftResponseInfo
 	}
@@ -456,7 +418,7 @@ func (m *Manager) NFTDisplayHandler(c *client.Client, bq *RQBaseInfo, data []byt
 	}
 
 	logs.Debug("length of original data", len(originalData))
-	if req.SupportedType == TYPE_NFT_AVATAR || req.SupportedType ==TYPE_NFT_OTHER {
+	if req.SupportedType == TYPE_NFT_AVATAR || req.SupportedType == TYPE_NFT_OTHER {
 		out, err := os.Create(decryptedFilePath)
 		if err != nil {
 			logs.Error(err.Error())
@@ -517,7 +479,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 			return
 		}
 		if purchaseInfo.Status != ACTION_STATUS_PENDING {
-			err:= errors.New("action in wrong status")
+			err := errors.New("action in wrong status")
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
@@ -597,14 +559,14 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 		})
 		return
 	} else if actionStatus == ACTION_STATUS_PENDING {
-		appTranIdBytes:= make([]byte,32)
-		_,err:=rand.Read(appTranIdBytes)
-		if err!=nil {
+		appTranIdBytes := make([]byte, 32)
+		_, err := rand.Read(appTranIdBytes)
+		if err != nil {
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
 		}
-		appTranId:= hex.EncodeToString(appTranIdBytes)
+		appTranId := hex.EncodeToString(appTranIdBytes)
 		purchaseInfo := models.BerryPurchaseTable{
 			TransactionId: appTranId,
 			RefillAsId:    req.AsUser.AsId,
@@ -619,8 +581,8 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 			return
 		}
 		m.wrapperAndSend(c, bq, &TokenPurchaseResponse{
-			RQBaseInfo:   *bq,
-			ActionStatus: ACTION_STATUS_PENDING,
+			RQBaseInfo:    *bq,
+			ActionStatus:  ACTION_STATUS_PENDING,
 			TransactionId: appTranId,
 		})
 		return
@@ -654,9 +616,9 @@ func (m *Manager) MarketUserListHandler(c *client.Client, bq *RQBaseInfo, data [
 		}
 	}
 
-	wl:=make([]*MarketUserWallet, len(walletIdList))
-	for i,_:=range wl {
-		walletIdList[i].Thumbnail = PathPrefixOfNFT("",PATH_KIND_USER_ICON) + walletIdList[i].Thumbnail
+	wl := make([]*MarketUserWallet, len(walletIdList))
+	for i, _ := range wl {
+		walletIdList[i].Thumbnail = PathPrefixOfNFT("", PATH_KIND_USER_ICON) + walletIdList[i].Thumbnail
 		wl[i] = &walletIdList[i]
 	}
 
@@ -676,7 +638,7 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, bq *RQBaseInfo, data [
 	}
 	user := req.WalletId
 
-	logs.Debug("user",user,"query user market info")
+	logs.Debug("user", user, "query user market info")
 
 	nftContract := m.chainHandler.Contract.(*nft.NFT)
 	nftList, err := nftContract.TokensOfUser(common.HexToAddress(user))
@@ -701,17 +663,20 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, bq *RQBaseInfo, data [
 
 	// get user nftInfo
 	for _, nftLdefIndex := range nftLdefIndexs {
+
 		r := models.O.Raw(`
-		select ni.nft_type, ni.nft_name,
-		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
-		ni.nft_charac_id,na.short_description, na.long_description,mp.file_name,mk.qty from
+		select ni.nft_type, ni.nft_name, 
+		mk.price,mk.active_ticker, mk.qty,
+		ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
+		ni.nft_charac_id,na.short_description, na.long_description,
+		mp.file_name, mp.icon_file_name from 
 		nft_market_table as mk,
 		nft_mapping_table as mp,
 		nft_info_table as ni,
 		nft_item_admin as na
 		where mk.nft_ldef_index = mp.nft_ldef_index and mk.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id and  ni.nft_ldef_index = ? `, nftLdefIndex)
-		var nftResponseInfo nftInfoListRes
-		err = r.QueryRow(&nftResponseInfo)
+		var nftInfo NFTInfo
+		err = r.QueryRow(&nftInfo)
 		if err != nil {
 			if err == orm.ErrNoRows {
 				logs.Debug(err.Error())
@@ -722,10 +687,13 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, bq *RQBaseInfo, data [
 				return
 			}
 		}
-
-		thumbnail:= PathPrefixOfNFT(nftResponseInfo.SupportedType,PATH_KIND_MARKET)
-		nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
-		nftTranResponseData = append(nftTranResponseData, &nftResponseInfo)
+		nftResInfo,err := nftResInfoFromNftInfo(&nftInfo)
+		if err!=nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		nftTranResponseData = append(nftTranResponseData, nftResInfo)
 	}
 
 	// balance of user
@@ -735,6 +703,199 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, bq *RQBaseInfo, data [
 		RQBaseInfo:  *bq,
 		TotalNFT:    balance,
 		NftTranData: nftTranResponseData,
+	}
+	m.wrapperAndSend(c, bq, res)
+}
+
+
+func (m *Manager) NFTPurchaseHistoryHandler(c *client.Client, bq *RQBaseInfo, data []byte) {
+	var req NFTPurchaseHistoryRequest
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+
+	userName:= req.UserName
+	var purchaseHistory []models.StorePurchaseHistroy
+	logs.Debug("user",userName,"query nft purchase history")
+	_,err=models.O.QueryTable("store_purchase_histroy").
+		Filter("as_id",userName).All(&purchaseHistory,"purchase_id",
+			"transaction_address",
+			"wallet_id",
+			"total_paid",
+			"active_ticker",
+			"nft_ldef_index",
+			"timestamp",
+			"status")
+	if err!=nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+	purchaseRecordRes:= make([]*NFTPurchaseRecord, len(purchaseHistory))
+	for i,_:= range purchaseHistory {
+		nftLdefIndex:= purchaseHistory[i].NftLdefIndex
+		r := models.O.Raw(`
+		select ni.nft_type, ni.nft_name,
+		ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
+		ni.nft_charac_id,na.short_description, na.long_description,
+		mp.file_name, mp.icon_file_name from
+		nft_mapping_table as mp,
+		nft_info_table as ni,
+		nft_item_admin as na
+		where mp.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id and  ni.nft_ldef_index = ? `, nftLdefIndex)
+		var nftInfo NFTInfo
+		err = r.QueryRow(&nftInfo)
+		if err != nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+
+		nftInfo.ActiveTicker = purchaseHistory[i].ActiveTicker
+		nftInfo.NftValue = purchaseHistory[i].TotalPaid
+		nftResInfo,err:= nftResInfoFromNftInfo(&nftInfo)
+		if err != nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+
+		purchaseRecordRes[i]= &NFTPurchaseRecord{
+			PurchaseId: purchaseHistory[i].PurchaseId,
+			TransactionAddress: purchaseHistory[i].TransactionAddress,
+			NftTranData: nftResInfo,
+			WalletId: purchaseHistory[i].WalletId,
+			Timestamp: chinaTimeFromTimeStamp(purchaseHistory[i].Timestamp),
+			Status: purchaseHistory[i].Status,
+		}
+	}
+
+	res := &NFTPurchaseHistoryResponse{
+		RQBaseInfo:  *bq,
+		PurchaseList:purchaseRecordRes,
+	}
+	m.wrapperAndSend(c, bq, res)
+}
+
+func (m *Manager) ShoppingCartChangeHandler(c *client.Client, bq *RQBaseInfo, data []byte) {
+	var req ShoppingCartChangeRequest
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+
+	username:= req.Username
+	operation:= req.Operation
+	// check operation
+	if operation != SHOPPING_CART_ADD && operation != SHOPPING_CART_DELETE {
+		err:= errors.New("unknown shopping cart operation")
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+
+	nftList:= req.NFTList
+	models.O.Begin()
+	for _,nftLdefIndex:=range nftList {
+		shoppingCartRecord:= models.NftShoppingCart{
+			NftLdefIndex:nftLdefIndex,
+			UserName:username,
+		}
+		if operation == SHOPPING_CART_ADD {
+			_,err:=models.O.Insert(&shoppingCartRecord)
+			if err != nil {
+				models.O.Rollback()
+				logs.Error(err.Error())
+				m.errorHandler(c, bq, err)
+				return
+			}
+			logs.Debug("insert ",nftLdefIndex,"success")
+		} else if operation == SHOPPING_CART_DELETE {
+			_,err:=models.O.Delete(&shoppingCartRecord,"nft_ldef_index","user_name")
+			if err != nil {
+				models.O.Rollback()
+				logs.Error(err.Error())
+				m.errorHandler(c, bq, err)
+				return
+			}
+			logs.Debug("delete ",nftLdefIndex,"success")
+		}
+	}
+	models.O.Commit()
+
+	m.wrapperAndSend(c,bq,&ShoppingCartChangeResponse{
+		RQBaseInfo: *bq,
+	})
+}
+
+func (m *Manager) ShoppingCartListHandler(c *client.Client, bq *RQBaseInfo, data []byte) {
+	var req ShoppingCartListRequest
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+	username:= req.Username
+	var shoppingCartHistory []models.NftShoppingCart
+	_,err=models.O.QueryTable("nft_shopping_cart").
+		Filter("user_name",username).
+		All(&shoppingCartHistory)
+	if err != nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+
+	shoppingCartRecordRes:= make([]*ShoppingCartRecord, len(shoppingCartHistory))
+	for i,_:= range shoppingCartHistory {
+		nftLdefIndex:= shoppingCartHistory[i].NftLdefIndex
+		logs.Debug("shopping card ldef index",nftLdefIndex)
+		r := models.O.Raw(`
+		select ni.nft_type, ni.nft_name, 
+		mk.price,mk.active_ticker, mk.qty,
+		ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
+		ni.nft_charac_id,na.short_description, na.long_description,
+		mp.file_name, mp.icon_file_name from 
+		nft_market_table as mk,
+		nft_mapping_table as mp,
+		nft_info_table as ni,
+		nft_item_admin as na
+		where mk.nft_ldef_index = mp.nft_ldef_index and mk.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id and  ni.nft_ldef_index = ? `, nftLdefIndex)
+		var nftInfo NFTInfo
+		err = r.QueryRow(&nftInfo)
+		if err != nil {
+			if err == orm.ErrNoRows {
+				logs.Info("item not exist in market")
+				continue
+			} else {
+				logs.Error(err.Error())
+				m.errorHandler(c, bq, err)
+				return
+			}
+		}
+
+		nftResInfo,err:= nftResInfoFromNftInfo(&nftInfo)
+		if err != nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		logs.Debug("origin time",shoppingCartHistory[i].Timestamp)
+		shoppingCartRecordRes[i]= &ShoppingCartRecord{
+			Timestamp: chinaTimeFromTimeStamp(shoppingCartHistory[i].Timestamp),
+			NftTranData: nftResInfo,
+		}
+	}
+
+	res := &ShoppingCartListResponse{
+		RQBaseInfo:  *bq,
+		NftList: shoppingCartRecordRes,
 	}
 	m.wrapperAndSend(c, bq, res)
 }
