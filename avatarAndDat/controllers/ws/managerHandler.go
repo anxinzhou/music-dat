@@ -72,7 +72,8 @@ func (m *Manager) GetMPList(c *client.Client, bq *RQBaseInfo, data []byte) {
 	logs.Debug("nft type", nftType)
 
 	// TODO can use prepare to optimize query
-	r := models.O.Raw(`
+	o := orm.NewOrm()
+	r := o.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
 		ni.nft_charac_id,  mp.file_name, mp.icon_file_name, mk.qty 
@@ -133,7 +134,19 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 		return
 	}
 
+	// currentBalance must be larger than total price of nft
+	needToPay := 0
+	nftRequestData := req.NftTranData
+
+	for _, itemDetail := range nftRequestData {
+		needToPay += itemDetail.NftValue
+	}
+
+	//session,_:=models.MongoClient.StartSession()
+	//session.StartTransaction()
+	ctx := context.Background()
 	col := models.MongoDB.Collection("users")
+
 	type fields struct {
 		Coin string `bson:"coin"`
 	}
@@ -157,7 +170,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 
 	var queryResult fields
 
-	err = col.FindOne(context.Background(), filter, options.FindOne().SetProjection(bson.M{
+	err = col.FindOne(ctx, filter, options.FindOne().SetProjection(bson.M{
 		"coin": true,
 	})).Decode(&queryResult)
 	if err != nil {
@@ -173,18 +186,24 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 	}
 	logs.Debug("as id", req.AsUser.AsId, "current balance:", currentBalance)
 
-	// currentBalance must be larger than total price of nft
-	needToPay := 0
-	nftRequestData := req.NftTranData
-
-	for _, itemDetail := range nftRequestData {
-		needToPay += itemDetail.NftValue
-	}
-	if currentBalance < needToPay {
-		err := errors.New("insufficient balance!")
+	finalBalance := currentBalance - needToPay
+	if finalBalance < 0 {
+		err := errors.New("Insufficient balance")
+		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
 		return
 	}
+	update := bson.M{
+		"$set": bson.M{"coin": strconv.Itoa(finalBalance)},
+	}
+	_, err = col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+
+	logs.Warn("update balance of user", req.AsUser.AsId, " to", finalBalance)
 
 	asId := req.AsUser.AsId
 	walletAddress := req.AsUser.AsWallet
@@ -199,7 +218,8 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 	toBeInsert := make([]*models.StorePurchaseHistroy, len(nftRequestData))
 	//toBeDelete:=make([]*models.NftMarketTable,len(nftRequestData))
 	// send transaction
-	models.O.Begin() // begin transaction
+	o := orm.NewOrm()
+	o.Begin() // begin transaction
 	var wg sync.WaitGroup
 	for i, itemDetail := range nftRequestData {
 		wg.Add(1)
@@ -213,24 +233,24 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 			nftLdefIndex := itemDetail.NftLdefIndex
 			tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
 			totalPaid := itemDetail.NftValue
-			activeTicker:= itemDetail.ActiveTicker
+			activeTicker := itemDetail.ActiveTicker
 			nftName := itemDetail.NftName
 			ownerAddress, err := m.chainHandler.Contract.(*nft.NFT).OwnerOf(tokenId)
 			if err != nil {
-				models.O.Rollback()
+				o.Rollback()
 				logs.Emergency(err.Error())
 				m.errorHandler(c, bq, err)
 				return
 			}
 			logs.Debug("purchase owner address", ownerAddress)
 			// delete from market user table if balance is zero
-			_, err = models.O.QueryTable("market_user_table").Filter("wallet_id", ownerAddress).Update(
+			_, err = o.QueryTable("market_user_table").Filter("wallet_id", ownerAddress).Update(
 				orm.Params{
 					"count": orm.ColValue(orm.ColAdd, -1),
 				},
 			)
 			if err != nil {
-				models.O.Rollback()
+				o.Rollback()
 				logs.Emergency(err.Error())
 				m.errorHandler(c, bq, err)
 				return
@@ -263,7 +283,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 				NftName:            nftName,
 				TotalPaid:          totalPaid,
 				NftLdefIndex:       nftLdefIndex,
-				ActiveTicker: 		activeTicker,
+				ActiveTicker:       activeTicker,
 				Status:             status,
 			}
 			toBeInsert[i] = storeInfo
@@ -271,9 +291,9 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 				NftLdefIndex: nftLdefIndex,
 			}
 			//delete from marketplace
-			num, err := models.O.Delete(toBeDelete)
+			num, err := o.Delete(toBeDelete)
 			if err != nil {
-				models.O.Rollback()
+				o.Rollback()
 				logs.Emergency("can not delete nft ldef:", nftLdefIndex)
 			} else {
 				logs.Warn("delete from marketplace table, nftldef:", nftLdefIndex, "num", num)
@@ -282,44 +302,17 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 	}
 	wg.Wait()
 	logs.Debug("length to be insert", len(toBeInsert))
-	num, err := models.O.InsertMulti(len(toBeInsert), toBeInsert)
+	num, err := o.InsertMulti(len(toBeInsert), toBeInsert)
 	if err != nil {
-		models.O.Rollback()
+		o.Rollback()
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
 		return
 	}
-	finalBalance := currentBalance - needToPay
-	update := bson.M{
-		"$set": bson.M{"coin": strconv.Itoa(finalBalance)},
-	}
-	_, err = col.UpdateOne(context.Background(), filter, update)
-	if err != nil {
-		models.O.Rollback()
-		logs.Error(err.Error())
-		m.errorHandler(c, bq, err)
-		return
-	}
-	logs.Warn("update balance of user", req.AsUser.AsId, " to", finalBalance)
-	logs.Info("insert num", num, "to purchase table")
-	models.O.Commit()
-	m.wrapperAndSend(c, bq, res)
 
-	//nftContract:= m.chainHandler.Contract.(*nft.NFT)
-	//var filteredWalletIdList []*MarketUserWallet
-	//for _,winfo:=range walletIdList {
-	//	user:=winfo.WalletId
-	//	count,err:=nftContract.BalanceOf(common.HexToAddress(user))
-	//	if err!=nil {
-	//		logs.Error(err.Error())
-	//		m.errorHandler(c, bq, err)
-	//		return
-	//	}
-	//	if count.Int64() == 0 {
-	//		continue
-	//	}
-	//	filteredWalletIdList=append(filteredWalletIdList, winfo)
-	//}
+	logs.Info("insert num", num, "to purchase table")
+	o.Commit()
+	m.wrapperAndSend(c, bq, res)
 }
 
 func (m *Manager) ItemDetailsHandler(c *client.Client, bq *RQBaseInfo, data []byte) {
@@ -336,11 +329,11 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, bq *RQBaseInfo, data []by
 		RQBaseInfo:  *bq,
 		NftTranData: nftResponseTranData,
 	}
-
+	o := orm.NewOrm()
 	for i, itemDetailsRequestNftInfo := range nftTranData {
 		nftLdefIndex := itemDetailsRequestNftInfo.NftLdefIndex
 		nftType := itemDetailsRequestNftInfo.SupportedType
-		r := models.O.Raw(`
+		r := o.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
 		ni.nft_charac_id,  na.short_description, na.long_description ,mp.file_name,mk.qty from  
@@ -376,7 +369,8 @@ func (m *Manager) NFTDisplayHandler(c *client.Client, bq *RQBaseInfo, data []byt
 	mp := models.NftMappingTable{
 		NftLdefIndex: nftLdefIndex,
 	}
-	err = models.O.Read(&mp)
+	o := orm.NewOrm()
+	err = o.Read(&mp)
 	if err != nil {
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
@@ -466,13 +460,14 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 	}
 
 	actionStatus := req.ActionStatus
+	o := orm.NewOrm()
 	if actionStatus == ACTION_STATUS_FINISH {
 		purchaseInfo := models.BerryPurchaseTable{
 			TransactionId: req.TransactionId,
 		}
 
-		models.O.Begin()
-		err = models.O.Read(&purchaseInfo)
+		o.Begin()
+		err = o.Read(&purchaseInfo)
 		if err != nil {
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
@@ -486,9 +481,9 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 		}
 		purchaseInfo.AppTranId = req.AppTranId
 		purchaseInfo.Status = ACTION_STATUS_FINISH
-		_, err = models.O.Update(&purchaseInfo)
+		_, err = o.Update(&purchaseInfo)
 		if err != nil {
-			models.O.Rollback()
+			o.Rollback()
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
@@ -512,7 +507,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 				"username": req.AsUser.AsId,
 			}
 		} else {
-			models.O.Rollback()
+			o.Rollback()
 			err := errors.New("wrong type")
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
@@ -524,7 +519,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 			"coin": true,
 		})).Decode(&queryResult)
 		if err != nil {
-			models.O.Rollback()
+			o.Rollback()
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
@@ -533,7 +528,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 
 		currentBalance, err := strconv.Atoi(queryResult.Coin)
 		if err != nil {
-			models.O.Rollback()
+			o.Rollback()
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
@@ -544,14 +539,14 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 		}
 		_, err = col.UpdateOne(context.Background(), filter, update)
 		if err != nil {
-			models.O.Rollback()
+			o.Rollback()
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
 		}
 		logs.Info("update success", "after update, amount:", amount+currentBalance)
 
-		models.O.Commit()
+		o.Commit()
 		logs.Info("insert one record to purchase table")
 		m.wrapperAndSend(c, bq, &TokenPurchaseResponse{
 			RQBaseInfo:   *bq,
@@ -574,7 +569,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, bq *RQBaseInfo, data []b
 			AppId:         req.AppId,
 			Status:        ACTION_STATUS_PENDING,
 		}
-		_, err = models.O.Insert(&purchaseInfo)
+		_, err = o.Insert(&purchaseInfo)
 		if err != nil {
 			logs.Emergency(err.Error())
 			m.errorHandler(c, bq, err)
@@ -602,7 +597,8 @@ func (m *Manager) MarketUserListHandler(c *client.Client, bq *RQBaseInfo, data [
 		m.errorHandler(c, bq, err)
 		return
 	}
-	r := models.O.Raw(`
+	o := orm.NewOrm()
+	r := o.Raw(`
 		select wallet_id,username,count,user_icon_url from market_user_table where count>0`)
 	var walletIdList []MarketUserWallet
 	_, err = r.QueryRows(&walletIdList)
@@ -660,11 +656,11 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, bq *RQBaseInfo, data [
 		nftLdefIndexs[i] = ldef
 	}
 	nftTranResponseData := make([]*nftInfoListRes, 0, len(nftList))
-
+	o := orm.NewOrm()
 	// get user nftInfo
 	for _, nftLdefIndex := range nftLdefIndexs {
 
-		r := models.O.Raw(`
+		r := o.Raw(`
 		select ni.nft_type, ni.nft_name, 
 		mk.price,mk.active_ticker, mk.qty,
 		ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
@@ -687,8 +683,8 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, bq *RQBaseInfo, data [
 				return
 			}
 		}
-		nftResInfo,err := nftResInfoFromNftInfo(&nftInfo)
-		if err!=nil {
+		nftResInfo, err := nftResInfoFromNftInfo(&nftInfo)
+		if err != nil {
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
@@ -707,7 +703,6 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, bq *RQBaseInfo, data [
 	m.wrapperAndSend(c, bq, res)
 }
 
-
 func (m *Manager) NFTPurchaseHistoryHandler(c *client.Client, bq *RQBaseInfo, data []byte) {
 	var req NFTPurchaseHistoryRequest
 	err := json.Unmarshal(data, &req)
@@ -716,28 +711,28 @@ func (m *Manager) NFTPurchaseHistoryHandler(c *client.Client, bq *RQBaseInfo, da
 		m.errorHandler(c, bq, err)
 		return
 	}
-
-	userName:= req.UserName
+	o := orm.NewOrm()
+	userName := req.UserName
 	var purchaseHistory []models.StorePurchaseHistroy
-	logs.Debug("user",userName,"query nft purchase history")
-	_,err=models.O.QueryTable("store_purchase_histroy").
-		Filter("as_id",userName).All(&purchaseHistory,"purchase_id",
-			"transaction_address",
-			"wallet_id",
-			"total_paid",
-			"active_ticker",
-			"nft_ldef_index",
-			"timestamp",
-			"status")
-	if err!=nil {
+	logs.Debug("user", userName, "query nft purchase history")
+	_, err = o.QueryTable("store_purchase_histroy").
+		Filter("as_id", userName).All(&purchaseHistory, "purchase_id",
+		"transaction_address",
+		"wallet_id",
+		"total_paid",
+		"active_ticker",
+		"nft_ldef_index",
+		"timestamp",
+		"status")
+	if err != nil {
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
 		return
 	}
-	purchaseRecordRes:= make([]*NFTPurchaseRecord, len(purchaseHistory))
-	for i,_:= range purchaseHistory {
-		nftLdefIndex:= purchaseHistory[i].NftLdefIndex
-		r := models.O.Raw(`
+	purchaseRecordRes := make([]*NFTPurchaseRecord, len(purchaseHistory))
+	for i, _ := range purchaseHistory {
+		nftLdefIndex := purchaseHistory[i].NftLdefIndex
+		r := o.Raw(`
 		select ni.nft_type, ni.nft_name,
 		ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
 		ni.nft_charac_id,na.short_description, na.long_description,
@@ -756,26 +751,26 @@ func (m *Manager) NFTPurchaseHistoryHandler(c *client.Client, bq *RQBaseInfo, da
 
 		nftInfo.ActiveTicker = purchaseHistory[i].ActiveTicker
 		nftInfo.NftValue = purchaseHistory[i].TotalPaid
-		nftResInfo,err:= nftResInfoFromNftInfo(&nftInfo)
+		nftResInfo, err := nftResInfoFromNftInfo(&nftInfo)
 		if err != nil {
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
 		}
 
-		purchaseRecordRes[i]= &NFTPurchaseRecord{
-			PurchaseId: purchaseHistory[i].PurchaseId,
+		purchaseRecordRes[i] = &NFTPurchaseRecord{
+			PurchaseId:         purchaseHistory[i].PurchaseId,
 			TransactionAddress: purchaseHistory[i].TransactionAddress,
-			NftTranData: nftResInfo,
-			WalletId: purchaseHistory[i].WalletId,
-			Timestamp: chinaTimeFromTimeStamp(purchaseHistory[i].Timestamp),
-			Status: purchaseHistory[i].Status,
+			NftTranData:        nftResInfo,
+			WalletId:           purchaseHistory[i].WalletId,
+			Timestamp:          chinaTimeFromTimeStamp(purchaseHistory[i].Timestamp),
+			Status:             purchaseHistory[i].Status,
 		}
 	}
 
 	res := &NFTPurchaseHistoryResponse{
-		RQBaseInfo:  *bq,
-		PurchaseList:purchaseRecordRes,
+		RQBaseInfo:   *bq,
+		PurchaseList: purchaseRecordRes,
 	}
 	m.wrapperAndSend(c, bq, res)
 }
@@ -789,46 +784,47 @@ func (m *Manager) ShoppingCartChangeHandler(c *client.Client, bq *RQBaseInfo, da
 		return
 	}
 
-	username:= req.Username
-	operation:= req.Operation
+	username := req.Username
+	operation := req.Operation
 	// check operation
 	if operation != SHOPPING_CART_ADD && operation != SHOPPING_CART_DELETE {
-		err:= errors.New("unknown shopping cart operation")
+		err := errors.New("unknown shopping cart operation")
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
 		return
 	}
 
-	nftList:= req.NFTList
-	models.O.Begin()
-	for _,nftLdefIndex:=range nftList {
-		shoppingCartRecord:= models.NftShoppingCart{
-			NftLdefIndex:nftLdefIndex,
-			UserName:username,
+	nftList := req.NFTList
+	o := orm.NewOrm()
+	o.Begin()
+	for _, nftLdefIndex := range nftList {
+		shoppingCartRecord := models.NftShoppingCart{
+			NftLdefIndex: nftLdefIndex,
+			UserName:     username,
 		}
 		if operation == SHOPPING_CART_ADD {
-			_,err:=models.O.Insert(&shoppingCartRecord)
+			_, err := o.Insert(&shoppingCartRecord)
 			if err != nil {
-				models.O.Rollback()
+				o.Rollback()
 				logs.Error(err.Error())
 				m.errorHandler(c, bq, err)
 				return
 			}
-			logs.Debug("insert ",nftLdefIndex,"success")
+			logs.Debug("insert ", nftLdefIndex, "success")
 		} else if operation == SHOPPING_CART_DELETE {
-			_,err:=models.O.Delete(&shoppingCartRecord,"nft_ldef_index","user_name")
+			_, err := o.Delete(&shoppingCartRecord, "nft_ldef_index", "user_name")
 			if err != nil {
-				models.O.Rollback()
+				o.Rollback()
 				logs.Error(err.Error())
 				m.errorHandler(c, bq, err)
 				return
 			}
-			logs.Debug("delete ",nftLdefIndex,"success")
+			logs.Debug("delete ", nftLdefIndex, "success")
 		}
 	}
-	models.O.Commit()
+	o.Commit()
 
-	m.wrapperAndSend(c,bq,&ShoppingCartChangeResponse{
+	m.wrapperAndSend(c, bq, &ShoppingCartChangeResponse{
 		RQBaseInfo: *bq,
 	})
 }
@@ -841,10 +837,11 @@ func (m *Manager) ShoppingCartListHandler(c *client.Client, bq *RQBaseInfo, data
 		m.errorHandler(c, bq, err)
 		return
 	}
-	username:= req.Username
+	username := req.Username
 	var shoppingCartHistory []models.NftShoppingCart
-	_,err=models.O.QueryTable("nft_shopping_cart").
-		Filter("user_name",username).
+	o := orm.NewOrm()
+	_, err = o.QueryTable("nft_shopping_cart").
+		Filter("user_name", username).
 		All(&shoppingCartHistory)
 	if err != nil {
 		logs.Error(err.Error())
@@ -852,11 +849,11 @@ func (m *Manager) ShoppingCartListHandler(c *client.Client, bq *RQBaseInfo, data
 		return
 	}
 
-	shoppingCartRecordRes:= make([]*ShoppingCartRecord, len(shoppingCartHistory))
-	for i,_:= range shoppingCartHistory {
-		nftLdefIndex:= shoppingCartHistory[i].NftLdefIndex
-		logs.Debug("shopping card ldef index",nftLdefIndex)
-		r := models.O.Raw(`
+	shoppingCartRecordRes := make([]*ShoppingCartRecord, len(shoppingCartHistory))
+	for i, _ := range shoppingCartHistory {
+		nftLdefIndex := shoppingCartHistory[i].NftLdefIndex
+		logs.Debug("shopping card ldef index", nftLdefIndex)
+		r := o.Raw(`
 		select ni.nft_type, ni.nft_name, 
 		mk.price,mk.active_ticker, mk.qty,
 		ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
@@ -880,22 +877,22 @@ func (m *Manager) ShoppingCartListHandler(c *client.Client, bq *RQBaseInfo, data
 			}
 		}
 
-		nftResInfo,err:= nftResInfoFromNftInfo(&nftInfo)
+		nftResInfo, err := nftResInfoFromNftInfo(&nftInfo)
 		if err != nil {
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
 		}
-		logs.Debug("origin time",shoppingCartHistory[i].Timestamp)
-		shoppingCartRecordRes[i]= &ShoppingCartRecord{
-			Timestamp: chinaTimeFromTimeStamp(shoppingCartHistory[i].Timestamp),
+		logs.Debug("origin time", shoppingCartHistory[i].Timestamp)
+		shoppingCartRecordRes[i] = &ShoppingCartRecord{
+			Timestamp:   chinaTimeFromTimeStamp(shoppingCartHistory[i].Timestamp),
 			NftTranData: nftResInfo,
 		}
 	}
 
 	res := &ShoppingCartListResponse{
-		RQBaseInfo:  *bq,
-		NftList: shoppingCartRecordRes,
+		RQBaseInfo: *bq,
+		NftList:    shoppingCartRecordRes,
 	}
 	m.wrapperAndSend(c, bq, res)
 }

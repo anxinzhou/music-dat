@@ -235,8 +235,8 @@ func (this *UploadController) Upload() {
 		logs.Debug("parent ldef index",nftParentLdef)
 	}
 	logs.Info("nftLdefindex", nftLdefIndex)
-
-	models.O.Begin()   //start transaction
+	o:= orm.NewOrm()
+	o.Begin()   //start transaction
 	// store nft info to database
 
 	nftInfo := &models.NftInfoTable{
@@ -249,7 +249,7 @@ func (this *UploadController) Upload() {
 		NftCharacId:   nftCharacterId,
 		PublicKey:     string(publicKey),
 	}
-	_, err = models.O.Insert(nftInfo)
+	_, err = o.Insert(nftInfo)
 	if err != nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller,err, 500)
@@ -280,9 +280,9 @@ func (this *UploadController) Upload() {
 	io.WriteString(h, mpId)
 	mpId = new(big.Int).SetBytes(h.Sum(nil)[:8]).String()
 
-	_, err = models.O.Insert(mappingInfo)
+	_, err = o.Insert(mappingInfo)
 	if err != nil {
-		models.O.Rollback()
+		o.Rollback()
 		logs.Error(err.Error())
 		sendError(&this.Controller,err, 500)
 		return
@@ -300,9 +300,9 @@ func (this *UploadController) Upload() {
 		Active:       true,
 		ActiveTicker: ACTIVE_TICKER,
 	}
-	_, err = models.O.Insert(marketInfo)
+	_, err = o.Insert(marketInfo)
 	if err != nil {
-		models.O.Rollback()
+		o.Rollback()
 		logs.Error(err.Error())
 		sendError(&this.Controller,err, 500)
 		return
@@ -316,9 +316,9 @@ func (this *UploadController) Upload() {
 		LongDescription: longDesc, //TODO
 		NumDistribution: qty, //TODO
 	}
-	_,err = models.O.Insert(nftAdminInfo)
+	_,err = o.Insert(nftAdminInfo)
 	if err!=nil {
-		models.O.Rollback()
+		o.Rollback()
 		logs.Error(err.Error())
 		sendError(&this.Controller,err,500)
 		return
@@ -333,11 +333,11 @@ func (this *UploadController) Upload() {
 		return
 	}
 	// insert to wallet address table
-	_,err = models.O.QueryTable("market_user_table").Filter("walletId",user).Update(orm.Params{
+	_,err = o.QueryTable("market_user_table").Filter("walletId",user).Update(orm.Params{
 		"count": orm.ColValue(orm.ColAdd,1),
 	})
 	if err!=nil {
-		models.O.Rollback()
+		o.Rollback()
 		logs.Error(err.Error())
 		sendError(&this.Controller,err,500)
 		return
@@ -361,16 +361,16 @@ func (this *UploadController) Upload() {
 	)
 	err = <-txErr
 	if err != nil {
-		models.O.Rollback()
+		o.Rollback()
 		logs.Error(err.Error())
 		sendError(&this.Controller,err, 500)
 		return
 	}
 	logs.Debug("create nft success")
 
-	err = models.O.Commit()
+	err = o.Commit()
 	if err!=nil {
-		models.O.Rollback()
+		o.Rollback()
 		err:=errors.New("commit to database fail")
 		logs.Error(err.Error())
 		sendError(&this.Controller,err, 500)

@@ -10,8 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var O orm.Ormer   			//TODO how to efficiently gurantee concurrentcy of mysql
 var MongoDB *mongo.Database   //TODO add logic to guranttee concurrency of mongodb
+var MongoClient *mongo.Client
 
 func init() {
 	// initialize mysql handler
@@ -50,18 +50,17 @@ func init() {
 	if err!=nil {
 		panic(err)
 	}
-
-	// set oramer object
-	O = orm.NewOrm()
-	O.Using("default")
+	// set connection pool
+	orm.SetMaxOpenConns("default",2000)
+	orm.SetMaxIdleConns("default",2000)
 
 	// initialize mongodb handler
 	mongoDBURL:= beego.AppConfig.String("mongodbConnection")
 	mongoDatabase:= beego.AppConfig.String("mongodbDatabase")
-	client,err:=mongo.Connect(context.Background(), options.Client().ApplyURI(mongoDBURL))
+	MongoClient,err=mongo.Connect(context.Background(), options.Client().ApplyURI(mongoDBURL))
 	if err!=nil {
 		logs.Error(err.Error())
 		panic(err)
 	}
-	MongoDB=client.Database(mongoDatabase)
+	MongoDB=MongoClient.Database(mongoDatabase)
 }

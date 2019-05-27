@@ -194,26 +194,26 @@ func (this *ImportWalletController) ImportWallet() {
 		Username: username,
 		UserIconUrl: iconFileName,
 	}
-
-	models.O.Begin()         //TODO single sql
-	err = models.O.Read(walletInfo)
+	o:=orm.NewOrm()
+	o.Begin()         //TODO single sql
+	err = o.Read(walletInfo)
 	if err != nil {
 		if err!= orm.ErrNoRows {
-			models.O.Rollback()
+			o.Rollback()
 			logs.Error(err.Error())
 			sendError(&this.Controller,err,500)
 			return
 		} else {
-			_,err:=models.O.Insert(walletInfo)
+			_,err:=o.Insert(walletInfo)
 			if err!=nil {
-				models.O.Rollback()
+				o.Rollback()
 				logs.Error(err.Error())
 				sendError(&this.Controller,err,500)
 				return
 			}
 		}
 	}
-	models.O.Commit()
+	o.Commit()
 	logs.Info("insert to market user table","username",username)
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 	return

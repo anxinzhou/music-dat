@@ -89,7 +89,7 @@ var purchaseConfirm = {
             "activeTicker": "berry", //string
             "nftLifeIndex": 7, // int
             "nftPowerIndex": 23, //int
-            "nftLdefIndex": "M229680162372527", // string
+            "nftLdefIndex": "M18177268319192", // string
             "nftCharacId": "def", //string
             "qty": 100, // int
         },
@@ -149,12 +149,12 @@ ws.on('open', async function open() {
     // ws.send(JSON.stringify(nftshow))
     // // ws.send(JSON.stringify(musicshow))
     // ws.send(JSON.stringify(itemDetails))
-    // ws.send(JSON.stringify(purchaseConfirm))
+    ws.send(JSON.stringify(purchaseConfirm))
     // ws.send(JSON.stringify(userMarketInfo));
     // ws.send(JSON.stringify(shoppingCartChangeAdd));
     // ws.send(JSON.stringify(shoppingCartChangeDelete));
     // ws.send(JSON.stringify(purchaseHistory));
-    ws.send(JSON.stringify(shoppingCartList));
+    // ws.send(JSON.stringify(shoppingCartList));
 });
 
 ws.on('message', function incoming(data) {
