@@ -336,22 +336,45 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, bq *RQBaseInfo, data []by
 		r := o.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
-		ni.nft_charac_id,  na.short_description, na.long_description ,mp.file_name,mk.qty from  
+		ni.nft_charac_id,  na.short_description, na.long_description ,mp.file_name, mp.icon_file_name,mk.qty from  
 		nft_market_table as mk, 
 		nft_mapping_table as mp,
 		nft_info_table as ni,
 		nft_item_admin as na 
 		where mk.nft_ldef_index = mp.nft_ldef_index and mk.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id and  ni.nft_ldef_index = ? `, nftLdefIndex)
-		var nftResponseInfo ItemDetailsResponseNftInfo
-		err = r.QueryRow(&nftResponseInfo)
+		var nftInfo NFTInfo
+		err = r.QueryRow(&nftInfo)
 		if err != nil {
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
 		}
-		thumbnail := PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
-		nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail // appending file name
-		nftResponseTranData[i] = &nftResponseInfo
+		nftResInfo := &ItemDetailsResponseNftInfo{
+			SupportedType: nftInfo.SupportedType,
+			NftName:       nftInfo.NftName,
+			NftValue:      nftInfo.NftValue,
+			ActiveTicker:  nftInfo.ActiveTicker,
+			NftLifeIndex:  nftInfo.NftLifeIndex,
+			NftPowerIndex: nftInfo.NftPowerIndex,
+			NftLdefIndex:  nftInfo.NftLdefIndex,
+			NftCharacId:   nftInfo.NftCharacId,
+			ShortDesc:     nftInfo.ShortDesc,
+			LongDesc:      nftInfo.LongDesc,
+			Thumbnail:     nftInfo.FileName,
+			Qty:           nftInfo.Qty,
+		}
+		prefix := PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
+		if nftType == TYPE_NFT_AVATAR || nftType == TYPE_NFT_OTHER {
+			nftResInfo.Thumbnail = prefix + nftInfo.FileName
+		} else if nftType == TYPE_NFT_MUSIC {
+			nftResInfo.Thumbnail = prefix + nftInfo.IconFileName
+		} else {
+			err := errors.New("unexpected type")
+			logs.Emergency(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		nftResponseTranData[i] = nftResInfo
 	}
 	m.wrapperAndSend(c, bq, itemDetailRes)
 }
