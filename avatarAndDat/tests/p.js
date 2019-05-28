@@ -1,7 +1,7 @@
 const WebSocket = require('ws');
 
-// const ws = new WebSocket('ws://3.1.35.36:4000/ws');
-const ws = new WebSocket('ws://localhost:4000/ws');
+const ws = new WebSocket('ws://3.1.35.36:4000/ws');
+// const ws = new WebSocket('ws://localhost:4000/ws');
 // const ws = new WebSocket("ws://18.136.134.84:4000");
 // const now = require('performance-now');
 
@@ -144,13 +144,13 @@ var purchaseHistory = {
 
 ws.on('open', async function open() {
     // start = now()
-    // ws.send(JSON.stringify(mkinfos))
+    ws.send(JSON.stringify(mkinfos))
     // ws.send(JSON.stringify(tokenPurchase))
     // ws.send(JSON.stringify(nftshow))
     // // ws.send(JSON.stringify(musicshow))
     // ws.send(JSON.stringify(itemDetails))
-    ws.send(JSON.stringify(purchaseConfirm))
-    // ws.send(JSON.stringify(userMarketInfo));
+    // ws.send(JSON.stringify(purchaseConfirm))
+    ws.send(JSON.stringify(userMarketInfo));
     // ws.send(JSON.stringify(shoppingCartChangeAdd));
     // ws.send(JSON.stringify(shoppingCartChangeDelete));
     // ws.send(JSON.stringify(purchaseHistory));
