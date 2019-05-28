@@ -37,7 +37,18 @@ func NewChainHelper() *ChainHelper {
 	if err!=nil {
 		panic(err)
 	}
-	account.BindEthClient(c,sender.CHAIN_KIND_PRIVATE)
+
+	runmode:= beego.AppConfig.String("runmode")
+	chainKind:= sender.CHAIN_KIND_PUBLIC
+	if runmode == "master" || runmode == "prod" {
+		chainKind = sender.CHAIN_KIND_PUBLIC
+	} else if runmode == "dev" {
+		chainKind = sender.CHAIN_KIND_PRIVATE
+	} else {
+		panic("unknown chain kind")
+	}
+
+	account.BindEthClient(c,chainKind)
 	contractAddress:= beego.AppConfig.String("contractAddress")
 	smartContract:= nft.NewNFT(common.HexToAddress(contractAddress))
 	smartContract.BindClient(c)
