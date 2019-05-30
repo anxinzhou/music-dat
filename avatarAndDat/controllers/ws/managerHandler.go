@@ -222,6 +222,9 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 	toBeTransfer:= make([]*transferPayLoad,len(nftRequestData))
 	o := orm.NewOrm()
 	o.Begin() // begin transaction
+
+	nftOwners:=make([]string,len(nftRequestData))
+
 	for i,itemDetail:= range nftRequestData {
 		purchaseId := strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10)
 		h := md5.New()
@@ -262,6 +265,22 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 			m.errorHandler(c, bq, err)
 			return
 		}
+
+		// query owner info
+		var mkInfo models.NftMarketTable
+		err=o.QueryTable("nft_market_table").
+			Filter("nft_ldef_index",nftLdefIndex).
+			One(&mkInfo,"owner_wallet_address","owner_user_name")
+		if err!=nil {
+			o.Rollback()
+			logs.Emergency(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		ownerWalletAddress:=mkInfo.OwnerWalletAddress
+		ownerUserName:=mkInfo.OwnerUserName
+		nftOwners[i] = ownerWalletAddress
+
 		status := PURCHASE_PENDING
 		nftPurchaseResponseInfo := &NftPurchaseResponseInfo{
 			NftLdefIndex: nftLdefIndex,
@@ -272,6 +291,8 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 			PurchaseId:         purchaseId,
 			AsId:               asId,
 			WalletId:           walletAddress,
+			OwnerWalletId: ownerWalletAddress,
+			OwnerAsId: ownerUserName,
 			NftName:            nftName,
 			TotalPaid:          totalPaid,
 			NftLdefIndex:       nftLdefIndex,
@@ -311,11 +332,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 			payload:= toBeTransfer[i]
 			tokenId:= payload.TokenId
 			purchaseId:= payload.PurchaseId
-			ownerAddress, err := m.chainHandler.Contract.(*nft.NFT).OwnerOf(tokenId)
-			if err != nil {
-				logs.Emergency(err.Error())
-				return
-			}
+			ownerAddress := nftOwners[i]
 			tx,err:=  m.chainHandler.ManagerAccount.PackTransaction(
 				m.chainHandler.Contract,
 				nil,

@@ -1,15 +1,20 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"github.com/astaxie/beego/logs"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/jameskeane/bcrypt"
 )
 
 func main() {
-	a:=[]byte("$2a$10$la75mLwUDCkxwdMNdOBaS.UHdjo3MD2iESfAmNTM1/h2vgHkFTdYm")
-	b:=[]byte("123456")
-	err:=bcrypt.CompareHashAndPassword(a,b)
-	if err==nil {
+	a:="$2a$10$la75mLwUDCkxwdMNdOBaS.UHdjo3MD2iESfAmNTM1/h2vgHkFTdYm"
+	h:= sha256.New()
+	h.Write([]byte("123456"))
+	b:=hex.EncodeToString(h.Sum(nil))
+	logs.Info(b)
+	ok:=bcrypt.Match(b,a)
+	if ok {
 		logs.Info("ok")
 	} else {
 		logs.Info("not ok")

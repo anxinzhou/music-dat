@@ -68,28 +68,26 @@ type nftListResponse struct {
 func (this *NftListController) Get() {
 	user := this.Ctx.Input.Param(":user")
 	logs.Debug("user", user, "query nft list")
-	nftContract := this.C.smartContract.(*nft.NFT)
-	nftList, err := nftContract.TokensOfUser(common.HexToAddress(user))
-	if err != nil {
-		logs.Error(err.Error())
-		sendError(&this.Controller, err, 500)
-		return
-	}
-
-	nftLdefIndexs := make([]string, len(nftList))
-	for i, tokenId := range nftList {
-		ldef, err := nftContract.LdefIndexOfToken(tokenId)
-		if err != nil {
+	o:=orm.NewOrm()
+	var mkInfos []models.NftMarketTable
+	num,err:=o.QueryTable("nft_market_table").
+		Filter("owner_wallet_address",user).
+		All(&mkInfos,"nft_ldef_index")
+	if err!=nil {
+		if err == orm.ErrNoRows {
+			logs.Info("no row in marketplace now")
+			mkInfos = make([]models.NftMarketTable,0)
+		} else {
 			logs.Error(err.Error())
 			sendError(&this.Controller, err, 500)
 			return
 		}
-		//logs.Info("ldefIndex",ldef)
-		nftLdefIndexs[i] = ldef
 	}
-	nftTranResponseData := make([]*nftInfoListRes, 0, len(nftList))
-	o := orm.NewOrm()
-	for _, nftLdefIndex := range nftLdefIndexs {
+	logs.Debug("number of list",num)
+
+	nftTranResponseData := make([]*nftInfoListRes, 0, num)
+	for _, mkInfo := range mkInfos {
+		nftLdefIndex:= mkInfo.NftLdefIndex
 		r := o.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
@@ -297,6 +295,59 @@ func (this *ChildrenOfNFTController) Get() {
 	}
 	var res nftListResponse
 	res.NftTranData = nftResponseInfo
+	this.Data["json"] = &res
+	this.ServeJSON()
+}
+
+type MarketTransactionHistoryController struct {
+	ContractController
+}
+
+type NftPurchaseInfo struct {
+	NftLdefIndex string `json:"nftLdefIndex"`
+	Buyer string `json:"buyer"`
+	Seller string `json:"seller"`
+	TransactionAddress string `json:"transactionAddress"`
+}
+
+type MarketHistoryResponse struct {
+	NftPurchaseInfo []*NftPurchaseInfo `json:"nftPurchaseInfo"`
+}
+
+func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
+	user:= this.Ctx.Input.Param(":transactionHistory")
+	var purchaseHistory [] models.StorePurchaseHistroy
+	o:=orm.NewOrm()
+	cond:= orm.NewCondition()
+	cond.And("wallet_id",user).Or("owner_wallet_id",user)
+	num,err:=o.QueryTable("store_purchase_histroy").
+		SetCond(cond).
+		All(&purchaseHistory,"as_id","owner_as_id","transaction_address","nft_ldef_index")
+	if err!=nil {
+		if err==orm.ErrNoRows {
+			purchaseHistory = make([]models.StorePurchaseHistroy,0)
+			logs.Error(err.Error())
+		} else {
+			logs.Error(err.Error())
+			sendError(&this.Controller, err, 500)
+			return
+		}
+	}
+
+	nftPurchaseInfo:=make([]*NftPurchaseInfo,num)
+	for i,v:=range purchaseHistory {
+		ni:= &NftPurchaseInfo{
+			NftLdefIndex: v.NftLdefIndex,
+			Buyer:v.AsId,
+			Seller:v.AsId,
+			TransactionAddress:v.TransactionAddress,
+		}
+		nftPurchaseInfo[i] = ni
+	}
+	logs.Debug("purchase history record of",user,"has",num,"record")
+	res:=&MarketHistoryResponse{
+		NftPurchaseInfo: nftPurchaseInfo,
+	}
 	this.Data["json"] = &res
 	this.ServeJSON()
 }

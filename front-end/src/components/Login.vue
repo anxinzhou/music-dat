@@ -54,7 +54,13 @@
           this.$cookies.set("nickName",nickName);
           this.$cookies.set("access-token", accessToken);
           this.$router.replace('/mnemonic')
-        }).catch(console.log);
+        }).catch(err=>{
+          if (err.response.status === 401) {
+            this.$store.state.notifyError("wrong user name or password");
+          } else {
+            this.$store.state.notifyError("server internal error");
+          }
+        });
       }
     },
     mounted: function () {

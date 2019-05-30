@@ -4,8 +4,10 @@ import "time"
 
 type StorePurchaseHistroy struct {
 	PurchaseId string `orm:"pk;unique"`
-	AsId string    // alpha user id
-	WalletId string // alpha user wallet address
+	AsId string    // alpha user buyer id
+	WalletId string // alpha user buyer wallet address
+	OwnerAsId string // alpha user owner id
+	OwnerWalletId string // alpha owner wallet address
 	TransactionAddress string
 	NftName string
 	ActiveTicker string
@@ -21,6 +23,8 @@ func (this *StorePurchaseHistroy) TableIndex() [][]string {
 		[]string {"WalletId"},
 		[]string {"NftLdefIndex"},
 		[]string {"TransactionAddress"},
+		[]string {"OwnerAsId"},
+		[]string {"OwnerWalletId"},
 	}
 }
 

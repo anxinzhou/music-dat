@@ -83,13 +83,13 @@ var purchaseConfirm = {
     "packedKeys": "U1074972YHBFGHJHDOJDJKDKDKKDLLD5462",
     "nftTranData": [ //array of object
         {
-            "supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+            "supportedType": "721-02", // string "721-04" for music "721-02" for avatar
             "nftName": "heart", // string
             "nftValue": 1, // int
             "activeTicker": "berry", //string
             "nftLifeIndex": 7, // int
             "nftPowerIndex": 23, //int
-            "nftLdefIndex": "M18177268319192", // string
+            "nftLdefIndex": "A133303755737745", // string
             "nftCharacId": "def", //string
             "qty": 100, // int
         },
@@ -144,13 +144,13 @@ var purchaseHistory = {
 
 ws.on('open', async function open() {
     // start = now()
-    ws.send(JSON.stringify(mkinfos))
+    // ws.send(JSON.stringify(mkinfos))
     // ws.send(JSON.stringify(tokenPurchase))
     // ws.send(JSON.stringify(nftshow))
     // // ws.send(JSON.stringify(musicshow))
     // ws.send(JSON.stringify(itemDetails))
-    // ws.send(JSON.stringify(purchaseConfirm))
-    ws.send(JSON.stringify(userMarketInfo));
+    ws.send(JSON.stringify(purchaseConfirm))
+    // ws.send(JSON.stringify(userMarketInfo));
     // ws.send(JSON.stringify(shoppingCartChangeAdd));
     // ws.send(JSON.stringify(shoppingCartChangeDelete));
     // ws.send(JSON.stringify(purchaseHistory));

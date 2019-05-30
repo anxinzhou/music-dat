@@ -51,6 +51,53 @@ func (this *UploadController) Upload() {
 		return
 	}
 
+	// check parameters from website
+
+	// nft metadata
+	var (
+		nftType        string
+		nftName        string
+		nftLdefIndex   string
+		nftLifeIndex   *big.Int
+		distIndex      string
+		nftPowerIndex  *big.Int
+		nftCharacterId string
+		publicKey      []byte
+		shortDesc string
+		longDesc string
+		nftParentLdef string
+		typeId string
+		qty int
+		price int
+	)
+
+	// set nftmetadata from website
+	// TODO
+	// now can set price and qty from website
+	if kind == NAME_NFT_MUSIC {
+		price,err = this.GetInt("price")
+		if err!=nil {
+			logs.Error(err.Error())
+			sendError(&this.Controller,err,400)
+			return
+		}
+		qty,err =this.GetInt("number")
+		if err!=nil {
+			logs.Error(err.Error())
+			sendError(&this.Controller,err,400)
+			return
+		}
+	} else {
+		price=1
+		qty= 100
+	}
+
+	user := this.GetString("address")
+	ownerName:= this.GetString("username")
+	//// get input from user
+	nftName = this.GetString("nftName")
+	shortDesc = this.GetString("shortDesc")
+	longDesc = this.GetString("longDesc")
 	fileNamePrefix := RandomPathFromFileName(header.Filename)
 	var fileName string
 	if kind == NAME_NFT_AVATAR {
@@ -169,31 +216,7 @@ func (this *UploadController) Upload() {
 		}
 	}
 
-	// create nft
-	var (
-		nftType        string
-		nftName        string
-		nftLdefIndex   string
-		nftLifeIndex   *big.Int
-		distIndex      string
-		nftPowerIndex  *big.Int
-		nftCharacterId string
-		publicKey      []byte
-		shortDesc string
-		longDesc string
-		nftParentLdef string
-		typeId string
-	)
-
-	// TODO
-	price:= 1
-	qty:=100
-
-	user := this.GetString("address")
-	//// get input from user
-	nftName = this.GetString("nftName")
-	shortDesc = this.GetString("shortDesc")
-	longDesc = this.GetString("longDesc")
+	// set other nft metadata info
 	logs.Info("address of user", user, "kind of creating", kind)
 	logs.Debug("name",nftName)
 	logs.Debug("shortDesc",shortDesc)
@@ -299,6 +322,8 @@ func (this *UploadController) Upload() {
 		NumSold:      0,   // already sold
 		Active:       true,
 		ActiveTicker: ACTIVE_TICKER,
+		OwnerUserName: ownerName,
+		OwnerWalletAddress: user,
 	}
 	_, err = o.Insert(marketInfo)
 	if err != nil {

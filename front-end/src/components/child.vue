@@ -1,3 +1,4 @@
+<script src="../router.js"></script>
 <template>
   <div>
     <body id="page-top">

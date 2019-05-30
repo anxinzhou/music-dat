@@ -49,6 +49,18 @@
             ></el-input>
           </div>
           <div class="description">
+            <span>Price:</span>
+            <el-input placeholder="Price" v-model.number="datPrice" label="Price"
+                      @change="datPriceChange"
+            ></el-input>
+          </div>
+          <div class="description">
+            <span>Number:</span>
+            <el-input placeholder="Number" v-model.number="datNumber" label="Number"
+                      @change="datNumberChange"
+            ></el-input>
+          </div>
+          <div class="description">
             <span>Short Description:</span>
             <el-input placeholder="Short Description" type="textarea" v-model="datShortDesc" label="Name"
                       @change="datShortDescChange"
@@ -200,15 +212,18 @@
             <el-table
               :data="tableData.slice((currentPage-1)*pagesize,currentPage*pagesize)"
               stripe
-              style="width: 100%"
-              @row-click="rowChild">
-              <el-table-column :min-width="40"
-                               prop="nftType"
-                               label="Type">
-              </el-table-column>
+              style="width: 100%">
               <el-table-column :min-width="60"
                                prop="nftLdefIndex"
                                label="Def Index">
+                <template slot-scope="scope">
+                  <router-link :to="{name:'Child',params:{nftLdefIndex:scope.row.nftLdefIndex}}"
+                          class="buttonText"><a>{{scope.row.nftLdefIndex}}</a></router-link>
+                </template>
+              </el-table-column>
+              <el-table-column :min-width="40"
+                               prop="nftType"
+                               label="Type">
               </el-table-column>
               <el-table-column :min-width="60"
                                prop="nftName"
@@ -257,6 +272,55 @@
         </el-col>
       </el-row>
 
+<!--    transaction history-->
+      <el-row class="marketPlaceTitle">
+        <el-col :offset="1">
+          Market Place Transaction History
+        </el-col>
+      </el-row>
+      <el-row :gutter="20">
+        <el-col :span=24 :offset="1">
+          <div class="upload-file-container">
+            <el-table
+              :data="mkTxHistoryTableData.slice((mkTxHistoryCurrentPage-1)*mkTxHistoryPagesize,mkTxHistoryCurrentPage*mkTxHistoryPagesize)"
+              stripe
+              style="width: 100%"
+              @cell-click="txInfoHandler">
+              <el-table-column :min-width="40"
+                               prop="transactionAddress"
+                               label="Tx Address">
+                <template slot-scope="scope">
+                  <a :href="'https://kovan.etherscan.io/tx/'+scope.row.transactionAddress"
+                     class="buttonText">{{truncateTxAddress(scope.row.transactionAddress)}}...</a>
+                </template>
+              </el-table-column>
+              <el-table-column :min-width="60"
+                               prop="nftLdefIndex"
+                               label="Def Index">
+              </el-table-column>
+              <el-table-column :min-width="60"
+                               prop="buyer"
+                               label="Buyer">
+              </el-table-column>
+              <el-table-column :min-width="60"
+                               prop="seller"
+                               label="Seller">
+              </el-table-column>
+            </el-table>
+            <div style="text-align: center;margin-top: 30px;">
+              <el-pagination
+                background
+                :page-size=mkTxHistoryPagesize
+                layout="prev, pager, next"
+                :total="mkTxHistoryTotal"
+                @current-change="current_change">
+              </el-pagination>
+            </div>
+
+          </div>
+        </el-col>
+      </el-row>
+
     </section>
   </div>
 </template>
@@ -274,6 +338,8 @@
         avatarLongDesc: '',
         datLongDesc: '',
         otherLongDesc: '',
+        datPrice:0,
+        datNumber:0,
         fileList: [],
         uploadDatPath: undefined,
         uploadDatAdditionalData: undefined,
@@ -288,6 +354,10 @@
         total: 0,
         pagesize: 10,
         currentPage: 1,
+        mkTxHistoryTableData: [],
+        mkTxHistoryPagesize: 10,
+        mkTxHistoryCurrentPage: 1,
+        mkTxHistoryTotal:0,
         nftList: undefined,
         nickName: undefined,
         avatarUrl: undefined,
@@ -311,6 +381,9 @@
       }
     },
     methods: {
+      truncateTxAddress: function(txAddress) {
+          return txAddress.slice(0,20)
+      },
       submitDat: function () {
         this.$refs.uploadDat.submit();
       },
@@ -380,6 +453,17 @@
           console.log(res.data.nftTranData);
         }).catch(console.log);
       },
+      getMarketHistoryList: function(address) {
+        this.axios.get(`${this.httpPath}/market/transactionHistory/${address}`).then(res => {
+          for (let i = res.data.nftPurchaseInfo.length - 1; i >= 0; --i) {
+            let purchaseInfo = res.data.nftPurchaseInfo[i];
+            // let el = this.setMarketTableFromResponse(purchaseInfo);
+            this.mkTxHistoryTableData.push(purchaseInfo);
+          }
+          this.mkTxHistoryTotal = this.mkTxHistoryTableData.length;
+          console.log(res.data.mkTxHistoryTableData);
+        }).catch(console.log);
+      },
       current_change: function (currentPage) {
         this.currentPage = currentPage
       },
@@ -401,6 +485,12 @@
       datLongDescChange: function () {
         this.$set(this.uploadDatAdditionalData, 'longDesc', this.datLongDesc);
       },
+      datNumberChange: function() {
+        this.$set(this.uploadDatAdditionalData, 'number', this.datNumber);
+      },
+      datPriceChange: function() {
+        this.$set(this.uploadDatAdditionalData, 'price', this.datPrice);
+      },
       otherNameChange: function () {
         this.$set(this.uploadOtherAdditionalData, 'nftName', this.otherName);
       },
@@ -410,11 +500,8 @@
       otherLongDescChange: function () {
         this.$set(this.uploadOtherAdditionalData, 'longDesc', this.otherLongDesc);
       },
-      rowChild: function (row, col, e) {
-        let nftLdefIndex = row.nftLdefIndex;
-        if (row.nftType !== "Other") {
-          this.$router.push(`/child/${nftLdefIndex}`);
-        }
+      txInfoHandler: function(row, col ,e) {
+        // https://kovan.etherscan.io/tx/
       },
       previewMusicAvatar: function (file, fileList) {
         if (file !== undefined) {
@@ -440,6 +527,7 @@
       this.uploadAvatarPath = this.httpPath + "/file/avatar";
       this.uploadOtherPath = this.httpPath + "/file/other";
       this.total = this.tableData.length / this.pagesize * 10;
+      this.mkTxHistoryTotal = this.mkTxHistoryTableData.length / this.mkTxHistoryPagesize * 10;
 
       let uploadBaseObject = {
         address: this.address,
@@ -453,6 +541,7 @@
       this.getTotalNFT(address);
       // get nft list of user from market place
       this.getNFTList(address);
+      this.getMarketHistoryList(address);
 
       // set default select item
       this.selectedType = this.uploadOptions[0].type;

@@ -42,6 +42,8 @@ func init() {
 	childrenOfNFTController.C = chainHelper
 	numOfChildrenController:= &http.NumOfChildrenController{}
 	numOfChildrenController.C = chainHelper
+	marketTransactionHistoryController:= &http.MarketTransactionHistoryController{}
+	marketTransactionHistoryController.C = chainHelper
 
 	beego.Router("/", &http.MainController{})
 	beego.Router("/ws", wsHandler)
@@ -53,6 +55,7 @@ func init() {
 	beego.Router("/nfts/:parentIndex:string/children", childrenOfNFTController)
 	beego.Router("/nfts/:parentIndex:string/balance", numOfChildrenController)
 	beego.Router("/wallet",&http.ImportWalletController{},"post:ImportWallet")
+	beego.Router("/market/transactionHistory/:user:string",marketTransactionHistoryController,"get:MarketTransactionHistory")
 }
 
 
