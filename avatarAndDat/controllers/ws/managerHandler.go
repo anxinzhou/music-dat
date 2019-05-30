@@ -215,103 +215,144 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 		NftTranData: responseNftTranData,
 	}
 
-	toBeInsert := make([]*models.StorePurchaseHistroy, len(nftRequestData))
-	//toBeDelete:=make([]*models.NftMarketTable,len(nftRequestData))
-	// send transaction
+	type transferPayLoad struct {
+		TokenId *big.Int
+		PurchaseId string
+	}
+	toBeTransfer:= make([]*transferPayLoad,len(nftRequestData))
 	o := orm.NewOrm()
 	o.Begin() // begin transaction
-	var wg sync.WaitGroup
+	for i,itemDetail:= range nftRequestData {
+		purchaseId := strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10)
+		h := md5.New()
+		io.WriteString(h, purchaseId)
+		purchaseId = new(big.Int).SetBytes(h.Sum(nil)[:8]).String()
+		nftLdefIndex := itemDetail.NftLdefIndex
+		if len(nftLdefIndex)<=1 {
+			err:=errors.New("length of nftLdefIndex less than 1")
+			logs.Emergency(err.Error())
+			m.errorHandler(c,bq,err)
+			return
+		}
+		tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
+		toBeTransfer[i] = &transferPayLoad{
+			TokenId:tokenId,
+			PurchaseId:purchaseId,
+		}
+		totalPaid := itemDetail.NftValue
+		activeTicker := itemDetail.ActiveTicker
+		nftName := itemDetail.NftName
+		ownerAddress, err := m.chainHandler.Contract.(*nft.NFT).OwnerOf(tokenId)
+		if err != nil {
+			o.Rollback()
+			logs.Emergency(err.Error())
+			m.errorHandler(c,bq,err)
+			return
+		}
+		logs.Debug("purchase owner address", ownerAddress)
+		// delete from market user table if balance is zero
+		_, err = o.QueryTable("market_user_table").Filter("wallet_id", ownerAddress).Update(
+			orm.Params{
+				"count": orm.ColValue(orm.ColAdd, -1),
+			},
+		)
+		if err != nil {
+			o.Rollback()
+			logs.Emergency(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		status := PURCHASE_PENDING
+		nftPurchaseResponseInfo := &NftPurchaseResponseInfo{
+			NftLdefIndex: nftLdefIndex,
+			Status:       status,
+		}
+		responseNftTranData[i] = nftPurchaseResponseInfo
+		storeInfo := &models.StorePurchaseHistroy{
+			PurchaseId:         purchaseId,
+			AsId:               asId,
+			WalletId:           walletAddress,
+			NftName:            nftName,
+			TotalPaid:          totalPaid,
+			NftLdefIndex:       nftLdefIndex,
+			ActiveTicker:       activeTicker,
+			Status:             status,
+		}
+		_,err=o.Insert(storeInfo)
+		if err!=nil {
+			o.Rollback()
+			logs.Emergency(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+		toBeDelete := &models.NftMarketTable{
+			NftLdefIndex: nftLdefIndex,
+		}
+		//delete from marketplace
+		num, err := o.Delete(toBeDelete)
+		if err != nil {
+			o.Rollback()
+			logs.Emergency("can not delete nft ldef:", nftLdefIndex)
+			m.errorHandler(c, bq, err)
+			return
+		}
+		logs.Warn("delete from marketplace table, nftldef:", nftLdefIndex, "num", num)
+	}
+	o.Commit()
+
+	//TODO using message queue to deal with pending transaction
+	wg:= sync.WaitGroup{}
 	for i, itemDetail := range nftRequestData {
 		wg.Add(1)
 		go func(i int, itemDetail *PurchaseNftInfo) {
 			defer wg.Done()
-			// generate purchase id
-			purchaseId := strconv.FormatInt(time.Now().UnixNano()|rand2.Int63(), 10)
-			h := md5.New()
-			io.WriteString(h, purchaseId)
-			purchaseId = new(big.Int).SetBytes(h.Sum(nil)[:8]).String()
-			nftLdefIndex := itemDetail.NftLdefIndex
-			tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
-			totalPaid := itemDetail.NftValue
-			activeTicker := itemDetail.ActiveTicker
-			nftName := itemDetail.NftName
+			o:= orm.NewOrm()
+			o.Begin()
+			payload:= toBeTransfer[i]
+			tokenId:= payload.TokenId
+			purchaseId:= payload.PurchaseId
 			ownerAddress, err := m.chainHandler.Contract.(*nft.NFT).OwnerOf(tokenId)
 			if err != nil {
-				o.Rollback()
 				logs.Emergency(err.Error())
-				m.errorHandler(c, bq, err)
 				return
 			}
-			logs.Debug("purchase owner address", ownerAddress)
-			// delete from market user table if balance is zero
-			_, err = o.QueryTable("market_user_table").Filter("wallet_id", ownerAddress).Update(
-				orm.Params{
-					"count": orm.ColValue(orm.ColAdd, -1),
-				},
-			)
-			if err != nil {
-				o.Rollback()
-				logs.Emergency(err.Error())
-				m.errorHandler(c, bq, err)
-				return
-			}
-			tx, txErr := m.chainHandler.ManagerAccount.SendFunction2(m.chainHandler.Contract,
+			tx,err:=  m.chainHandler.ManagerAccount.PackTransaction(
+				m.chainHandler.Contract,
 				nil,
 				nft.FuncDelegateTransfer,
 				common.HexToAddress(ownerAddress),
 				common.HexToAddress(walletAddress),
 				tokenId)
-			err = <-txErr
-			var status int
-			if err != nil {
-				status = PURCHASE_PENDING
-				logs.Debug("transfer token unsuccessful", tokenId, "to", walletAddress, "from", ownerAddress)
-			} else {
-				status = PURCHASE_CONFIRMED
-				logs.Debug("transfer token", tokenId, "to", walletAddress, "from", ownerAddress)
+			if err!=nil {
+				logs.Emergency(err.Error())
+				return
 			}
-			nftPurchaseResponseInfo := &NftPurchaseResponseInfo{
-				NftLdefIndex: nftLdefIndex,
-				Status:       status,
-			}
-			responseNftTranData[i] = nftPurchaseResponseInfo
+			tx,err = m.chainHandler.ManagerAccount.SignTransaction(tx)
+			status := PURCHASE_CONFIRMED
 			storeInfo := &models.StorePurchaseHistroy{
 				PurchaseId:         purchaseId,
-				AsId:               asId,
-				WalletId:           walletAddress,
 				TransactionAddress: tx.Hash().Hex(),
-				NftName:            nftName,
-				TotalPaid:          totalPaid,
-				NftLdefIndex:       nftLdefIndex,
-				ActiveTicker:       activeTicker,
 				Status:             status,
 			}
-			toBeInsert[i] = storeInfo
-			toBeDelete := &models.NftMarketTable{
-				NftLdefIndex: nftLdefIndex,
+			_,err =o.Update(storeInfo,"transaction_address","status")
+			if err!=nil {
+				o.Rollback()
+				logs.Emergency(err.Error())
+				return
 			}
-			//delete from marketplace
-			num, err := o.Delete(toBeDelete)
+			logs.Warn("transfer token", tokenId, "to", walletAddress, "from", ownerAddress)
+			txErr := m.chainHandler.ManagerAccount.SendTransaction(tx)
+			err = <-txErr
 			if err != nil {
 				o.Rollback()
-				logs.Emergency("can not delete nft ldef:", nftLdefIndex)
-			} else {
-				logs.Warn("delete from marketplace table, nftldef:", nftLdefIndex, "num", num)
+				logs.Emergency(err.Error())
+				return
 			}
+			o.Commit()
+			responseNftTranData[i].Status = status
 		}(i, itemDetail)
 	}
 	wg.Wait()
-	logs.Debug("length to be insert", len(toBeInsert))
-	num, err := o.InsertMulti(len(toBeInsert), toBeInsert)
-	if err != nil {
-		o.Rollback()
-		logs.Error(err.Error())
-		m.errorHandler(c, bq, err)
-		return
-	}
-
-	logs.Info("insert num", num, "to purchase table")
-	o.Commit()
 	m.wrapperAndSend(c, bq, res)
 }
 

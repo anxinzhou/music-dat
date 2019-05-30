@@ -8,7 +8,6 @@ import (
 	"github.com/xxRanger/blockchainUtil/contract/nft"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"math/big"
-	"sync"
 )
 
 type NftBalanceController struct {
@@ -89,7 +88,7 @@ func (this *NftListController) Get() {
 		nftLdefIndexs[i] = ldef
 	}
 	nftTranResponseData := make([]*nftInfoListRes, 0, len(nftList))
-	o:= orm.NewOrm()
+	o := orm.NewOrm()
 	for _, nftLdefIndex := range nftLdefIndexs {
 		r := o.Raw(`
 		select ni.nft_type, ni.nft_name,
@@ -113,7 +112,7 @@ func (this *NftListController) Get() {
 			}
 		}
 
-		thumbnail:= PathPrefixOfNFT(nftResponseInfo.SupportedType,PATH_KIND_MARKET)
+		thumbnail := PathPrefixOfNFT(nftResponseInfo.SupportedType, PATH_KIND_MARKET)
 		nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
 		nftTranResponseData = append(nftTranResponseData, &nftResponseInfo)
 	}
@@ -131,13 +130,14 @@ type RewardController struct {
 }
 
 func (this *RewardController) RewardDat() {
+	// only reward one dat now
 	user := this.Ctx.Input.Param(":user")
-	o:= orm.NewOrm()
+	o := orm.NewOrm()
 	o.Begin()
-	qs := o.QueryTable("nft_market_table").Filter("nft_ldef_index__contains","M").Limit(1)
-	var mks []models.NftMarketTable
+	qs := o.QueryTable("nft_market_table").Filter("nft_ldef_index__contains", "M").Limit(1)
+	var mk models.NftMarketTable
 	rewardAccount := 1
-	_, err := qs.Limit(rewardAccount).All(&mks)
+	err := qs.Limit(rewardAccount).One(&mk)
 	if err != nil {
 		o.Rollback()
 		logs.Error(err.Error())
@@ -165,18 +165,10 @@ func (this *RewardController) RewardDat() {
 	}
 
 	var res response
-	nftInfoList := make([]*nftInfoQuery, len(mks))
+	nftInfoList := make([]*nftInfoQuery, rewardAccount)
 	res.NftTranData = nftInfoList
-
-
-	wg := sync.WaitGroup{}
-	for i, mk := range mks {
-		wg.Add(1)
-		go func(i int, mk models.NftMarketTable) {
-			defer wg.Done()
-			nftLdefIndex := mk.NftLdefIndex
-
-			r := o.Raw(`
+	nftLdefIndex := mk.NftLdefIndex
+	r := o.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
 		ni.nft_charac_id,na.short_description, na.long_description,mp.icon_file_name,mk.qty from
@@ -185,54 +177,56 @@ func (this *RewardController) RewardDat() {
 		nft_info_table as ni,
 		nft_item_admin as na
 		where mk.nft_ldef_index = mp.nft_ldef_index and mk.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id and  ni.nft_ldef_index = ? `, nftLdefIndex)
-			var nftResponseInfo nftInfoQuery
-			err = r.QueryRow(&nftResponseInfo)
-			if err != nil {
-				o.Rollback()
-				logs.Error(err.Error())
-				sendError(&this.Controller, err, 500)
-				return
-			}
-			nftType:= nftResponseInfo.SupportedType
-			thumbnail := PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
-			nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
-			//nftResponseInfo.Thumbnail = thumbnail + "music.png"
-
-			nftInfoList[i] = &nftResponseInfo
-			//_, err = o.Delete(&mk)  //TODO comment for testing
-			//if err != nil {
-			//	o.Rollback()
-			//	logs.Error(err.Error())
-			//	sendError(&this.Controller, err, 500)
-			//	return
-			//}
-
-			tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
-
-			nftContract := this.C.smartContract.(*nft.NFT)
-			ownerAddress, err := nftContract.OwnerOf(tokenId)
-			if err != nil {
-				o.Rollback()
-				logs.Error(err.Error())
-				sendError(&this.Controller, err, 500)
-				return
-			}
-			_, txErr := this.C.account.SendFunction2(nftContract,
-				nil,
-				nft.FuncDelegateTransfer,
-				common.HexToAddress(ownerAddress),
-				common.HexToAddress(user),
-				tokenId)    // TODO redis to cache unsuccessful transaction
-			err = <-txErr
-			if err != nil {
-				o.Rollback()
-				logs.Error(err.Error())
-				sendError(&this.Controller, err, 500)
-				return
-			}
-		}(i, mk)
+	var nftResponseInfo nftInfoQuery
+	err = r.QueryRow(&nftResponseInfo)
+	if err != nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 500)
+		return
 	}
-	wg.Wait()
+	nftType := nftResponseInfo.SupportedType
+	thumbnail := PathPrefixOfNFT(nftType, PATH_KIND_MARKET)
+	nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
+	//nftResponseInfo.Thumbnail = thumbnail + "music.png"
+
+	nftInfoList[0] = &nftResponseInfo
+	//_, err = o.Delete(&mk)  //TODO comment for testing
+	//if err != nil {
+	//	o.Rollback()
+	//	logs.Error(err.Error())
+	//	sendError(&this.Controller, err, 500)
+	//	return
+	//}
+	if len(nftLdefIndex)<=1 {
+		o.Rollback()
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
+
+	nftContract := this.C.smartContract.(*nft.NFT)
+	ownerAddress, err := nftContract.OwnerOf(tokenId)
+	if err != nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	_, txErr := this.C.account.SendFunction2(nftContract,
+		nil,
+		nft.FuncDelegateTransfer,
+		common.HexToAddress(ownerAddress),
+		common.HexToAddress(user),
+		tokenId) // TODO redis to cache unsuccessful transaction
+	err = <-txErr
+	if err != nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 500)
+		return
+	}
 	o.Commit()
 	this.Data["json"] = res
 	this.ServeJSON()
@@ -248,7 +242,7 @@ type NumOfChildrenRes struct {
 
 func (this *NumOfChildrenController) Get() {
 	parentIndex := this.Ctx.Input.Param(":parentIndex")
-	o:= orm.NewOrm()
+	o := orm.NewOrm()
 	r := o.Raw(`
 		select count(a.nft_ldef_index) as num 
 		from nft_mapping_table as a,
@@ -258,18 +252,18 @@ func (this *NumOfChildrenController) Get() {
 		Num int
 	}
 	var queryResult CountQuery
-	err:=r.QueryRow(&queryResult)
-	if err!=nil {
+	err := r.QueryRow(&queryResult)
+	if err != nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller, err, 500)
 		return
 	}
 
-	res:=&NumOfChildrenRes{
+	res := &NumOfChildrenRes{
 		Count: queryResult.Num,
 	}
 
-	this.Data["json"]=res
+	this.Data["json"] = res
 	this.ServeJSON()
 }
 
@@ -279,7 +273,7 @@ type ChildrenOfNFTController struct {
 
 func (this *ChildrenOfNFTController) Get() {
 	parentIndex := this.Ctx.Input.Param(":parentIndex")
-	o:= orm.NewOrm()
+	o := orm.NewOrm()
 	r := o.Raw(`
 		select ni.nft_type, ni.nft_name,
 		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
@@ -289,8 +283,8 @@ func (this *ChildrenOfNFTController) Get() {
 		nft_info_table as ni,
 		nft_item_admin as na
 		where mp.nft_parent_ldef= ? and mk.nft_ldef_index = mp.nft_ldef_index and mp.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id`, parentIndex)
-	nftResponseInfo:= []*nftInfoListRes{}
-	_,err := r.QueryRows(&nftResponseInfo)
+	nftResponseInfo := []*nftInfoListRes{}
+	_, err := r.QueryRows(&nftResponseInfo)
 	if err != nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller, err, 500)
@@ -298,7 +292,7 @@ func (this *ChildrenOfNFTController) Get() {
 	}
 
 	thumbnail := PathPrefixOfNFT(TYPE_NFT_OTHER, PATH_KIND_MARKET)
-	for _,nftInfo:= range nftResponseInfo {
+	for _, nftInfo := range nftResponseInfo {
 		nftInfo.Thumbnail = thumbnail + nftInfo.Thumbnail
 	}
 	var res nftListResponse
