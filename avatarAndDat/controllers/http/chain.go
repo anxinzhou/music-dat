@@ -339,7 +339,7 @@ func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
 		ni:= &NftPurchaseInfo{
 			NftLdefIndex: v.NftLdefIndex,
 			Buyer:v.AsId,
-			Seller:v.AsId,
+			Seller:v.OwnerAsId,
 			TransactionAddress:v.TransactionAddress,
 		}
 		nftPurchaseInfo[i] = ni

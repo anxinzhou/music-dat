@@ -89,7 +89,7 @@ var purchaseConfirm = {
             "activeTicker": "berry", //string
             "nftLifeIndex": 7, // int
             "nftPowerIndex": 23, //int
-            "nftLdefIndex": "A133303755737745", // string
+            "nftLdefIndex": "A98435070792098", // string
             "nftCharacId": "def", //string
             "qty": 100, // int
         },
