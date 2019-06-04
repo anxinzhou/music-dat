@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,24 +18,24 @@ type nftBalanceResponse struct {
 }
 
 func (this *NftBalanceController) Get() {
-	user := this.Ctx.Input.Param(":user")
-	nftContract, ok := this.C.smartContract.(*nft.NFT)
-	logs.Debug("contract address", nftContract.Address())
-	if !ok {
-		err := errors.New("can not convert smart contract")
-		sendError(&this.Controller, err, 500)
-		return
+	nickname := this.Ctx.Input.Param(":nickname")
+	o:=orm.NewOrm()
+	userMkInfo:=models.MarketUserTable {
+		Nickname:nickname,
 	}
-	logs.Debug("user", user, "query balance")
-	count, err := nftContract.BalanceOf(common.HexToAddress(user))
-	if err != nil {
+	count:=0
+	logs.Debug("nickname",nickname,"query balance")
+	err:=o.Read(&userMkInfo)
+	if err!=nil && err!= orm.ErrNoRows {
 		logs.Error(err.Error())
 		sendError(&this.Controller, err, 500)
 		return
 	}
-	logs.Debug("balance of user", count)
+
+	count = userMkInfo.Count
+
 	this.Data["json"] = &nftBalanceResponse{
-		Count: int(count.Int64()),
+		Count: count,
 	}
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 	this.ServeJSON()
@@ -66,12 +65,12 @@ type nftListResponse struct {
 }
 
 func (this *NftListController) Get() {
-	user := this.Ctx.Input.Param(":user")
-	logs.Debug("user", user, "query nft list")
+	nickname := this.Ctx.Input.Param(":nickname")
+	logs.Debug("user", nickname, "query nft list")
 	o:=orm.NewOrm()
 	var mkInfos []models.NftMarketTable
 	num,err:=o.QueryTable("nft_market_table").
-		Filter("owner_wallet_address",user).
+		Filter("seller_nickname",nickname).
 		All(&mkInfos,"nft_ldef_index")
 	if err!=nil {
 		if err == orm.ErrNoRows {
@@ -127,15 +126,57 @@ type RewardController struct {
 	ContractController
 }
 
+type nftInfoQuery struct {
+	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
+	NftName       string `json:"nftName"`
+	NftValue      int    `json:"nftValue" orm:"column(price)"`
+	ActiveTicker  string `json:"activeTicker"`
+	NftLifeIndex  int64  `json:"nftLifeIndex"`
+	NftPowerIndex int64  `json:"nftPowerIndex"`
+	NftLdefIndex  string `json:"nftLdefIndex"`
+	NftCharacId   string `json:"nftCharacId"`
+	ShortDesc     string `json:"shortDesc" orm:"column(short_description)"`
+	LongDesc      string `json:"longDesc" orm:"column(long_description)"`
+	Thumbnail     string `json:"thumbnail" orm:"column(icon_file_name)"`
+	Qty           int    `json:"qty"`
+	SellerWalletId string
+	SellerNickname string
+}
+
+type rewardNFTInfo struct {
+	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
+	NftName       string `json:"nftName"`
+	NftValue      int    `json:"nftValue" orm:"column(price)"`
+	ActiveTicker  string `json:"activeTicker"`
+	NftLifeIndex  int64  `json:"nftLifeIndex"`
+	NftPowerIndex int64  `json:"nftPowerIndex"`
+	NftLdefIndex  string `json:"nftLdefIndex"`
+	NftCharacId   string `json:"nftCharacId"`
+	ShortDesc     string `json:"shortDesc" orm:"column(short_description)"`
+	LongDesc      string `json:"longDesc" orm:"column(long_description)"`
+	Thumbnail     string `json:"thumbnail" orm:"column(icon_file_name)"`
+	Qty           int    `json:"qty"`
+}
+
+type RewardResponse struct {
+	NftTranData []*rewardNFTInfo `json:"nftTranData"`
+}
+
 func (this *RewardController) RewardDat() {
 	// only reward one dat now
-	user := this.Ctx.Input.Param(":user")
+	nickname := this.Ctx.Input.Param(":nickname")
+	walletAddress,err:= models.WalletIdOfNickname(nickname)
+	if err!=nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 500)
+		return
+	}
 	o := orm.NewOrm()
 	o.Begin()
-	qs := o.QueryTable("nft_market_table").Filter("nft_ldef_index__contains", "M").Limit(1)
+	qs := o.QueryTable("nft_market_table").Filter("nft_ldef_index__contains", "M").Filter("allow_airdrop",true).Limit(1)
 	var mk models.NftMarketTable
 	rewardAccount := 1
-	err := qs.Limit(rewardAccount).One(&mk)
+	err = qs.Limit(rewardAccount).One(&mk)
 	if err != nil {
 		o.Rollback()
 		logs.Error(err.Error())
@@ -143,27 +184,8 @@ func (this *RewardController) RewardDat() {
 		return
 	}
 
-	type nftInfoQuery struct {
-		SupportedType string `json:"supportedType" orm:"column(nft_type)"`
-		NftName       string `json:"nftName"`
-		NftValue      int    `json:"nftValue" orm:"column(price)"`
-		ActiveTicker  string `json:"activeTicker"`
-		NftLifeIndex  int64  `json:"nftLifeIndex"`
-		NftPowerIndex int64  `json:"nftPowerIndex"`
-		NftLdefIndex  string `json:"nftLdefIndex"`
-		NftCharacId   string `json:"nftCharacId"`
-		ShortDesc     string `json:"shortDesc" orm:"column(short_description)"`
-		LongDesc      string `json:"longDesc" orm:"column(long_description)"`
-		Thumbnail     string `json:"thumbnail" orm:"column(icon_file_name)"`
-		Qty           int    `json:"qty"`
-	}
-
-	type response struct {
-		NftTranData []*nftInfoQuery `json:"nftTranData"`
-	}
-
-	var res response
-	nftInfoList := make([]*nftInfoQuery, rewardAccount)
+	var res RewardResponse
+	nftInfoList := make([]*rewardNFTInfo, rewardAccount)
 	res.NftTranData = nftInfoList
 	nftLdefIndex := mk.NftLdefIndex
 	r := o.Raw(`
@@ -188,14 +210,53 @@ func (this *RewardController) RewardDat() {
 	nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
 	//nftResponseInfo.Thumbnail = thumbnail + "music.png"
 
-	nftInfoList[0] = &nftResponseInfo
-	//_, err = o.Delete(&mk)  //TODO comment for testing
-	//if err != nil {
-	//	o.Rollback()
-	//	logs.Error(err.Error())
-	//	sendError(&this.Controller, err, 500)
-	//	return
-	//}
+	nftInfoList[0] = &rewardNFTInfo{
+		SupportedType: nftResponseInfo.SupportedType,
+		NftName: nftResponseInfo.NftName,
+		NftValue: nftResponseInfo.NftValue,
+		ActiveTicker: nftResponseInfo.ActiveTicker,
+		NftLifeIndex: nftResponseInfo.NftLifeIndex,
+		NftPowerIndex: nftResponseInfo.NftPowerIndex,
+		NftLdefIndex: nftResponseInfo.NftLdefIndex,
+		NftCharacId: nftResponseInfo.NftCharacId,
+		ShortDesc: nftResponseInfo.ShortDesc,
+		LongDesc: nftResponseInfo.LongDesc,
+		Thumbnail: nftResponseInfo.Thumbnail,
+		Qty:          nftResponseInfo.Qty,
+	}
+	_, err = o.Delete(&mk)  //TODO comment for testing
+	if err != nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 500)
+		return
+	}
+
+	sellerNickname:= nftResponseInfo.SellerNickname
+	sellerWalletAddress:= nftResponseInfo.SellerWalletId
+	// add count for buyer
+	_,err = o.QueryTable("market_user_table").Filter("nickname",nickname).Update(orm.Params{
+		"count": orm.ColValue(orm.ColAdd,1),
+	})
+	if err!=nil {
+		o.Rollback()
+		logs.Emergency("can not add count for nickname:", nickname)
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	logs.Warn("add count in market table for",nickname)
+	// reduce count for sender
+	_,err = o.QueryTable("market_user_table").Filter("nickname",sellerNickname).Update(orm.Params{
+		"count": orm.ColValue(orm.ColMinus,1),
+	})
+	if err!=nil {
+		o.Rollback()
+		logs.Emergency("can not reduce count for nickname:", sellerNickname)
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	logs.Warn("reduce count in market table for",sellerNickname)
+
 	if len(nftLdefIndex)<=1 {
 		o.Rollback()
 		logs.Error(err.Error())
@@ -205,18 +266,11 @@ func (this *RewardController) RewardDat() {
 	tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
 
 	nftContract := this.C.smartContract.(*nft.NFT)
-	ownerAddress, err := nftContract.OwnerOf(tokenId)
-	if err != nil {
-		o.Rollback()
-		logs.Error(err.Error())
-		sendError(&this.Controller, err, 500)
-		return
-	}
 	_, txErr := this.C.account.SendFunction2(nftContract,
 		nil,
 		nft.FuncDelegateTransfer,
-		common.HexToAddress(ownerAddress),
-		common.HexToAddress(user),
+		common.HexToAddress(sellerWalletAddress),
+		common.HexToAddress(walletAddress),
 		tokenId) // TODO redis to cache unsuccessful transaction
 	err = <-txErr
 	if err != nil {
@@ -315,14 +369,14 @@ type MarketHistoryResponse struct {
 }
 
 func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
-	user:= this.Ctx.Input.Param(":transactionHistory")
+	nickname:= this.Ctx.Input.Param(":nickname")
 	var purchaseHistory [] models.StorePurchaseHistroy
 	o:=orm.NewOrm()
 	cond:= orm.NewCondition()
-	cond.And("wallet_id",user).Or("owner_wallet_id",user)
+	cond = cond.And("seller_nickname",nickname).Or("buyer_nickname",nickname)
 	num,err:=o.QueryTable("store_purchase_histroy").
 		SetCond(cond).
-		All(&purchaseHistory,"as_id","owner_as_id","transaction_address","nft_ldef_index")
+		All(&purchaseHistory,"buyer_nickname","seller_nickname","transaction_address","nft_ldef_index")
 	if err!=nil {
 		if err==orm.ErrNoRows {
 			purchaseHistory = make([]models.StorePurchaseHistroy,0)
@@ -338,13 +392,13 @@ func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
 	for i,v:=range purchaseHistory {
 		ni:= &NftPurchaseInfo{
 			NftLdefIndex: v.NftLdefIndex,
-			Buyer:v.AsId,
-			Seller:v.OwnerAsId,
+			Buyer:v.BuyerNickname,
+			Seller:v.SellerNickname,
 			TransactionAddress:v.TransactionAddress,
 		}
 		nftPurchaseInfo[i] = ni
 	}
-	logs.Debug("purchase history record of",user,"has",num,"record")
+	logs.Debug("purchase history record of",nickname,"has",num,"record")
 	res:=&MarketHistoryResponse{
 		NftPurchaseInfo: nftPurchaseInfo,
 	}

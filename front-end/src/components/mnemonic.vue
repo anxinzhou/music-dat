@@ -48,9 +48,9 @@
         let httpPath =  this.$store.state.config.httpPath;
         this.mnemonic = this.mnemonic.replace(/\s+/g,' ').replace(/^\s+|\s+$/,'');
         let account = createWallet(this.mnemonic);
-        let username = this.$cookies.get('username');
+        let nickname = this.$cookies.get('nickname');
         this.axios.post(`${httpPath}/wallet`,{
-          username: username,
+          nickname: nickname,
           walletId: account.address,
         }).then(res=>{
           this.account = account;

@@ -47,13 +47,12 @@
           password: this.password,
         }).then(res => {
           let avatarUrl = res.data.avatarUrl;
-          let nickName = res.data.nickName;
+          let nickname = res.data.nickname;
           let accessToken = res.data.accessToken;
-          this.$cookies.set("username",this.username);
           this.$cookies.set("avatarUrl",avatarUrl);
-          this.$cookies.set("nickName",nickName);
+          this.$cookies.set("nickname",nickname);
           this.$cookies.set("access-token", accessToken);
-          this.$router.replace('/mnemonic')
+          this.$router.replace('/mnemonic');
         }).catch(err=>{
           if (err.response.status === 401) {
             this.$store.state.notifyError("wrong user name or password");

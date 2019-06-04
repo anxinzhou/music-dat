@@ -57,6 +57,10 @@ func (m *Manager) Init() {
 	m.RegisterHandler("nft_purchase_history",m.NFTPurchaseHistoryHandler)
 	m.RegisterHandler("nft_shopping_cart_change", m.ShoppingCartChangeHandler)
 	m.RegisterHandler("nft_shopping_cart_list",m.ShoppingCartListHandler)
+	m.RegisterHandler("nft_transfer",m.NFTTransferHandler)
+	m.RegisterHandler("bind_wallet",m.BindWalletHandler)
+	m.RegisterHandler("set_nickname",m.SetNicknameHandler)
+	m.RegisterHandler("is_nickname_duplicated",m.IsNicknameDuplicatedHandler)
 }
 
 //func (m *Manager) DisPatchMsg() {

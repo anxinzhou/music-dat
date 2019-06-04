@@ -97,9 +97,9 @@ func ReadFileFromRequest(file multipart.File) ([]byte, error){
 }
 
 // one to one mapping
-func UserIconPathFromUserName(username string) string {
+func UserIconPathFromNickname(nickname string) string {
 	h:=md5.New()
-	io.WriteString(h,username)
+	io.WriteString(h,nickname)
 	return hex.EncodeToString(h.Sum(nil))+".jpg"
 }
 

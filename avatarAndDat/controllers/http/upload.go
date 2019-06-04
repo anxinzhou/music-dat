@@ -69,6 +69,7 @@ func (this *UploadController) Upload() {
 		typeId string
 		qty int
 		price int
+		allowAirdrop bool
 	)
 
 	// set nftmetadata from website
@@ -92,8 +93,21 @@ func (this *UploadController) Upload() {
 		qty= 100
 	}
 
-	user := this.GetString("address")
-	ownerName:= this.GetString("username")
+	allowAirdrop,err = this.GetBool("allowAirdrop")
+	if err!=nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+
+	nickname:= this.GetString("nickname")
+	walletAddress,err := models.WalletIdOfNickname(nickname)
+	if err!=nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+
 	//// get input from user
 	nftName = this.GetString("nftName")
 	shortDesc = this.GetString("shortDesc")
@@ -217,7 +231,7 @@ func (this *UploadController) Upload() {
 	}
 
 	// set other nft metadata info
-	logs.Info("address of user", user, "kind of creating", kind)
+	logs.Info("address of user", walletAddress, "kind of creating", kind)
 	logs.Debug("name",nftName)
 	logs.Debug("shortDesc",shortDesc)
 	logs.Debug("longDesc",longDesc)
@@ -278,7 +292,7 @@ func (this *UploadController) Upload() {
 		sendError(&this.Controller,err, 500)
 		return
 	}
-	logs.Info("insert nft info from", user, "to db, number:")
+	logs.Info("insert nft info from", nickname, "to db, number:")
 
 	// store mapping info to database
 
@@ -310,7 +324,7 @@ func (this *UploadController) Upload() {
 		sendError(&this.Controller,err, 500)
 		return
 	}
-	logs.Debug("insert mapping info from", user, "to db, number:")
+	logs.Debug("insert mapping info from", nickname, "to db, number:")
 
 	// store marketplace info to database
 	marketInfo := &models.NftMarketTable{
@@ -322,8 +336,9 @@ func (this *UploadController) Upload() {
 		NumSold:      0,   // already sold
 		Active:       true,
 		ActiveTicker: ACTIVE_TICKER,
-		OwnerUserName: ownerName,
-		OwnerWalletAddress: user,
+		SellerWalletId:walletAddress,
+		SellerNickname:nickname,
+		AllowAirdrop:allowAirdrop,
 	}
 	_, err = o.Insert(marketInfo)
 	if err != nil {
@@ -332,7 +347,7 @@ func (this *UploadController) Upload() {
 		sendError(&this.Controller,err, 500)
 		return
 	}
-	logs.Debug("insert marketplace info from", user, "to db")
+	logs.Debug("insert marketplace info from", nickname, "to db")
 
 	// store admin table to database
 	nftAdminInfo:= &models.NftItemAdmin{
@@ -348,7 +363,7 @@ func (this *UploadController) Upload() {
 		sendError(&this.Controller,err,500)
 		return
 	}
-	logs.Debug("insert nftadmin table from", user, "to db")
+	logs.Debug("insert nftadmin table from", nickname, "to db")
 
 	// if unsuccessful to create nft, delete file
 	tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
@@ -358,7 +373,7 @@ func (this *UploadController) Upload() {
 		return
 	}
 	// insert to wallet address table
-	_,err = o.QueryTable("market_user_table").Filter("walletId",user).Update(orm.Params{
+	_,err = o.QueryTable("market_user_table").Filter("nickname",nickname).Update(orm.Params{
 		"count": orm.ColValue(orm.ColAdd,1),
 	})
 	if err!=nil {
@@ -373,7 +388,7 @@ func (this *UploadController) Upload() {
 	txErr := this.C.account.SendFunction(this.C.smartContract,
 		nil,
 		nft.FuncMint,
-		common.HexToAddress(user),
+		common.HexToAddress(walletAddress),
 		tokenId,
 		nftType,
 		nftName,

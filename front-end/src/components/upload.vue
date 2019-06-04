@@ -13,9 +13,17 @@
               v-for="op in uploadOptions"
               :value="op.type"
               :label="op.label"
+              :key="op.type"
               >
             </el-option>
           </el-select>
+          <div class="airDropTitle">
+            <span><b>Allow Airdrop</b></span>
+          </div>
+          <el-radio-group v-model="allowAirdrop" @input="airDropOptionChange">
+            <el-radio  :label=true >Yes</el-radio>
+            <el-radio  :label=false >No</el-radio>
+          </el-radio-group>
         </el-col>
 
 
@@ -170,7 +178,7 @@
               <b>User Name: </b>
             </el-col>
             <el-col :span="6">
-              <span style="font-size: 0.8rem">{{username}}</span>
+              <span style="font-size: 0.8rem">{{nickname}}</span>
             </el-col>
             <el-col :span="2" :offset="4">
               <img :src="avatarUrl" style="width: 100px;"/>
@@ -290,8 +298,9 @@
                                prop="transactionAddress"
                                label="Tx Address">
                 <template slot-scope="scope">
-                  <a :href="'https://kovan.etherscan.io/tx/'+scope.row.transactionAddress"
-                     class="buttonText">{{truncateTxAddress(scope.row.transactionAddress)}}...</a>
+<!--                  <a class="buttonText"> :href="'https://kovan.etherscan.io/tx/'+scope.row.transactionAddress"-->
+                     {{truncateTxAddress(scope.row.transactionAddress)}}...
+<!--                  </a>-->
                 </template>
               </el-table-column>
               <el-table-column :min-width="60"
@@ -359,11 +368,12 @@
         mkTxHistoryCurrentPage: 1,
         mkTxHistoryTotal:0,
         nftList: undefined,
-        nickName: undefined,
+        nickname: undefined,
         avatarUrl: undefined,
         username: undefined,
         imageUrl: undefined,
         selectedType: undefined,
+        allowAirdrop: true,
         uploadOptions: [
           {
             "type": "dat",
@@ -436,14 +446,14 @@
         }
         return el;
       },
-      getTotalNFT: function (address) {
+      getTotalNFT: function (nickname) {
         // get total nft balance
-        this.axios.get(`${this.httpPath}/balance/${address}`).then(res => {
+        this.axios.get(`${this.httpPath}/balance/${nickname}`).then(res => {
           this.totalNFT = res.data.count;
         }).catch(console.log);
       },
-      getNFTList: function (address) {
-        this.axios.get(`${this.httpPath}/nftList/${address}`).then(res => {
+      getNFTList: function (nickname) {
+        this.axios.get(`${this.httpPath}/nftList/${nickname}`).then(res => {
           for (let i = res.data.nftTranData.length - 1; i >= 0; --i) {
             let nftData = res.data.nftTranData[i];
             let el = this.setNFTFromResponse(nftData);
@@ -453,8 +463,8 @@
           console.log(res.data.nftTranData);
         }).catch(console.log);
       },
-      getMarketHistoryList: function(address) {
-        this.axios.get(`${this.httpPath}/market/transactionHistory/${address}`).then(res => {
+      getMarketHistoryList: function(nickname) {
+        this.axios.get(`${this.httpPath}/market/transactionHistory/${nickname}`).then(res => {
           for (let i = res.data.nftPurchaseInfo.length - 1; i >= 0; --i) {
             let purchaseInfo = res.data.nftPurchaseInfo[i];
             // let el = this.setMarketTableFromResponse(purchaseInfo);
@@ -512,14 +522,22 @@
           this.imageUrl = undefined;
         }
       },
+      airDropOptionChange: function(value) {
+        console.log("allow airdrop?",value);
+        this.allowAirdrop = value;
+        this.$set(this.uploadAvatarAdditionalData, 'allowAirdrop', value);
+        this.$set(this.uploadDatAdditionalData, 'allowAirdrop', value);
+        this.$set(this.uploadOtherAdditionalData, 'allowAirdrop', value);
+      }
     },
     created: function () {
       // console.log(this.$store.state.account)
       // init variables
       this.username = this.$cookies.get('username');
-      this.nickName = this.$cookies.get('nickName');
+      this.nickname = this.$cookies.get('nickname');
       this.avatarUrl = this.$cookies.get('avatarUrl');
       let address = this.$cookies.get('account').address;
+      let nickname = this.nickname;
       console.log("address:", address);
       this.address = address;
       this.httpPath = this.$store.state.config.httpPath;
@@ -531,17 +549,18 @@
 
       let uploadBaseObject = {
         address: this.address,
-        username: this.username,
+        nickname: this.nickname,
+        allowAirdrop: this.allowAirdrop,
       };
 
       this.uploadDatAdditionalData = Object.assign({}, uploadBaseObject);
       this.uploadAvatarAdditionalData = Object.assign({}, uploadBaseObject);
       this.uploadOtherAdditionalData = Object.assign({}, uploadBaseObject);
       // get total nft
-      this.getTotalNFT(address);
+      this.getTotalNFT(nickname);
       // get nft list of user from market place
-      this.getNFTList(address);
-      this.getMarketHistoryList(address);
+      this.getNFTList(nickname);
+      this.getMarketHistoryList(nickname);
 
       // set default select item
       this.selectedType = this.uploadOptions[0].type;
@@ -579,6 +598,12 @@
   }
 
   .selectTitle {
+    font-size: 1.5rem;
+    margin-bottom: 100px;
+  }
+
+  .airDropTitle {
+    margin-top: 100px;
     font-size: 1.5rem;
     margin-bottom: 100px;
   }

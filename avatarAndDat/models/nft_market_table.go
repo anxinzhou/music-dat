@@ -2,8 +2,8 @@ package models
 
 type NftMarketTable struct {
 	NftLdefIndex string `orm:"pk;unique"`
-	OwnerWalletAddress string
-	OwnerUserName string
+	SellerWalletId string
+	SellerNickname string
 	MpId string
 	NftAdminId string
 	Price int
@@ -11,13 +11,14 @@ type NftMarketTable struct {
 	NumSold int
 	Active bool
 	ActiveTicker string
+	AllowAirdrop bool
 }
 
 func (this *NftMarketTable) TableIndex() [][]string {
 	return [][]string {
 		[]string{"NftAdminId"},
-		[]string{"OwnerWalletAddress"},
-		[]string{"OwnerUserName"},
+		[]string{"SellerWalletId"},
+		[]string{"SellerNickname"},
 	}
 }
 

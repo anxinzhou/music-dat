@@ -49,13 +49,13 @@ func init() {
 	beego.Router("/ws", wsHandler)
 	beego.Router("/admin",&http.AdminController{},"post:Login")
 	beego.Router("/file/:kind(avatar|dat|other)",upLoadController,"get:Get;post:Upload")
-	beego.Router("/balance/:user:string",nftBalanceController)
-	beego.Router("/nftList/:user:string",nftListController)
-	beego.Router("/rewardDat/:user:string",rewardController,"get:RewardDat")
+	beego.Router("/balance/:nickname:string",nftBalanceController)
+	beego.Router("/nftList/:nickname:string",nftListController)
+	beego.Router("/rewardDat/:nickname:string",rewardController,"get:RewardDat")
 	beego.Router("/nfts/:parentIndex:string/children", childrenOfNFTController)
 	beego.Router("/nfts/:parentIndex:string/balance", numOfChildrenController)
 	beego.Router("/wallet",&http.ImportWalletController{},"post:ImportWallet")
-	beego.Router("/market/transactionHistory/:user:string",marketTransactionHistoryController,"get:MarketTransactionHistory")
+	beego.Router("/market/transactionHistory/:nickname:string",marketTransactionHistoryController,"get:MarketTransactionHistory")
 }
 
 

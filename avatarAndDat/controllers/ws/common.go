@@ -3,9 +3,16 @@ package ws
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/logs"
+	"io"
+	"math/big"
 	"time"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/client"
 )
 
 const FILE_SAVING_PATH = "./resource/"
@@ -27,6 +34,11 @@ const (
 	NAME_NFT_OTHER = "other"
 )
 
+// base file path
+const (
+	BASE_FILE_PATH = "resource"
+)
+
 // purchase nft status
 const (
 	PURCHASE_CONFIRMED = 1
@@ -39,6 +51,12 @@ const (
 	PATH_KIND_ENCRYPT = "encrypt"
 	PATH_KIND_DEFAULT = "default"
 	PATH_KIND_USER_ICON = "userIcon"
+)
+
+// NFT transfer status
+const (
+	NFT_TRANSFER_SUCCESS = 0
+	NFT_TRANSFER_PENDING = 1
 )
 
 
@@ -79,6 +97,27 @@ func PathPrefixOfNFT(nftType string, pathKind string) string {
 	return pathPrefix
 }
 
+func validSupportedType(supportedType string) error {
+	if supportedType!=TYPE_NFT_MUSIC && supportedType!=TYPE_NFT_OTHER && supportedType!=TYPE_NFT_AVATAR {
+		err:= errors.New("unsupported nft type")
+		return err
+	}
+	return nil
+}
+
+func validNftLdefIndex(nftLdefIndex string) error {
+	if len(nftLdefIndex)<=1 {
+		err:=errors.New("error length of nft ldef index")
+		return err
+	}
+	return nil
+}
+
+func TokenIdFromNftLdefIndex(nftLdefIndex string) *big.Int {
+	tokenId,_:=new(big.Int).SetString(nftLdefIndex[1:],10)
+	return tokenId
+}
+
 func nftResInfoFromNftInfo(nftInfo *NFTInfo) (*nftInfoListRes,error) {
 	nftResInfo := &nftInfoListRes{
 		SupportedType: nftInfo.SupportedType,
@@ -106,12 +145,44 @@ func nftResInfoFromNftInfo(nftInfo *NFTInfo) (*nftInfoListRes,error) {
 	return nftResInfo,nil
 }
 
+// one to one mapping
+func UserIconPathFromNickname(nickname string) string {
+	h:=md5.New()
+	io.WriteString(h,nickname)
+	return hex.EncodeToString(h.Sum(nil))+".jpg"
+}
+
 func chinaTimeFromTimeStamp(timestamp time.Time) string {
 	timeLocaltion,err:= time.LoadLocation("Asia/Shanghai")
 	if err!=nil {
 		panic(err)
 	}
 	return timestamp.In(timeLocaltion).Format("2006-01-02T15:04:05")
+}
+
+func (m *Manager) errorHandler(c *client.Client, bq *RQBaseInfo, err error) {
+	bq.Event = "failed"
+	res := &ErrorResponse{
+		RQBaseInfo: *bq,
+		Reason:     err.Error(),
+	}
+	resWrapper, err := json.Marshal(res)
+	if err != nil {
+		panic(err)
+		return
+	}
+	c.Send(resWrapper)
+}
+
+func (m *Manager) wrapperAndSend(c *client.Client, bq *RQBaseInfo, v interface{}) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+
+	c.Send(data)
 }
 
 func init() {

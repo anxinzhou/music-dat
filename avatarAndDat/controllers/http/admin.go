@@ -45,7 +45,8 @@ type AdminRequest struct {
 
 type AdminResponse struct {
 	AvatarUrl string `json:"avatarUrl"`
-	NickName string `json:"nickName"`
+	Nickname string `json:"nickname"`
+	Uuid string `json:"uuid"`
 	AccessToken string `json:"accessToken"`
 }
 
@@ -73,7 +74,8 @@ func (this *AdminController) Login() {
 		Username string `bson:"username"`
 		Password string `bson:"password"`
 		AvatarUrl string `bson:"avatar_url"`
-		NickName string `bson:"nickname"`
+		Nickname string `bson:"nickname"`
+		Uuid string `bson:"uuid"`
 	}
 	col:=models.MongoDB.Collection("users")
 	var res AdminResponse
@@ -89,6 +91,7 @@ func (this *AdminController) Login() {
 			"password": true,
 			"avatar_url":true,
 			"nickname":true,
+			"uuid": true,
 		})).Decode(&queryResult)
 		if err!=nil {
 			if err == mongo.ErrNoDocuments {
@@ -120,8 +123,8 @@ func (this *AdminController) Login() {
 		}
 
 		res.AvatarUrl = queryResult.AvatarUrl
-		res.NickName = queryResult.NickName
-		fileName:= UserIconPathFromUserName(username)
+		res.Nickname = queryResult.Nickname
+		fileName:= UserIconPathFromNickname(res.Nickname)
 		if _,err:=os.Stat(fileName); os.IsNotExist(err) {
 			logs.Info("creating user icon file in local")
 			logs.Debug("avatar url",res.AvatarUrl)
@@ -179,7 +182,7 @@ type ImportWalletController struct {
 }
 
 type ImportWalletRequest struct {
-	Username string `json:"username"`
+	Nickname string `json:"nickname"`
 	WalletId string `json:"walletId"`
 }
 
@@ -198,9 +201,9 @@ func (this *ImportWalletController) ImportWallet() {
 		return
 	}
 
-	username:= req.Username
+	nickname:= req.Nickname
 	walletId:= req.WalletId
-	iconFileName:= UserIconPathFromUserName(username)
+	iconFileName:= UserIconPathFromNickname(nickname)
 	// user file should have been saved at local this time
 	if _,err:=os.Stat(path.Join(BASE_FILE_PATH,PATH_KIND_USER_ICON,iconFileName)); os.IsNotExist(err) {
 		logs.Error(err.Error())
@@ -211,7 +214,7 @@ func (this *ImportWalletController) ImportWallet() {
 	walletInfo:= &models.MarketUserTable{
 		WalletId: walletId,
 		Count: 0,
-		Username: username,
+		Nickname: nickname,
 		UserIconUrl: iconFileName,
 	}
 	o:=orm.NewOrm()
@@ -234,7 +237,7 @@ func (this *ImportWalletController) ImportWallet() {
 		}
 	}
 	o.Commit()
-	logs.Info("insert to market user table","username",username)
+	logs.Info("insert to market user table","nickname",nickname)
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 	return
 }

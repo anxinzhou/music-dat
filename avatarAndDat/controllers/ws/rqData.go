@@ -34,6 +34,11 @@ type RQBaseInfo struct {
 	ActId string `json:"actId"`
 }
 
+type NftBaseInfo struct {
+	NftLdefIndex string `json:"nftLdefIndex"`
+	SupportedType string `json:"supportedType"`
+}
+
 // MP_LIST
 type MpListRequest struct {
 	RQBaseInfo
@@ -61,29 +66,11 @@ type MpListResponse struct {
 }
 
 // PURCHASE_CONFIRM
-type AsUserPurchaseConfirmInfo struct {
-	AsId string `json:"asId"`
-	AsWallet string `json:"asWallet"`
-	Type int `json:"type"`
-}
-
-type PurchaseNftInfo struct {
-	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
-	NftName string `json:"nftName"`
-	NftValue int `json:"nftValue" orm:"column(price)"`
-	ActiveTicker string `json:"activeTicker"`
-	NftLifeIndex int64 `json:"nftLifeIndex"`
-	NftPowerIndex int64 `json:"nftPowerIndex"`
-	NftLdefIndex string `json:"nftLdefIndex"`
-	NftCharacId string `json:"nftCharacId"`
-	Qty int `json:"qty"`
-}
 
 type PurchaseConfirmRequest struct {
 	RQBaseInfo
-	AsUser *AsUserPurchaseConfirmInfo `json:"asUser"`
-	PackedKeys string `json:"packedKeys"`
-	NftTranData []*PurchaseNftInfo `json:"nftTranData"`
+	Nickname string `json:"nickname"`
+	NftTranData []*NftBaseInfo `json:"nftTranData"`
 }
 
 type NftPurchaseResponseInfo struct {
@@ -106,7 +93,7 @@ type AsUserPurchaseInfo struct {
 
 type TokenPurchaseRequest struct {
 	RQBaseInfo
-	AsUser *AsUserPurchaseInfo `json:"asUser"`
+	Nickname string `json:"nickname"`
 	AppTranId string `json:"appTranId"`
 	TransactionId string `json:"transactionId"`
 	AppId string `json:"appId"`
@@ -117,22 +104,14 @@ type TokenPurchaseRequest struct {
 type TokenPurchaseResponse struct {
 	RQBaseInfo
 	ActionStatus int `json:"actionStatus"`
-	TransactionId string `json:"appTranId"`
+	TransactionId string `json:"transactionId"`
 }
 
 //NFT_SHOW
-type NftShowAsUserInfo struct {
-	AsId string `json:"asId"`
-	AsWallet string `json:"asWallet"`
-	PackedKeys string `json:"packedKeys"`
-}
-
 type NftShowRequest struct {
 	RQBaseInfo
-	AsUser *NftShowAsUserInfo `json:"asUser"`
-	TranAddress string `json:"tranAddress"`
 	NftLdefIndex string `json:"nftLdefIndex"`
-	SupportedType string `json:"supportedType"`
+	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
 }
 
 type NftShowResponse struct {
@@ -231,7 +210,7 @@ type MarketUserListRequest struct {
 
 type MarketUserWallet struct {
 	WalletId string `json:"walletId" orm:"column(wallet_id)"`
-	Username string `json:"username"`
+	Nickname string `json:"nickname"`
 	Count int `json:"count"`
 	Thumbnail string `json:"thumbnail" orm:"column(user_icon_url)"`
 }
@@ -260,7 +239,7 @@ type nftInfoListRes struct {
 
 type UserMarketInfoRequest struct {
 	RQBaseInfo
-	WalletId string `json:"walletId"`
+	Nickname string `json:"nickname"`
 }
 
 type UserMarketInfoResponse struct {
@@ -287,7 +266,7 @@ type NFTInfo struct {
 
 type NFTPurchaseHistoryRequest struct {
 	RQBaseInfo
-	UserName string `json:"userName"`
+	Nickname string `json:"nickname"`
 }
 
 type NFTPurchaseRecord struct {
@@ -306,7 +285,7 @@ type NFTPurchaseHistoryResponse struct {
 
 type ShoppingCartChangeRequest struct {
 	RQBaseInfo
-	Username string `json:"username"`
+	Nickname string `json:"nickname"`
 	Operation int `json:"operation"` // 0 for add 1 for delete
 	NFTList []string `json:"nftList"`
 }
@@ -317,7 +296,7 @@ type ShoppingCartChangeResponse struct {
 
 type ShoppingCartListRequest struct {
 	RQBaseInfo
-	Username string `json:"username"`
+	Nickname string `json:"Nickname"`
 }
 
 type ShoppingCartRecord struct {
@@ -329,3 +308,51 @@ type ShoppingCartListResponse struct {
 	RQBaseInfo
 	NftList []*ShoppingCartRecord `json:"nftList"`
 }
+
+// todo
+// nft transfer
+type NftTransferRequest struct {
+	RQBaseInfo
+	SenderNickname string `json:"senderNickname"`
+	ReceiverNickname string `json:"receiverNickname"`
+	NftTranData *NftBaseInfo `json:"nftTranData"`
+}
+
+type NftTransferResponse struct {
+	RQBaseInfo
+	Status int `json:"status"`
+}
+
+// bind wallet
+type BindWalletRequest struct {
+	RQBaseInfo
+	Nickname string `json:"nickname"`
+	WalletId string `json:"walletId"`
+}
+
+type BindWalletResponse struct {
+	RQBaseInfo
+}
+
+// set nick name
+type SetNicknameRequest struct {
+	RQBaseInfo
+	Uuid string `json:"uuid"`
+	Nickname string `json:"nickname"`
+}
+
+type SetNicknameResponse struct {
+	RQBaseInfo
+}
+
+// is nick name duplicated
+type IsNicknameDuplicatedRequest struct {
+	RQBaseInfo
+	Nickname string `json:"nickname"`
+}
+
+type IsNicknameDuplicatedResponse struct {
+	RQBaseInfo
+	Duplicated bool `json:"duplicated"`
+}
+
