@@ -63,6 +63,7 @@ func (m *Manager) Init() {
 	m.RegisterHandler("is_nickname_duplicated",m.IsNicknameDuplicatedHandler)
 	m.RegisterHandler("follow_list",m.FollowListHandler)
 	m.RegisterHandler("follow_list_operation",m.FollowListOperationHandler)
+	m.RegisterHandler("is_nickname_set",m.IsNicknameSetHandler)
 }
 
 //func (m *Manager) DisPatchMsg() {

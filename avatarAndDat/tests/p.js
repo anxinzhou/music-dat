@@ -8,7 +8,7 @@ const ws = new WebSocket('ws://localhost:4000/ws');
 let testNftLdefIndex = "M982980481";
 let tokenId = "396285078";
 let nickname = "AlphaBrain";
-let testnickname = "testnickname";
+let testnickname = "testnickname2";
 //done
 var mkinfos = {
     action: "mp_list",
@@ -141,7 +141,7 @@ var BindWallet = {
     "event": "user_activity",  // string
     "action": "bind_wallet", // string
     "actId": "APP01234776789", // string
-    "nickname": "testnickname",
+    "nickname": testnickname,
     "walletId": "0x3c62aa7913bc303ee4b9c07df87b556b6770e3fc",
 };
 
@@ -150,7 +150,7 @@ var setNickname = {
     "action": "set_nickname", // string
     "actId": "APP01234776789", // string
     "uuid": "AKkjkHCHcbvMq6oLWPUEk2Wf",
-    "nickname": "testnickname"
+    "nickname": testnickname
 }
 
 var isNicknameDuplicated = {
@@ -185,6 +185,13 @@ var followOperationDelete = {
     "operation": 1,
 };
 
+var isNickNameSet = {
+    "event": "user_activity",  // string
+    "action": "is_nickname_set", // string
+    "actId": "APP01234776789", // string
+    "uuid": "AKkjkHCHcbvMq6oLWPUEk2Wf",
+}
+
 // var start
 // var end
 
@@ -204,11 +211,12 @@ ws.on('open', async function open() {
     // ws.send(JSON.stringify(shoppingCartChangeDelete));
     // ws.send(JSON.stringify(nftTransfer));
     // ws.send(JSON.stringify(BindWallet));
-    // ws.send(JSON.stringify(setNickname));
+    ws.send(JSON.stringify(setNickname));
     // ws.send(JSON.stringify(isNicknameDuplicated));
-    ws.send(JSON.stringify(followList));
-    ws.send(JSON.stringify(followOperationAdd));
+    // ws.send(JSON.stringify(followList));
+    // ws.send(JSON.stringify(followOperationAdd));
     // ws.send(JSON.stringify(followOperationDelete));
+    ws.send(JSON.stringify(isNickNameSet));
 });
 
 ws.on('message', function incoming(data) {

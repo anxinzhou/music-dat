@@ -103,6 +103,18 @@ func (m *Manager) SetNicknameHandler(c *client.Client, bq *RQBaseInfo, data []by
 		return
 	}
 
+	o:= orm.NewOrm()
+	userBaseInfo:= models.UserBaseInfo{
+		Uuid:uuid,
+		Nickname:nickname,
+	}
+	_,err=o.Insert(&userBaseInfo)
+	if err!=nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+
 	col := models.MongoDB.Collection("users")
 	filter:= bson.M {
 		"uuid": uuid,
@@ -112,10 +124,13 @@ func (m *Manager) SetNicknameHandler(c *client.Client, bq *RQBaseInfo, data []by
 	}
 	_,err=col.UpdateOne(context.Background(),filter,update)
 	if err!=nil {
+		o.Rollback()
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
 		return
 	}
+	o.Commit()
+	logs.Warn("insert into user base info table")
 	m.wrapperAndSend(c,bq,&SetNicknameResponse{
 		RQBaseInfo: *bq,
 	})
@@ -254,5 +269,38 @@ func (m*Manager) FollowListOperationHandler(c *client.Client, bq *RQBaseInfo, da
 		RQBaseInfo: *bq,
 		FollowNickname:followNickname,
 		Operation: operation,
+	})
+}
+
+func (m*Manager) IsNicknameSetHandler(c *client.Client, bq *RQBaseInfo, data []byte) {
+	var req IsNicknameSetRequest
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+
+	uuid:= req.Uuid
+	queryInfo:= models.UserBaseInfo{
+		Uuid:uuid,
+	}
+	set:= true
+	o:=orm.NewOrm()
+	err=o.Read(&queryInfo)
+	if err!=nil {
+		if err==orm.ErrNoRows {
+			set = false
+		} else {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+	} else {
+		set = true
+	}
+	m.wrapperAndSend(c,bq,&IsNicknameSetResponse{
+		RQBaseInfo: *bq,
+		Set: set,
 	})
 }

@@ -393,3 +393,14 @@ type FollowListOperationResponse struct {
 	FollowNickname string `json:"followNickname"`
 	Operation int `json:"operation"`
 }
+
+// has user set nickname
+type IsNicknameSetRequest struct {
+	RQBaseInfo
+	Uuid string `json:"uuid"`
+}
+
+type IsNicknameSetResponse struct {
+	RQBaseInfo
+	Set bool `json:"set"`
+}
