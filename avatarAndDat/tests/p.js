@@ -8,6 +8,7 @@ const ws = new WebSocket('ws://localhost:4000/ws');
 let testNftLdefIndex = "M982980481";
 let tokenId = "396285078";
 let nickname = "AlphaBrain";
+let testnickname = "testnickname";
 //done
 var mkinfos = {
     action: "mp_list",
@@ -83,6 +84,7 @@ var marketUserList = {
     "event": "nft_market", //string
     "action": "market_user_list", //string
     "actId": "APP0123456889", //string
+    "nickname": testnickname,
 };
 
 var userMarketInfo = {
@@ -158,6 +160,31 @@ var isNicknameDuplicated = {
     "nickname": nickname,  //string
 };
 
+var followList = {
+    "event": "user_activity",  // string
+    "action": "follow_list", // string
+    "actId": "APP01234776789", // string
+    "nickname": testnickname,
+};
+
+var followOperationAdd = {
+    "event": "user_activity",  // string
+    "action": "follow_list_operation", // string
+    "actId": "APP01234776789", // string
+    "nickname": testnickname, // string
+    "followNickname": nickname, // string
+    "operation": 0,
+};
+
+var followOperationDelete = {
+    "event": "user_activity",  // string
+    "action": "follow_list_operation", // string
+    "actId": "APP01234776789", // string
+    "nickname": testnickname, // string
+    "followNickname": nickname, // string
+    "operation": 1,
+};
+
 // var start
 // var end
 
@@ -170,15 +197,18 @@ ws.on('open', async function open() {
     // ws.send(JSON.stringify(tokenPurchaseFinish));
     // ws.send(JSON.stringify(nftshow))
     // ws.send(JSON.stringify(itemDetails))
-    // ws.send(JSON.stringify(marketUserList));
+    ws.send(JSON.stringify(marketUserList));
     // ws.send(JSON.stringify(userMarketInfo));
     // ws.send(JSON.stringify(shoppingCartChangeAdd));
     // ws.send(JSON.stringify(shoppingCartList));
     // ws.send(JSON.stringify(shoppingCartChangeDelete));
     // ws.send(JSON.stringify(nftTransfer));
-    ws.send(JSON.stringify(BindWallet));
+    // ws.send(JSON.stringify(BindWallet));
     // ws.send(JSON.stringify(setNickname));
     // ws.send(JSON.stringify(isNicknameDuplicated));
+    ws.send(JSON.stringify(followList));
+    ws.send(JSON.stringify(followOperationAdd));
+    // ws.send(JSON.stringify(followOperationDelete));
 });
 
 ws.on('message', function incoming(data) {

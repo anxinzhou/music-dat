@@ -527,11 +527,28 @@ func (m *Manager) MarketUserListHandler(c *client.Client, bq *RQBaseInfo, data [
 			return
 		}
 	}
-
+	nickname:= req.Nickname
 	wl := make([]*MarketUserWallet, len(walletIdList))
 	for i, _ := range wl {
 		walletIdList[i].Thumbnail = PathPrefixOfNFT("", PATH_KIND_USER_ICON) + walletIdList[i].Thumbnail
 		wl[i] = &walletIdList[i]
+		followNickname:= wl[i].Nickname
+		queryInfo:= models.FollowTable{
+			FolloweeNickname:followNickname,
+			FollowerNickname: nickname,
+		}
+		err:=o.Read(&queryInfo,"followee_nickname","follower_nickname")
+		if err!=nil {
+			if err== orm.ErrNoRows {
+				wl[i].Followed = false
+			} else {
+				logs.Error(err.Error())
+				m.errorHandler(c, bq, err)
+				return
+			}
+		} else {
+			wl[i].Followed = true
+		}
 	}
 
 	m.wrapperAndSend(c, bq, &MarketUserListResponse{

@@ -40,6 +40,7 @@ func init() {
 		new(NftInfoTable),
 		new(MarketUserTable),
 		new(NftShoppingCart),
+		new(FollowTable),
 		//new(CoinRecords),
 	)
 

@@ -19,6 +19,12 @@ const (
 	SHOPPING_CART_DELETE = 1
 )
 
+// follow list operation
+const (
+	FOLLOW_LIST_ADD = 0
+	FOLLOW_LIST_DELETE = 1
+)
+
 type ConnectErrorResponse struct {
 	Reason string `json:"reason"`
 }
@@ -206,6 +212,7 @@ type MarketUserListRequest struct {
 	RQBaseInfo
 	Page int `json:"page"` //TODO
 	Offet int `json:"offset"`  //TODO
+	Nickname string `json:"nickname"`
 }
 
 type MarketUserWallet struct {
@@ -213,6 +220,7 @@ type MarketUserWallet struct {
 	Nickname string `json:"nickname"`
 	Count int `json:"count"`
 	Thumbnail string `json:"thumbnail" orm:"column(user_icon_url)"`
+	Followed bool `json:"followed"`
 }
 
 type MarketUserListResponse struct {
@@ -356,3 +364,32 @@ type IsNicknameDuplicatedResponse struct {
 	Duplicated bool `json:"duplicated"`
 }
 
+type FollowInfo struct {
+	Nickname string `json:"nickname" orm:"column(nickname)"`
+	Thumbnail string `json:"thumbnail" orm:"user_icon_url"`
+}
+
+// follow list
+type FollowListRequest struct {
+	RQBaseInfo
+	Nickname string `json:"nickname" `
+}
+
+type FollowListResponse struct {
+	RQBaseInfo
+	FollowInfo []*FollowInfo `json:"followInfo"`
+}
+
+// follow list operation
+type FollowListOperationRequest struct {
+	RQBaseInfo
+	Nickname string `json:"nickname"`
+	FollowNickname string `json:"followNickname"`
+	Operation int `json:"operation"`
+}
+
+type FollowListOperationResponse struct {
+	RQBaseInfo
+	FollowNickname string `json:"followNickname"`
+	Operation int `json:"operation"`
+}

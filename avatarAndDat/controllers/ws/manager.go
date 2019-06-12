@@ -61,6 +61,8 @@ func (m *Manager) Init() {
 	m.RegisterHandler("bind_wallet",m.BindWalletHandler)
 	m.RegisterHandler("set_nickname",m.SetNicknameHandler)
 	m.RegisterHandler("is_nickname_duplicated",m.IsNicknameDuplicatedHandler)
+	m.RegisterHandler("follow_list",m.FollowListHandler)
+	m.RegisterHandler("follow_list_operation",m.FollowListOperationHandler)
 }
 
 //func (m *Manager) DisPatchMsg() {

@@ -7,6 +7,9 @@ import (
 	"github.com/xxRanger/blockchainUtil/contract/nft"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"math/big"
+	"math/rand"
+	"strconv"
+	"time"
 )
 
 type NftBalanceController struct {
@@ -263,6 +266,28 @@ func (this *RewardController) RewardDat() {
 		sendError(&this.Controller, err, 500)
 		return
 	}
+
+	// insert to purchase history
+	purchaseId := strconv.FormatInt(time.Now().UnixNano()|rand.Int63(), 10)
+	storeInfo := &models.StorePurchaseHistroy{
+		PurchaseId:    purchaseId,
+		BuyerNickname: nickname,
+		BuyerWalletId: walletAddress,
+		SellerNickname: sellerNickname,
+		SellerWalletId:     sellerWalletAddress,
+		TotalPaid:     nftInfoList[0].NftValue,
+		NftLdefIndex:  nftLdefIndex,
+		ActiveTicker:  nftInfoList[0].ActiveTicker,
+		Status:       PURCHASE_CONFIRMED ,
+	}
+	_, err = o.Insert(storeInfo)
+	if err != nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 500)
+		return
+	}
+
 	tokenId, _ := new(big.Int).SetString(nftLdefIndex[1:], 10)
 
 	nftContract := this.C.smartContract.(*nft.NFT)

@@ -44,6 +44,12 @@ const (
 	BASE_FILE_PATH = "resource"
 )
 
+// purchase nft status
+const (
+	PURCHASE_CONFIRMED = 1
+	PURCHASE_PENDING = 2
+)
+
 // path kind
 const (
 	PATH_KIND_MARKET = "market"
