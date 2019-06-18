@@ -193,7 +193,8 @@ func (this *RewardController) RewardDat() {
 	nftLdefIndex := mk.NftLdefIndex
 	r := o.Raw(`
 		select ni.nft_type, ni.nft_name,
-		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
+		mk.price,mk.active_ticker, mk.seller_wallet_id,mk.seller_nickname,
+		ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
 		ni.nft_charac_id,na.short_description, na.long_description,mp.icon_file_name,mk.qty from
 		nft_market_table as mk,
 		nft_mapping_table as mp,
@@ -387,6 +388,7 @@ type NftPurchaseInfo struct {
 	Buyer string `json:"buyer"`
 	Seller string `json:"seller"`
 	TransactionAddress string `json:"transactionAddress"`
+	Time string `json:"time"`
 }
 
 type MarketHistoryResponse struct {
@@ -401,7 +403,7 @@ func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
 	cond = cond.And("seller_nickname",nickname).Or("buyer_nickname",nickname)
 	num,err:=o.QueryTable("store_purchase_histroy").
 		SetCond(cond).
-		All(&purchaseHistory,"buyer_nickname","seller_nickname","transaction_address","nft_ldef_index")
+		All(&purchaseHistory,"buyer_nickname","seller_nickname","transaction_address","nft_ldef_index","timestamp")
 	if err!=nil {
 		if err==orm.ErrNoRows {
 			purchaseHistory = make([]models.StorePurchaseHistroy,0)
@@ -420,6 +422,7 @@ func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
 			Buyer:v.BuyerNickname,
 			Seller:v.SellerNickname,
 			TransactionAddress:v.TransactionAddress,
+			Time: chinaTimeFromTimeStamp(v.Timestamp),
 		}
 		nftPurchaseInfo[i] = ni
 	}

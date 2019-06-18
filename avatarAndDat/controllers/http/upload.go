@@ -384,7 +384,7 @@ func (this *UploadController) Upload() {
 	}
 	logs.Debug("insert to wallet address table success")
 
-	logs.Warn("create nft, tokenId", tokenId)
+	logs.Warn("create nft, tokenId", tokenId,"for",walletAddress)
 	txErr := this.C.account.SendFunction(this.C.smartContract,
 		nil,
 		nft.FuncMint,

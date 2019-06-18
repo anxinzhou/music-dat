@@ -44,6 +44,10 @@ func init() {
 	numOfChildrenController.C = chainHelper
 	marketTransactionHistoryController:= &http.MarketTransactionHistoryController{}
 	marketTransactionHistoryController.C = chainHelper
+	nicknameController:= &http.NicknameController{}
+	introController:= &http.IntroController{}
+	avatarController:= &http.AvatarController{}
+	walletController:= &http.WalletController{}
 
 	beego.Router("/", &http.MainController{})
 	beego.Router("/ws", wsHandler)
@@ -54,8 +58,12 @@ func init() {
 	beego.Router("/rewardDat/:nickname:string",rewardController,"get:RewardDat")
 	beego.Router("/nfts/:parentIndex:string/children", childrenOfNFTController)
 	beego.Router("/nfts/:parentIndex:string/balance", numOfChildrenController)
-	beego.Router("/wallet",&http.ImportWalletController{},"post:ImportWallet")
+	//beego.Router("/wallet",&http.ImportWalletController{},"post:ImportWallet")
 	beego.Router("/market/transactionHistory/:nickname:string",marketTransactionHistoryController,"get:MarketTransactionHistory")
+	beego.Router("/profile/:nickname/nickname",nicknameController,"get:GetNickname;post:SetNickname")
+	beego.Router("/profile/:nickname/avatar",avatarController,"get:GetAvatar;post:SetAvatar")
+	beego.Router("/profile/:nickname/intro",introController,"get:GetIntro;post:SetIntro")
+	beego.Router("/profile/:nickname/wallet",walletController,"get:GetWallet;post:SetWallet")
 }
 
 

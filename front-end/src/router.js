@@ -55,6 +55,14 @@ const router = new Router({
         title: 'alpha',
         requireAuth: false,
       }
+    }, {
+      path: '/profile',
+      name: 'Profile',
+      component: ()=> import('@/components/profile.vue'),
+      meta: {
+        title: 'alpha',
+        requireAuth: false,
+      }
     }]
 });
 
@@ -73,9 +81,12 @@ router.beforeEach((to, from, next) => {
     //     }
     // }
 
-    let hasAccount = Vue.cookies.isKey('account');
+    let hasAccount = Vue.cookies.isKey('address');
     let isLogined = Vue.cookies.isKey('access-token');
     if (to.name==='Mnemonic') {
+        if( !isLogined) {
+          next('/login');
+        }
         if(hasAccount) {
           next('/');
         } else {

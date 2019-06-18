@@ -19,6 +19,7 @@ const FILE_SAVING_PATH = "./resource/"
 const ENCRYPTION_FILE_PATH = "./resource/encryption/"
 const DECRYPTION_FILE_PATH = "./resource/public/"
 const MARKET_PATH = "./resource/market/"
+const USER_ICON_PATH = "./resource/userIcon/"
 
 // NFT TYPE
 const (
@@ -107,6 +108,14 @@ func UserIconPathFromNickname(nickname string) string {
 	h:=md5.New()
 	io.WriteString(h,nickname)
 	return hex.EncodeToString(h.Sum(nil))+".jpg"
+}
+
+func chinaTimeFromTimeStamp(timestamp time.Time) string {
+	timeLocaltion,err:= time.LoadLocation("Asia/Shanghai")
+	if err!=nil {
+		panic(err)
+	}
+	return timestamp.In(timeLocaltion).Format("2006-01-02T15:04:05")
 }
 
 func RandomPathFromFileName(fileName string) string {

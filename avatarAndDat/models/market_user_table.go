@@ -9,6 +9,7 @@ type MarketUserTable struct {
 	Count int
 	Nickname string `orm:"pk;unique"`
 	UserIconUrl string
+	Intro string
 }
 
 func (this *MarketUserTable) TableIndex() [][]string {

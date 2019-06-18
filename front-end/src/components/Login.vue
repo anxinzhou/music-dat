@@ -1,3 +1,4 @@
+<script src="../router.js"></script>
 <template>
   <div class="signup">
     <div class="text-center">
@@ -49,6 +50,10 @@
           let avatarUrl = res.data.avatarUrl;
           let nickname = res.data.nickname;
           let accessToken = res.data.accessToken;
+          let address = res.data.address;
+          if(address!=='') {
+            this.$cookies.set("address",address);
+          }
           this.$cookies.set("avatarUrl",avatarUrl);
           this.$cookies.set("nickname",nickname);
           this.$cookies.set("access-token", accessToken);

@@ -14,7 +14,7 @@
     <div>
       <form class="login-form" v-if="account===undefined">
         <div class="login-form-item">
-          <div class="login-form-label">Mnemonic:</div>
+          <div class="login-form-label">Address:</div>
           <input class="login-form-input" v-model="mnemonic" type="text">
         </div>
         <div class="login-form-button">
@@ -46,16 +46,20 @@
       importWallet: function () {
         // console.log(this.mnemonic)
         let httpPath =  this.$store.state.config.httpPath;
-        this.mnemonic = this.mnemonic.replace(/\s+/g,' ').replace(/^\s+|\s+$/,'');
-        let account = createWallet(this.mnemonic);
+        let address = this.mnemonic.replace(' ','');
+        // this.mnemonic = this.mnemonic.replace(/\s+/g,' ').replace(/^\s+|\s+$/,'');
+        // let account = createWallet(this.mnemonic);
         let nickname = this.$cookies.get('nickname');
-        this.axios.post(`${httpPath}/wallet`,{
-          nickname: nickname,
-          walletId: account.address,
+        console.log("address",address,nickname);
+        this.axios.post(`${httpPath}/profile/${nickname}/wallet`,{
+          address: address,
         }).then(res=>{
-          this.account = account;
-          this.$cookies.set('account', account);
-        }).catch(console.log)
+          this.$cookies.set('address',address);
+          this.$router.replace('/');
+        }).catch(err=>{
+          this.$store.state.notifyError(err.response.data.reason);
+          console.log(err.response.data.reason);
+        });
       },
       goAhead: function () {
         this.$router.replace('/')

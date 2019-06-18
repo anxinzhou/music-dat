@@ -14,15 +14,15 @@
               :value="op.type"
               :label="op.label"
               :key="op.type"
-              >
+            >
             </el-option>
           </el-select>
           <div class="airDropTitle">
             <span><b>Allow Airdrop</b></span>
           </div>
           <el-radio-group v-model="allowAirdrop" @input="airDropOptionChange">
-            <el-radio  :label=true >Yes</el-radio>
-            <el-radio  :label=false >No</el-radio>
+            <el-radio :label=true>Yes</el-radio>
+            <el-radio :label=false>No</el-radio>
           </el-radio-group>
         </el-col>
 
@@ -173,15 +173,25 @@
       <el-row style="margin-bottom: 50px;">
         <!--          <img src="../assets/images/avatar.jpg">-->
         <el-col :span="7" :offset="2">
-          <el-row type="flex" align="middle">
+          <el-row>
             <el-col :span="12">
-              <b>User Name: </b>
+              <b>User: </b>
             </el-col>
             <el-col :span="6">
               <span style="font-size: 0.8rem">{{nickname}}</span>
             </el-col>
             <el-col :span="2" :offset="4">
-              <img :src="avatarUrl" style="width: 100px;"/>
+              <img :src="avatarUrl" style="margin-top: -20px;width: 100px;"/>
+            </el-col>
+          </el-row>
+        </el-col>
+        <el-col :span="7" :offset="3">
+          <el-row type="flex" align="middle">
+            <el-col :span="12">
+              <b>Intro: </b>
+            </el-col>
+            <el-col :span="12" >
+              <span style="font-size: 0.8rem">{{intro}}</span>
             </el-col>
           </el-row>
         </el-col>
@@ -198,12 +208,12 @@
             </el-col>
           </el-row>
         </el-col>
-        <el-col :span="6" :offset="6">
+        <el-col :span="7" :offset="3">
           <el-row>
             <el-col :span="12">
               <b>Total NFT: </b>
             </el-col>
-            <el-col :span="12" class="text-center">
+            <el-col :span="12" >
               {{totalNFT}}
             </el-col>
           </el-row>
@@ -226,7 +236,7 @@
                                label="Def Index">
                 <template slot-scope="scope">
                   <router-link :to="{name:'Child',params:{nftLdefIndex:scope.row.nftLdefIndex}}"
-                          class="buttonText"><a>{{scope.row.nftLdefIndex}}</a></router-link>
+                               class="buttonText"><a>{{scope.row.nftLdefIndex}}</a></router-link>
                 </template>
               </el-table-column>
               <el-table-column :min-width="40"
@@ -280,7 +290,7 @@
         </el-col>
       </el-row>
 
-<!--    transaction history-->
+      <!--    transaction history-->
       <el-row class="marketPlaceTitle">
         <el-col :offset="1">
           Market Place Transaction History
@@ -298,9 +308,9 @@
                                prop="transactionAddress"
                                label="Tx Address">
                 <template slot-scope="scope">
-<!--                  <a class="buttonText"> :href="'https://kovan.etherscan.io/tx/'+scope.row.transactionAddress"-->
-                     {{truncateTxAddress(scope.row.transactionAddress)}}...
-<!--                  </a>-->
+                  <!--                  <a class="buttonText"> :href="'https://kovan.etherscan.io/tx/'+scope.row.transactionAddress"-->
+                  {{truncateTxAddress(scope.row.transactionAddress)}}...
+                  <!--                  </a>-->
                 </template>
               </el-table-column>
               <el-table-column :min-width="60"
@@ -314,6 +324,10 @@
               <el-table-column :min-width="60"
                                prop="seller"
                                label="Seller">
+              </el-table-column>
+              <el-table-column :min-width="60"
+                               prop="time"
+                               label="Date">
               </el-table-column>
             </el-table>
             <div style="text-align: center;margin-top: 30px;">
@@ -347,8 +361,8 @@
         avatarLongDesc: '',
         datLongDesc: '',
         otherLongDesc: '',
-        datPrice:0,
-        datNumber:0,
+        datPrice: 0,
+        datNumber: 0,
         fileList: [],
         uploadDatPath: undefined,
         uploadDatAdditionalData: undefined,
@@ -366,7 +380,7 @@
         mkTxHistoryTableData: [],
         mkTxHistoryPagesize: 10,
         mkTxHistoryCurrentPage: 1,
-        mkTxHistoryTotal:0,
+        mkTxHistoryTotal: 0,
         nftList: undefined,
         nickname: undefined,
         avatarUrl: undefined,
@@ -374,6 +388,7 @@
         imageUrl: undefined,
         selectedType: undefined,
         allowAirdrop: true,
+        intro: '',
         uploadOptions: [
           {
             "type": "dat",
@@ -391,8 +406,8 @@
       }
     },
     methods: {
-      truncateTxAddress: function(txAddress) {
-          return txAddress.slice(0,20)
+      truncateTxAddress: function (txAddress) {
+        return txAddress.slice(0, 20)
       },
       submitDat: function () {
         this.$refs.uploadDat.submit();
@@ -463,7 +478,7 @@
           console.log(res.data.nftTranData);
         }).catch(console.log);
       },
-      getMarketHistoryList: function(nickname) {
+      getMarketHistoryList: function (nickname) {
         this.axios.get(`${this.httpPath}/market/transactionHistory/${nickname}`).then(res => {
           for (let i = res.data.nftPurchaseInfo.length - 1; i >= 0; --i) {
             let purchaseInfo = res.data.nftPurchaseInfo[i];
@@ -495,10 +510,10 @@
       datLongDescChange: function () {
         this.$set(this.uploadDatAdditionalData, 'longDesc', this.datLongDesc);
       },
-      datNumberChange: function() {
+      datNumberChange: function () {
         this.$set(this.uploadDatAdditionalData, 'number', this.datNumber);
       },
-      datPriceChange: function() {
+      datPriceChange: function () {
         this.$set(this.uploadDatAdditionalData, 'price', this.datPrice);
       },
       otherNameChange: function () {
@@ -510,7 +525,7 @@
       otherLongDescChange: function () {
         this.$set(this.uploadOtherAdditionalData, 'longDesc', this.otherLongDesc);
       },
-      txInfoHandler: function(row, col ,e) {
+      txInfoHandler: function (row, col, e) {
         // https://kovan.etherscan.io/tx/
       },
       previewMusicAvatar: function (file, fileList) {
@@ -522,12 +537,18 @@
           this.imageUrl = undefined;
         }
       },
-      airDropOptionChange: function(value) {
-        console.log("allow airdrop?",value);
+      airDropOptionChange: function (value) {
+        console.log("allow airdrop?", value);
         this.allowAirdrop = value;
         this.$set(this.uploadAvatarAdditionalData, 'allowAirdrop', value);
         this.$set(this.uploadDatAdditionalData, 'allowAirdrop', value);
         this.$set(this.uploadOtherAdditionalData, 'allowAirdrop', value);
+      },
+      getIntro: function (nickname) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${nickname}/intro`).then(res => {
+          this.intro = res.data.intro;
+        }).catch(console.log);
       }
     },
     created: function () {
@@ -536,7 +557,7 @@
       this.username = this.$cookies.get('username');
       this.nickname = this.$cookies.get('nickname');
       this.avatarUrl = this.$cookies.get('avatarUrl');
-      let address = this.$cookies.get('account').address;
+      let address = this.$cookies.get('address');
       let nickname = this.nickname;
       console.log("address:", address);
       this.address = address;
@@ -564,6 +585,7 @@
 
       // set default select item
       this.selectedType = this.uploadOptions[0].type;
+      this.getIntro(nickname);
     }
   }
 </script>
