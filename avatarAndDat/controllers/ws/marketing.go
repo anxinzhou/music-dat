@@ -538,7 +538,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, bq *RQBaseInfo, data [
 	}
 	o := orm.NewOrm()
 	r := o.Raw(`
-		select mk.wallet_id,mk.nickname,count,user_icon_url,Intro 
+		select mk.wallet_id,mk.nickname,count,user_icon_url,intro 
 		 from market_user_table as mk, creator_info as ci
 		 where mk.nickname = ci.nickname
 			`)

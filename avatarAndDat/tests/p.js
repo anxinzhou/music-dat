@@ -1,7 +1,7 @@
 const WebSocket = require('ws');
 
-// const ws = new WebSocket('ws://3.1.35.36:4000/ws');
-const ws = new WebSocket('ws://localhost:4000/ws');
+const ws = new WebSocket('ws://3.1.35.36:4000/ws');
+// const ws = new WebSocket('ws://localhost:4000/ws');
 // const ws = new WebSocket("ws://18.136.134.84:4000");
 // const now = require('performance-now');
 
