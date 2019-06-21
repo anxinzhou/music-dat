@@ -42,6 +42,7 @@ func init() {
 		new(NftShoppingCart),
 		new(FollowTable),
 		new(UserBaseInfo),
+		new(CreatorInfo),
 		//new(CoinRecords),
 	)
 
@@ -65,4 +66,16 @@ func init() {
 		panic(err)
 	}
 	MongoDB=MongoClient.Database(mongoDatabase)
+
+	// set test creator
+	o:=orm.NewOrm()
+	userInfo:= CreatorInfo{
+		Username: "alphaslottest",
+		Password: "123456",
+		Nickname: "AlphaBrain",
+	}
+	_,_,err=o.ReadOrCreate(&userInfo,"username","password")
+	if err!=nil {
+		panic(err)
+	}
 }

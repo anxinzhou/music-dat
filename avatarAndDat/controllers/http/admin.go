@@ -1,20 +1,14 @@
 package http
 
 import (
-	"context"
 	"crypto/md5"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
-	"github.com/jameskeane/bcrypt"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -72,57 +66,74 @@ func (this *AdminController) Login() {
 		Nickname string `bson:"nickname"`
 		Uuid string `bson:"uuid"`
 	}
-	col:=models.MongoDB.Collection("users")
 	var res AdminResponse
 	if loginType == LOGIN_TYPE_USERNAME {
 		username := req.Username
 		rawPassword := req.Password
-		filter:= bson.M {
-			"username": username,
+		// find in mongo
+		//col:=models.MongoDB.Collection("users")
+		//filter:= bson.M {
+		//	"username": username,
+		//}
+		//var queryResult usersTablefields
+		//err:= col.FindOne(context.Background(),filter,options.FindOne().SetProjection(bson.M{
+		//	"username": true,
+		//	"password": true,
+		//	"avatar_url":true,
+		//	"nickname":true,
+		//	"uuid": true,
+		//})).Decode(&queryResult)
+		//if err!=nil {
+		//	if err == mongo.ErrNoDocuments {
+		//		// no such user
+		//		logs.Error(err.Error())
+		//		sendError(&this.Controller,errors.New("no such user"),401)
+		//		return
+		//	} else {
+		//		logs.Error(err.Error())
+		//		sendError(&this.Controller, errors.New("no such user"), 500)
+		//		return
+		//	}
+		//}
+		//hashedPassword:= queryResult.Password
+		//
+		//// raw password to hased password
+		//h:= sha256.New()
+		//h.Write([]byte(rawPassword))
+		//password:=hex.EncodeToString(h.Sum(nil))
+		//logs.Debug("raw password",rawPassword)
+		//logs.Debug("password",password)
+		//logs.Debug("hashed password",hashedPassword)
+		//match:=bcrypt.Match(password,hashedPassword)
+		//if !match {
+		//	err:=errors.New("wrong password")
+		//	logs.Error(err.Error())
+		//	sendError(&this.Controller, err, 401)
+		//	return
+		//}
+		//
+		o:=orm.NewOrm()
+		queryResult:= models.CreatorInfo{
+			Username: username,
+			Password: rawPassword,
 		}
-		var queryResult usersTablefields
-		err:= col.FindOne(context.Background(),filter,options.FindOne().SetProjection(bson.M{
-			"username": true,
-			"password": true,
-			"avatar_url":true,
-			"nickname":true,
-			"uuid": true,
-		})).Decode(&queryResult)
+		err:=o.Read(&queryResult,"username","password")
 		if err!=nil {
-			if err == mongo.ErrNoDocuments {
-				// no such user
+			if err == orm.ErrNoRows {
 				logs.Error(err.Error())
-				sendError(&this.Controller,errors.New("no such user"),401)
-				return
+					sendError(&this.Controller,errors.New("no such user"),401)
+					return
 			} else {
 				logs.Error(err.Error())
 				sendError(&this.Controller, errors.New("no such user"), 500)
 				return
 			}
 		}
-		hashedPassword:= queryResult.Password
-
-		// raw password to hased password
-		h:= sha256.New()
-		h.Write([]byte(rawPassword))
-		password:=hex.EncodeToString(h.Sum(nil))
-		logs.Debug("raw password",rawPassword)
-		logs.Debug("password",password)
-		logs.Debug("hashed password",hashedPassword)
-		match:=bcrypt.Match(password,hashedPassword)
-		if !match {
-			err:=errors.New("wrong password")
-			logs.Error(err.Error())
-			sendError(&this.Controller, err, 401)
-			return
-		}
-
 		nickname:= queryResult.Nickname
 		res.Nickname = queryResult.Nickname
 		userInfo:= models.MarketUserTable{
 			Nickname:res.Nickname,
 		}
-		o:=orm.NewOrm()
 		o.Begin()
 		err=o.Read(&userInfo,"nickname")
 		if err!=nil && err!=orm.ErrNoRows {

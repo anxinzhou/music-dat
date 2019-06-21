@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"errors"
+	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,12 +30,19 @@ func (m *Manager) NFTPurchaseHistoryHandler(c *client.Client, bq *RQBaseInfo, da
 		m.errorHandler(c, bq, err)
 		return
 	}
+	nftType:=req.SupportedType
+	if err:=validSupportedType(nftType);err!=nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+
 	o := orm.NewOrm()
 	nickname := req.Nickname
 	var purchaseHistory []models.StorePurchaseHistroy
 	logs.Debug("user", nickname, "query nft purchase history")
 	_, err = o.QueryTable("store_purchase_histroy").
-		Filter("buyer_nickname", nickname).All(&purchaseHistory, "purchase_id",
+		Filter("buyer_nickname", nickname).Filter("nft_type",nftType).All(&purchaseHistory, "purchase_id",
 		"transaction_address",
 		"buyer_wallet_id",
 		"total_paid",
@@ -67,14 +75,26 @@ func (m *Manager) NFTPurchaseHistoryHandler(c *client.Client, bq *RQBaseInfo, da
 			return
 		}
 
+
 		nftInfo.ActiveTicker = purchaseHistory[i].ActiveTicker
 		nftInfo.NftValue = purchaseHistory[i].TotalPaid
+		fileName := nftInfo.FileName
+		decryptedFilePath,err:=DecryptFile(fileName,req.SupportedType)
+		if err!=nil {
+			logs.Error(err.Error())
+			m.errorHandler(c, bq, err)
+			return
+		}
+
 		nftResInfo, err := nftResInfoFromNftInfo(&nftInfo)
+		nftResInfo.DecSource = beego.AppConfig.String("prefix") + beego.AppConfig.String("hostaddr") + ":" +
+			beego.AppConfig.String("fileport") + "/" + decryptedFilePath
 		if err != nil {
 			logs.Error(err.Error())
 			m.errorHandler(c, bq, err)
 			return
 		}
+
 
 		purchaseRecordRes[i] = &NFTPurchaseRecord{
 			PurchaseId:         purchaseHistory[i].PurchaseId,
@@ -318,6 +338,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 
 	walletAddress,err := models.WalletIdOfNickname(nickname)
 	if err!=nil {
+		err:= errors.New("nickname "+nickname+" doest bind wallet")
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
 		return
@@ -346,6 +367,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 		io.WriteString(h, purchaseId)
 		purchaseId = new(big.Int).SetBytes(h.Sum(nil)[:8]).String()
 		nftLdefIndex := itemDetail.NftLdefIndex
+		nftType:= itemDetail.SupportedType
 		if err:=validNftLdefIndex(nftLdefIndex);err!=nil {
 			logs.Emergency(err.Error())
 			m.errorHandler(c, bq, err)
@@ -407,6 +429,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 			NftLdefIndex:  nftLdefIndex,
 			ActiveTicker:  activeTicker,
 			Status:        status,
+			NftType: nftType,
 		}
 		_, err = o.Insert(storeInfo)
 		if err != nil {

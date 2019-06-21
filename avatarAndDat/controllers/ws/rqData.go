@@ -242,6 +242,7 @@ type nftInfoListRes struct {
 	ShortDesc string `json:"shortDesc" orm:"column(short_description)"`
 	LongDesc string `json:"longDesc" orm:"column(long_description)"`
 	Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
+	DecSource string `json:"decSource"`
 	Qty int `json:"qty"`
 }
 
@@ -275,6 +276,7 @@ type NFTInfo struct {
 type NFTPurchaseHistoryRequest struct {
 	RQBaseInfo
 	Nickname string `json:"nickname"`
+	SupportedType string `json:"supportedType"`
 }
 
 type NFTPurchaseRecord struct {

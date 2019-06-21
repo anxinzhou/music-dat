@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/md5"
@@ -9,8 +10,13 @@ import (
 	"errors"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
+	"image"
+	"image/jpeg"
 	"io"
+	"io/ioutil"
 	"math/big"
+	"os"
+	"path"
 	"time"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/client"
 )
@@ -143,6 +149,60 @@ func nftResInfoFromNftInfo(nftInfo *NFTInfo) (*nftInfoListRes,error) {
 		return nil,err
 	}
 	return nftResInfo,nil
+}
+
+func DecryptFile(fileName string, nftType string) (string,error) {
+	if err:=validSupportedType(nftType);err!=nil {
+		err:= errors.New("unknown decryption type")
+		return "",err
+	}
+	//TODO user symmetric key from client to decrypt file
+	var encryptedFilePath string
+	var decryptedFilePath string
+	logs.Debug("nft type from request,", nftType)
+	if nftType == TYPE_NFT_AVATAR {
+		encryptedFilePath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_AVATAR, fileName)
+		decryptedFilePath = path.Join(DECRYPTION_FILE_PATH, NAME_NFT_AVATAR, fileName)
+	} else if nftType == TYPE_NFT_MUSIC {
+		encryptedFilePath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_MUSIC, fileName)
+		decryptedFilePath = path.Join(DECRYPTION_FILE_PATH, NAME_NFT_MUSIC, fileName)
+	} else if nftType == TYPE_NFT_OTHER {
+		encryptedFilePath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_OTHER, fileName)
+		decryptedFilePath = path.Join(DECRYPTION_FILE_PATH, NAME_NFT_OTHER, fileName)
+	}
+	cipherText, err := ioutil.ReadFile(encryptedFilePath)
+	if err!=nil {
+		return "",err
+	}
+
+	nonce, ct := cipherText[:aesgcm.NonceSize()], cipherText[aesgcm.NonceSize():]
+	originalData, err := aesgcm.Open(nil, nonce, ct, nil)
+	if err!=nil {
+		return "",err
+	}
+
+	logs.Debug("length of original data", len(originalData))
+	if nftType == TYPE_NFT_AVATAR || nftType == TYPE_NFT_OTHER {
+		out, err := os.Create(decryptedFilePath)
+		if err != nil {
+			return "",err
+		}
+		defer out.Close()
+		originalImage, _, err := image.Decode(bytes.NewBuffer(originalData))
+		if err != nil {
+			return "",err
+		}
+		err = jpeg.Encode(out, originalImage, nil)
+		if err != nil {
+			return "",err
+		}
+	} else if nftType == TYPE_NFT_MUSIC {
+		err := ioutil.WriteFile(decryptedFilePath, originalData, 0777)
+		if err != nil {
+			return "",err
+		}
+	}
+	return decryptedFilePath,nil
 }
 
 // one to one mapping

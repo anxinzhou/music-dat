@@ -1,7 +1,6 @@
 package ws
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"github.com/astaxie/beego"
@@ -11,11 +10,6 @@ import (
 	"github.com/xxRanger/blockchainUtil/contract/nft"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/client"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
-	"image"
-	"image/jpeg"
-	"io/ioutil"
-	"os"
-	"path"
 )
 
 func (m *Manager) ItemDetailsHandler(c *client.Client, bq *RQBaseInfo, data []byte) {
@@ -118,63 +112,11 @@ func (m *Manager) NFTDisplayHandler(c *client.Client, bq *RQBaseInfo, data []byt
 		return
 	}
 	fileName := mp.FileName
-	//TODO user symmetric key from client to decrypt file
-	var encryptedFilePath string
-	var decryptedFilePath string
-	logs.Debug("nft type from request,", req.SupportedType)
-	if req.SupportedType == TYPE_NFT_AVATAR {
-		encryptedFilePath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_AVATAR, fileName)
-		decryptedFilePath = path.Join(DECRYPTION_FILE_PATH, NAME_NFT_AVATAR, fileName)
-	} else if req.SupportedType == TYPE_NFT_MUSIC {
-		encryptedFilePath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_MUSIC, fileName)
-		decryptedFilePath = path.Join(DECRYPTION_FILE_PATH, NAME_NFT_MUSIC, fileName)
-	} else if req.SupportedType == TYPE_NFT_OTHER {
-		encryptedFilePath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_OTHER, fileName)
-		decryptedFilePath = path.Join(DECRYPTION_FILE_PATH, NAME_NFT_OTHER, fileName)
-	}
-	cipherText, err := ioutil.ReadFile(encryptedFilePath)
-	if err != nil {
+	decryptedFilePath,err:=DecryptFile(fileName,req.SupportedType)
+	if err!=nil {
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
 		return
-	}
-
-	nonce, ct := cipherText[:aesgcm.NonceSize()], cipherText[aesgcm.NonceSize():]
-	originalData, err := aesgcm.Open(nil, nonce, ct, nil)
-	if err != nil {
-		logs.Error(err.Error())
-		m.errorHandler(c, bq, err)
-		return
-	}
-
-	logs.Debug("length of original data", len(originalData))
-	if req.SupportedType == TYPE_NFT_AVATAR || req.SupportedType == TYPE_NFT_OTHER {
-		out, err := os.Create(decryptedFilePath)
-		if err != nil {
-			logs.Error(err.Error())
-			m.errorHandler(c, bq, err)
-			return
-		}
-		defer out.Close()
-		originalImage, _, err := image.Decode(bytes.NewBuffer(originalData))
-		if err != nil {
-			logs.Error(err.Error())
-			m.errorHandler(c, bq, err)
-			return
-		}
-		err = jpeg.Encode(out, originalImage, nil)
-		if err != nil {
-			logs.Error(err.Error())
-			m.errorHandler(c, bq, err)
-			return
-		}
-	} else if req.SupportedType == TYPE_NFT_MUSIC {
-		err := ioutil.WriteFile(decryptedFilePath, originalData, 0777)
-		if err != nil {
-			logs.Error(err.Error())
-			m.errorHandler(c, bq, err)
-			return
-		}
 	}
 
 	m.wrapperAndSend(c, bq, NftShowResponse{

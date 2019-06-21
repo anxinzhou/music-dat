@@ -12,6 +12,7 @@ type StorePurchaseHistroy struct {
 	ActiveTicker string
 	TotalPaid int
 	NftLdefIndex string
+	NftType string
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
 	Status int
 }
@@ -24,6 +25,7 @@ func (this *StorePurchaseHistroy) TableIndex() [][]string {
 		[]string {"TransactionAddress"},
 		[]string {"SellerNickname"},
 		[]string {"SellerWalletId"},
+		[]string {"NftType"},
 	}
 }
 

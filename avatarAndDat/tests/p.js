@@ -21,11 +21,11 @@ var purchaseConfirm = {
     "event": "nft_market", // string
     "action": "NFT_purchase_confirm", // string
     "actId": "APP0123456789", //string
-    "nickname": nickname, // string
+    "nickname": "AlphaBrain", // string
     "nftTranData": [ //array of object
         {
-            "supportedType": "721-04", // string "721-04" for music "721-02" for avatar
-            "nftLdefIndex": "M160196874231178", // string
+            "supportedType": "721-02", // string "721-04" for music "721-02" for avatar
+            "nftLdefIndex": "A99290519599110", // string
         },
     ]
 };
@@ -35,6 +35,7 @@ var purchaseHistory = {
     "action": "nft_purchase_history",
     "actId": "APP01234776789", //string
     "nickname": nickname,
+    "supportedType": "721-02"
 };
 
 var tokenPurchasePending = {
@@ -199,24 +200,24 @@ ws.on('open', async function open() {
     // start = now()
     // ws.send(JSON.stringify(mkinfos));
     // ws.send(JSON.stringify(purchaseConfirm));
-    // ws.send(JSON.stringify(purchaseHistory));
+    ws.send(JSON.stringify(purchaseHistory));
     // ws.send(JSON.stringify(tokenPurchasePending));
     // ws.send(JSON.stringify(tokenPurchaseFinish));
     // ws.send(JSON.stringify(nftshow))
     // ws.send(JSON.stringify(itemDetails))
-    ws.send(JSON.stringify(marketUserList));
+    // ws.send(JSON.stringify(marketUserList));
     // ws.send(JSON.stringify(userMarketInfo));
     // ws.send(JSON.stringify(shoppingCartChangeAdd));
     // ws.send(JSON.stringify(shoppingCartList));
     // ws.send(JSON.stringify(shoppingCartChangeDelete));
     // ws.send(JSON.stringify(nftTransfer));
     // ws.send(JSON.stringify(BindWallet));
-    ws.send(JSON.stringify(setNickname));
+    // ws.send(JSON.stringify(setNickname));
     // ws.send(JSON.stringify(isNicknameDuplicated));
     // ws.send(JSON.stringify(followList));
     // ws.send(JSON.stringify(followOperationAdd));
     // ws.send(JSON.stringify(followOperationDelete));
-    ws.send(JSON.stringify(isNickNameSet));
+    // ws.send(JSON.stringify(isNickNameSet));
 });
 
 ws.on('message', function incoming(data) {
