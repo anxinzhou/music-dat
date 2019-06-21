@@ -24,8 +24,8 @@ var purchaseConfirm = {
     "nickname": "AlphaBrain", // string
     "nftTranData": [ //array of object
         {
-            "supportedType": "721-02", // string "721-04" for music "721-02" for avatar
-            "nftLdefIndex": "A99290519599110", // string
+            "supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+            "nftLdefIndex": "M125751628465743", // string
         },
     ]
 };
@@ -35,7 +35,7 @@ var purchaseHistory = {
     "action": "nft_purchase_history",
     "actId": "APP01234776789", //string
     "nickname": nickname,
-    "supportedType": "721-02"
+    "supportedType": "721-04"
 };
 
 var tokenPurchasePending = {
@@ -85,7 +85,7 @@ var marketUserList = {
     "event": "nft_market", //string
     "action": "market_user_list", //string
     "actId": "APP0123456889", //string
-    "nickname": testnickname,
+    "nickname": "alphaslot2019",
 };
 
 var userMarketInfo = {
@@ -200,12 +200,12 @@ ws.on('open', async function open() {
     // start = now()
     // ws.send(JSON.stringify(mkinfos));
     // ws.send(JSON.stringify(purchaseConfirm));
-    ws.send(JSON.stringify(purchaseHistory));
+    // ws.send(JSON.stringify(purchaseHistory));
     // ws.send(JSON.stringify(tokenPurchasePending));
     // ws.send(JSON.stringify(tokenPurchaseFinish));
     // ws.send(JSON.stringify(nftshow))
     // ws.send(JSON.stringify(itemDetails))
-    // ws.send(JSON.stringify(marketUserList));
+    ws.send(JSON.stringify(marketUserList));
     // ws.send(JSON.stringify(userMarketInfo));
     // ws.send(JSON.stringify(shoppingCartChangeAdd));
     // ws.send(JSON.stringify(shoppingCartList));

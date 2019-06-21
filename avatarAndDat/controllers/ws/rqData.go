@@ -219,6 +219,7 @@ type MarketUserWallet struct {
 	WalletId string `json:"walletId" orm:"column(wallet_id)"`
 	Nickname string `json:"nickname"`
 	Count int `json:"count"`
+	Intro string `json:"intro"`
 	Thumbnail string `json:"thumbnail" orm:"column(user_icon_url)"`
 	Followed bool `json:"followed"`
 }

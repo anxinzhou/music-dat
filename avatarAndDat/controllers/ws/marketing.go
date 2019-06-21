@@ -538,7 +538,10 @@ func (m *Manager) MarketUserListHandler(c *client.Client, bq *RQBaseInfo, data [
 	}
 	o := orm.NewOrm()
 	r := o.Raw(`
-		select wallet_id,nickname,count,user_icon_url from market_user_table where count>0`)
+		select mk.wallet_id,mk.nickname,count,user_icon_url,Intro 
+		 from market_user_table as mk, creator_info as ci
+		 where mk.nickname = ci.nickname
+			`)
 	var walletIdList []MarketUserWallet
 	_, err = r.QueryRows(&walletIdList)
 	if err != nil {

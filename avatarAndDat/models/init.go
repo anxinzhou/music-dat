@@ -67,7 +67,7 @@ func init() {
 	}
 	MongoDB=MongoClient.Database(mongoDatabase)
 
-	// set test creator
+	// set test creator 1
 	o:=orm.NewOrm()
 	userInfo:= CreatorInfo{
 		Username: "alphaslottest",
@@ -78,6 +78,42 @@ func init() {
 	if err!=nil {
 		if err == orm.ErrNoRows {
 			_,err:=o.Insert(&userInfo)
+			if err!=nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
+	}
+
+	// set test creator 2
+	userInfo2:= CreatorInfo{
+		Username: "alphaslottest2",
+		Password: "123456",
+		Nickname: "AlphaBrain2",
+	}
+	err=o.Read(&userInfo2,"username","password")
+	if err!=nil {
+		if err == orm.ErrNoRows {
+			_,err:=o.Insert(&userInfo2)
+			if err!=nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
+	}
+
+	// set test creator 3
+	userInfo3:= CreatorInfo{
+		Username: "alphaslottest3",
+		Password: "123456",
+		Nickname: "AlphaBrain3",
+	}
+	err=o.Read(&userInfo3,"username","password")
+	if err!=nil {
+		if err == orm.ErrNoRows {
+			_,err:=o.Insert(&userInfo3)
 			if err!=nil {
 				panic(err)
 			}
