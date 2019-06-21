@@ -205,6 +205,7 @@
         this.$cookies.remove("avatarUrl");
         this.$cookies.remove("nickname");
         this.$cookies.remove("access-token");
+        this.$cookies.remove("address");
         this.$cookies.remove("account");
         this.$router.replace('/login');
       },
