@@ -74,8 +74,15 @@ func init() {
 		Password: "123456",
 		Nickname: "AlphaBrain",
 	}
-	_,_,err=o.ReadOrCreate(&userInfo,"username","password")
+	err=o.Read(&userInfo,"username","password")
 	if err!=nil {
-		panic(err)
+		if err == orm.ErrNoRows {
+			_,err:=o.Insert(&userInfo)
+			if err!=nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
 	}
 }
