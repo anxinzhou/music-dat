@@ -556,6 +556,9 @@ func (m *Manager) MarketUserListHandler(c *client.Client, bq *RQBaseInfo, data [
 	nickname:= req.Nickname
 	wl := make([]*MarketUserWallet, len(walletIdList))
 	for i, _ := range wl {
+		if walletIdList[i].Thumbnail == "" {
+			walletIdList[i].Thumbnail = "default.jpg"
+		}
 		walletIdList[i].Thumbnail = PathPrefixOfNFT("", PATH_KIND_USER_ICON) + walletIdList[i].Thumbnail
 		wl[i] = &walletIdList[i]
 		followNickname:= wl[i].Nickname
