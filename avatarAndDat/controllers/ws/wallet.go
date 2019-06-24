@@ -172,10 +172,11 @@ func (m *Manager) FollowListHandler(c *client.Client, bq *RQBaseInfo, data []byt
 	type queryInfo struct {
 		FolloweeNickname string `orm:"column(followee_nickname)"`
 		UserIconUrl string `orm:"column(user_icon_url)"`
+		Intro string `orm:"column(intro)"`
 	}
 	var queryResult []queryInfo
 	num,err:=o.Raw(`
-		select followee_nickname,user_icon_url from market_user_table as mk, follow_table as ft
+		select followee_nickname,user_icon_url, intro from market_user_table as mk, follow_table as ft
 		where mk.nickname = ft.followee_nickname and ft.follower_nickname = ?`, nickname).QueryRows(&queryResult)
 	if err!=nil {
 		if err!= orm.ErrNoRows {
@@ -190,6 +191,7 @@ func (m *Manager) FollowListHandler(c *client.Client, bq *RQBaseInfo, data []byt
 		followInfo[i] = &FollowInfo{
 			Nickname: queryResult[i].FolloweeNickname,
 			Thumbnail: PathPrefixOfNFT("", PATH_KIND_USER_ICON)+queryResult[i].UserIconUrl,
+			Intro: queryResult[i].Intro,
 		}
 	}
 	logs.Debug("user has",num,"followee")

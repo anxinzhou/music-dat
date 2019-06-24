@@ -370,6 +370,7 @@ type IsNicknameDuplicatedResponse struct {
 type FollowInfo struct {
 	Nickname string `json:"nickname" orm:"column(nickname)"`
 	Thumbnail string `json:"thumbnail" orm:"user_icon_url"`
+	Intro string `json:"intro"`
 }
 
 // follow list
