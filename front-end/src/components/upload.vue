@@ -120,6 +120,12 @@
                           @change="publisherPercentChange"
                 ></el-input>
               </div>
+              <div class="description">
+                <span>Publisher:</span>
+                <el-input placeholder="User Percent" v-model.number="userPercent" label="Number"
+                          @change="userPercentChange"
+                ></el-input>
+              </div>
             </el-col>
           </el-row>
         </el-col>
@@ -273,12 +279,12 @@
                                prop="nftType"
                                label="Type">
               </el-table-column>
-              <el-table-column :min-width="40"
+              <el-table-column :min-width="25"
                                prop="nftName"
                                label="Name">
               </el-table-column>
               <el-table-column
-                prop="activeTicker" :min-width="40"
+                prop="activeTicker" :min-width="25"
                 label="Active Ticker">
               </el-table-column>
               <el-table-column :min-width="20"
@@ -317,9 +323,13 @@
                 prop="songComposerPercent"
                 label="Song Composer">
               </el-table-column>
+              <el-table-column :min-width="25"
+                               prop="publisherPercent"
+                               label="Publisher">
+              </el-table-column>
               <el-table-column :min-width="45"
-                prop="publisherPercent"
-                label="Publisher">
+                               prop="userPercent"
+                               label="User">
               </el-table-column>
             </el-table>
             <div style="text-align: center;margin-top: 30px;">
@@ -439,6 +449,7 @@
         lyricsWriterPercent: undefined,
         songComposerPercent: undefined,
         publisherPercent: undefined,
+        userPercent: undefined,
         uploadOptions: [
           {
             "type": "dat",
@@ -460,7 +471,7 @@
         return txAddress.slice(0, 20)
       },
       submitDat: function () {
-        if(this.creatorPercent + this.lyricsWriterPercent + this.songComposerPercent + this.publisherPercent !==100) {
+        if(this.creatorPercent + this.lyricsWriterPercent + this.songComposerPercent + this.publisherPercent + this.userPercent !==100) {
           this.$store.state.notifyError("The sum of interest percent should be 100");
           return
         }
@@ -508,6 +519,7 @@
           el.lyricsWriterPercent = nftData.lyricsWriterPercent;
           el.songComposerPercent = nftData.songComposerPercent;
           el.publisherPercent = nftData.publisherPercent;
+          el.userPercent = nftData.userPercent;
         } else if (nftData.supportedType === '721-02') {
           el.nftType = "Avatar"
           el.nftPowerIndex = nftData.nftPowerIndex;
@@ -516,6 +528,7 @@
           el.lyricsWriterPercent = "/";
           el.songComposerPercent = "/";
           el.publisherPercent = "/";
+          el.userPercent = "/";
         } else if (nftData.supportedType === "721-05") {
           el.nftType = "Other";
           el.nftPowerIndex = "/";
@@ -524,6 +537,7 @@
           el.lyricsWriterPercent = "/";
           el.songComposerPercent = "/";
           el.publisherPercent = "/";
+          el.userPercent = "/";
         }
         return el;
       },
@@ -590,6 +604,9 @@
       },
       publisherPercentChange: function() {
         this.$set(this.uploadDatAdditionalData, 'publisherPercent', this.publisherPercent);
+      },
+      userPercentChange: function() {
+        this.$set(this.uploadDatAdditionalData, 'userPercent', this.userPercent);
       },
       datPriceChange: function () {
         this.$set(this.uploadDatAdditionalData, 'price', this.datPrice);

@@ -74,6 +74,7 @@ func (this *UploadController) Upload() {
 		lyricsWriterPercent int
 		songComposerPercent int
 		publisherPercent int
+		userPercent int
 	)
 
 	// set nftmetadata from website
@@ -118,6 +119,13 @@ func (this *UploadController) Upload() {
 		publisherPercent,err = this.GetInt("publisherPercent")
 		if err!=nil {
 			err:= errors.New("publisher percent should be integer")
+			logs.Error(err.Error())
+			sendError(&this.Controller,err,400)
+			return
+		}
+		userPercent,err = this.GetInt("userPercent")
+		if err!=nil {
+			err:= errors.New("user percent should be integer")
 			logs.Error(err.Error())
 			sendError(&this.Controller,err,400)
 			return
@@ -377,6 +385,7 @@ func (this *UploadController) Upload() {
 		LyricsWriterPercent: lyricsWriterPercent,
 		SongComposerPercent: songComposerPercent,
 		PublisherPercent: publisherPercent,
+		UserPercent:userPercent,
 	}
 	_, err = o.Insert(marketInfo)
 	if err != nil {

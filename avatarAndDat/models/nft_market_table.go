@@ -16,6 +16,7 @@ type NftMarketTable struct {
 	LyricsWriterPercent int
 	SongComposerPercent int
 	PublisherPercent int
+	UserPercent int
 }
 
 func (this *NftMarketTable) TableIndex() [][]string {

@@ -65,6 +65,7 @@ type nftInfoListRes struct {
 	LyricsWriterPercent int `json:"lyricsWriterPercent"`
 	SongComposerPercent int `json:"songComposerPercent"`
 	PublisherPercent int `json:"publisherPercent"`
+	UserPercent int `json:"userPercent"`
 }
 
 type nftListResponse struct {
@@ -97,7 +98,7 @@ func (this *NftListController) Get() {
 		nftLdefIndex:= mkInfo.NftLdefIndex
 		r := o.Raw(`
 		select mk.creator_percent, mk.lyrics_writer_percent, mk.song_composer_percent,
-		mk.publisher_percent, mk.price,mk.active_ticker, 
+		mk.publisher_percent, mk.user_percent, mk.price,mk.active_ticker, 
 		ni.nft_type, ni.nft_name, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
 		ni.nft_charac_id,na.short_description, na.long_description,mp.file_name,mk.qty from
 		nft_market_table as mk,
