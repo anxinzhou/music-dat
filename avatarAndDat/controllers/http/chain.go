@@ -61,6 +61,10 @@ type nftInfoListRes struct {
 	LongDesc      string `json:"longDesc" orm:"column(long_description)"`
 	Thumbnail     string `json:"thumbnail" orm:"column(file_name)"`
 	Qty           int    `json:"qty"`
+	CreatorPercent int `json:"creatorPercent"`
+	LyricsWriterPercent int `json:"lyricsWriterPercent"`
+	SongComposerPercent int `json:"songComposerPercent"`
+	PublisherPercent int `json:"publisherPercent"`
 }
 
 type nftListResponse struct {
@@ -88,11 +92,13 @@ func (this *NftListController) Get() {
 	logs.Debug("number of list",num)
 
 	nftTranResponseData := make([]*nftInfoListRes, 0, num)
-	for _, mkInfo := range mkInfos {
+	for i:=len(mkInfos)-1;i>=0;i-- {
+		mkInfo:= mkInfos[i]
 		nftLdefIndex:= mkInfo.NftLdefIndex
 		r := o.Raw(`
-		select ni.nft_type, ni.nft_name,
-		mk.price,mk.active_ticker, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
+		select mk.creator_percent, mk.lyrics_writer_percent, mk.song_composer_percent,
+		mk.publisher_percent, mk.price,mk.active_ticker, 
+		ni.nft_type, ni.nft_name, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
 		ni.nft_charac_id,na.short_description, na.long_description,mp.file_name,mk.qty from
 		nft_market_table as mk,
 		nft_mapping_table as mp,

@@ -70,6 +70,10 @@ func (this *UploadController) Upload() {
 		qty int
 		price int
 		allowAirdrop bool
+		creatorPercent int
+		lyricsWriterPercent int
+		songComposerPercent int
+		publisherPercent int
 	)
 
 	// set nftmetadata from website
@@ -78,12 +82,42 @@ func (this *UploadController) Upload() {
 	if kind == NAME_NFT_MUSIC {
 		price,err = this.GetInt("price")
 		if err!=nil {
+			err:= errors.New("price should be integer")
 			logs.Error(err.Error())
 			sendError(&this.Controller,err,400)
 			return
 		}
 		qty,err =this.GetInt("number")
 		if err!=nil {
+			err:= errors.New("number should be integer")
+			logs.Error(err.Error())
+			sendError(&this.Controller,err,400)
+			return
+		}
+		creatorPercent,err = this.GetInt("creatorPercent")
+		if err!=nil {
+			err:= errors.New("creator percent should be integer")
+			logs.Error(err.Error())
+			sendError(&this.Controller,err,400)
+			return
+		}
+		lyricsWriterPercent,err = this.GetInt("lyricsWriterPercent")
+		if err!=nil {
+			err:= errors.New("lyrics writer percent should be integer")
+			logs.Error(err.Error())
+			sendError(&this.Controller,err,400)
+			return
+		}
+		songComposerPercent,err = this.GetInt("songComposerPercent")
+		if err!=nil {
+			err:= errors.New("song composer percent should be integer")
+			logs.Error(err.Error())
+			sendError(&this.Controller,err,400)
+			return
+		}
+		publisherPercent,err = this.GetInt("publisherPercent")
+		if err!=nil {
+			err:= errors.New("publisher percent should be integer")
 			logs.Error(err.Error())
 			sendError(&this.Controller,err,400)
 			return
@@ -339,6 +373,10 @@ func (this *UploadController) Upload() {
 		SellerWalletId:walletAddress,
 		SellerNickname:nickname,
 		AllowAirdrop:allowAirdrop,
+		CreatorPercent: creatorPercent,
+		LyricsWriterPercent: lyricsWriterPercent,
+		SongComposerPercent: songComposerPercent,
+		PublisherPercent: publisherPercent,
 	}
 	_, err = o.Insert(marketInfo)
 	if err != nil {

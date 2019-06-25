@@ -27,7 +27,7 @@
         </el-col>
 
 
-        <el-col :span="6" :offset="1" v-if="selectedType==='dat'">
+        <el-col :span="10" :offset="1" v-if="selectedType==='dat'">
           <el-row type="flex" align="middle">
             <el-col :span="12">
               <div class="uploadTitle">
@@ -50,48 +50,78 @@
               </el-upload>
             </el-col>
           </el-row>
-          <div class="description">
-            <span>Name:</span>
-            <el-input placeholder="Name" v-model="datName" label="Name"
-                      @change="datNameChange"
-            ></el-input>
-          </div>
-          <div class="description">
-            <span>Price:</span>
-            <el-input placeholder="Price" v-model.number="datPrice" label="Price"
-                      @change="datPriceChange"
-            ></el-input>
-          </div>
-          <div class="description">
-            <span>Number:</span>
-            <el-input placeholder="Number" v-model.number="datNumber" label="Number"
-                      @change="datNumberChange"
-            ></el-input>
-          </div>
-          <div class="description">
-            <span>Short Description:</span>
-            <el-input placeholder="Short Description" type="textarea" v-model="datShortDesc" label="Name"
-                      @change="datShortDescChange"
-            ></el-input>
-          </div>
-          <div class="description">
-            <span>Long Description:</span>
-            <el-input placeholder="Long Description" rows=4 type="textarea" v-model="datLongDesc" label="Name"
-                      @change="datLongDescChange"
-            ></el-input>
-          </div>
-          <el-upload
-            ref="uploadDat"
-            name="file"
-            :action="uploadDatPath"
-            :data="uploadDatAdditionalData"
-            :on-success="uploadDatSuccessHook"
-            :auto-upload="false">
-            <el-button slot="trigger" size="small" type="primary">select music file</el-button>
-            <el-button style="margin-left: 10px;" size="small" type="success" @click="submitDat">upload to server
-            </el-button>
-            <div class="el-upload__tip" slot="tip">Upload music file <b>one at a time</b></div>
-          </el-upload>
+          <el-row type="flex">
+            <el-col :span="16">
+              <div class="description">
+                <span>Name:</span>
+                <el-input placeholder="Name" v-model="datName" label="Name"
+                          @change="datNameChange"
+                ></el-input>
+              </div>
+              <div class="description">
+                <span>Price:</span>
+                <el-input placeholder="Price" v-model.number="datPrice" label="Price"
+                          @change="datPriceChange"
+                ></el-input>
+              </div>
+              <div class="description">
+                <span>Number:</span>
+                <el-input placeholder="Number" v-model.number="datNumber" label="Number"
+                          @change="datNumberChange"
+                ></el-input>
+              </div>
+              <div class="description">
+                <span>Short Description:</span>
+                <el-input placeholder="Short Description" type="textarea" v-model="datShortDesc" label="Name"
+                          @change="datShortDescChange"
+                ></el-input>
+              </div>
+              <div class="description">
+                <span>Long Description:</span>
+                <el-input placeholder="Long Description" rows=4 type="textarea" v-model="datLongDesc" label="Name"
+                          @change="datLongDescChange"
+                ></el-input>
+              </div>
+              <el-upload
+                ref="uploadDat"
+                name="file"
+                :action="uploadDatPath"
+                :data="uploadDatAdditionalData"
+                :on-success="uploadDatSuccessHook"
+                :auto-upload="false">
+                <el-button slot="trigger" size="small" type="primary">select music file</el-button>
+                <el-button style="margin-left: 10px;" size="small" type="success" @click="submitDat">upload to server
+                </el-button>
+                <div class="el-upload__tip" slot="tip">Upload music file <b>one at a time</b></div>
+              </el-upload>
+            </el-col>
+            <el-col :span="12" :offset="2">
+              <div class="description">
+                <span>Creator:</span>
+                <el-input placeholder="Creator Percent" v-model.number="creatorPercent" label="Number"
+                          @change="creatorPercentChange"
+                ></el-input>
+              </div>
+              <div class="description">
+                <span>Lyrics Writer:</span>
+                <el-input placeholder="Lyrics Writer Percent" v-model.number="lyricsWriterPercent" label="Number"
+                          @change="lyricsWriterPercentChange"
+                ></el-input>
+              </div>
+              <div class="description">
+                <span>Song Composer</span>
+                <el-input placeholder="Song Composer Percent" v-model.number="songComposerPercent" label="Number"
+                          @change="songComposerPercentChange"
+                ></el-input>
+              </div>
+              <div class="description">
+                <span>Publisher:</span>
+                <el-input placeholder="Publisher Percent" v-model.number="publisherPercent" label="Number"
+                          @change="publisherPercentChange"
+                ></el-input>
+              </div>
+            </el-col>
+          </el-row>
         </el-col>
 
         <el-col :span="6" :offset="1" v-if="selectedType==='avatar'">
@@ -231,7 +261,7 @@
               :data="tableData.slice((currentPage-1)*pagesize,currentPage*pagesize)"
               stripe
               style="width: 100%">
-              <el-table-column :min-width="60"
+              <el-table-column :min-width="40"
                                prop="nftLdefIndex"
                                label="Def Index">
                 <template slot-scope="scope">
@@ -239,11 +269,11 @@
                                class="buttonText"><a>{{scope.row.nftLdefIndex}}</a></router-link>
                 </template>
               </el-table-column>
-              <el-table-column :min-width="40"
+              <el-table-column :min-width="20"
                                prop="nftType"
                                label="Type">
               </el-table-column>
-              <el-table-column :min-width="60"
+              <el-table-column :min-width="40"
                                prop="nftName"
                                label="Name">
               </el-table-column>
@@ -251,7 +281,7 @@
                 prop="activeTicker" :min-width="40"
                 label="Active Ticker">
               </el-table-column>
-              <el-table-column :min-width="25"
+              <el-table-column :min-width="20"
                                prop="nftValue"
                                label="Price">
               </el-table-column>
@@ -263,17 +293,33 @@
                                prop="nftPowerIndex"
                                label="Power">
               </el-table-column>
-              <el-table-column :min-width="25"
+              <el-table-column :min-width="20"
                                prop="nftLifeIndex"
                                label="Life">
               </el-table-column>
-              <el-table-column :min-width="50"
+              <el-table-column :min-width="40"
                                prop="shortDesc"
                                label="Short desc">
               </el-table-column>
-              <el-table-column
-                prop="longDesc"
-                label="Long desc">
+              <el-table-column :min-width="40"
+                               prop="longDesc"
+                               label="Long desc">
+              </el-table-column>
+              <el-table-column :min-width="25"
+                prop="creatorPercent"
+                label="Creator">
+              </el-table-column>
+              <el-table-column :min-width="25"
+                prop="lyricsWriterPercent"
+                label="Lyrics Writer">
+              </el-table-column>
+              <el-table-column :min-width="25"
+                prop="songComposerPercent"
+                label="Song Composer">
+              </el-table-column>
+              <el-table-column :min-width="45"
+                prop="publisherPercent"
+                label="Publisher">
               </el-table-column>
             </el-table>
             <div style="text-align: center;margin-top: 30px;">
@@ -389,6 +435,10 @@
         selectedType: undefined,
         allowAirdrop: true,
         intro: '',
+        creatorPercent: undefined,
+        lyricsWriterPercent: undefined,
+        songComposerPercent: undefined,
+        publisherPercent: undefined,
         uploadOptions: [
           {
             "type": "dat",
@@ -410,6 +460,10 @@
         return txAddress.slice(0, 20)
       },
       submitDat: function () {
+        if(this.creatorPercent + this.lyricsWriterPercent + this.songComposerPercent + this.publisherPercent !==100) {
+          this.$store.state.notifyError("The sum of interest percent should be 100");
+          return
+        }
         this.$refs.uploadDat.submit();
       },
       submitAvatar: function () {
@@ -450,14 +504,26 @@
           el.nftType = "Dat"
           el.nftPowerIndex = "/"
           el.nftLifeIndex = "/"
+          el.creatorPercent = nftData.creatorPercent;
+          el.lyricsWriterPercent = nftData.lyricsWriterPercent;
+          el.songComposerPercent = nftData.songComposerPercent;
+          el.publisherPercent = nftData.publisherPercent;
         } else if (nftData.supportedType === '721-02') {
           el.nftType = "Avatar"
           el.nftPowerIndex = nftData.nftPowerIndex;
           el.nftLifeIndex = nftData.nftLifeIndex;
+          el.creatorPercent = "/";
+          el.lyricsWriterPercent = "/";
+          el.songComposerPercent = "/";
+          el.publisherPercent = "/";
         } else if (nftData.supportedType === "721-05") {
-          el.nftType = "Other"
-          el.nftPowerIndex = "/"
-          el.nftLifeIndex = "/"
+          el.nftType = "Other";
+          el.nftPowerIndex = "/";
+          el.nftLifeIndex = "/";
+          el.creatorPercent = "/";
+          el.lyricsWriterPercent = "/";
+          el.songComposerPercent = "/";
+          el.publisherPercent = "/";
         }
         return el;
       },
@@ -512,6 +578,18 @@
       },
       datNumberChange: function () {
         this.$set(this.uploadDatAdditionalData, 'number', this.datNumber);
+      },
+      creatorPercentChange: function() {
+        this.$set(this.uploadDatAdditionalData, 'creatorPercent', this.creatorPercent);
+      },
+      lyricsWriterPercentChange: function() {
+        this.$set(this.uploadDatAdditionalData, 'lyricsWriterPercent', this.lyricsWriterPercent);
+      },
+      songComposerPercentChange: function() {
+        this.$set(this.uploadDatAdditionalData, 'songComposerPercent', this.songComposerPercent);
+      },
+      publisherPercentChange: function() {
+        this.$set(this.uploadDatAdditionalData, 'publisherPercent', this.publisherPercent);
       },
       datPriceChange: function () {
         this.$set(this.uploadDatAdditionalData, 'price', this.datPrice);

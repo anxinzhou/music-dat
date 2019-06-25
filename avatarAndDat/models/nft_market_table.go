@@ -12,6 +12,10 @@ type NftMarketTable struct {
 	Active bool
 	ActiveTicker string
 	AllowAirdrop bool
+	CreatorPercent int
+	LyricsWriterPercent int
+	SongComposerPercent int
+	PublisherPercent int
 }
 
 func (this *NftMarketTable) TableIndex() [][]string {
