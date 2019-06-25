@@ -1,6 +1,8 @@
 package http
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,7 +10,6 @@ import (
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
-	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -167,15 +168,32 @@ func (this *AvatarController) SetAvatar() {
 		sendError(&this.Controller,err,400)
 		return
 	}
+
+	data,err:= ReadFileFromRequest(file)
+	if err!=nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	h:=md5.New()
+	h.Write(data)
+	fileName:=hex.EncodeToString(h.Sum(nil))+".jpg"
+
+
 	nickname:= this.Ctx.Input.Param(":nickname")
-	fileName:= UserIconPathFromNickname(nickname)
 	savingPath:= path.Join(USER_ICON_PATH,fileName)
 	f, err := os.OpenFile(savingPath, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	io.Copy(f,file)
+	_,err=f.Write(data)
+	if err!=nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	defer f.Close()
 	userInfo:= models.MarketUserTable{
 		Nickname:nickname,
 		UserIconUrl: fileName,

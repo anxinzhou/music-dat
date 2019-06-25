@@ -277,11 +277,13 @@
             'Content-Type': 'multipart/form-data'
           }
         }).then(res=>{
-            this.imageUrl = res.data.avatarUrl;
-            this.$cookies.set('avatarUrl',this.imageUrl);
-            this.avatarUrl  = this.imageUrl;
-            this.newAvatar = undefined;
             this.avatarEditing = false;
+            let url = res.data.avatarUrl;
+            this.$cookies.set('avatarUrl',url);
+            this.avatarUrl = undefined;
+            this.avatarUrl  = url;
+            this.newAvatar = undefined;
+            this.imageUrl = undefined;
         }).catch(err=>{
           this.$store.state.notifyError(err.response.data.reason);
           console.log(err.response.data.reason);

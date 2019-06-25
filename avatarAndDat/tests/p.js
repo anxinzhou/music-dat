@@ -165,7 +165,7 @@ var followList = {
     "event": "user_activity",  // string
     "action": "follow_list", // string
     "actId": "APP01234776789", // string
-    "nickname": testnickname,
+    "nickname": "alphaslot2019",
 };
 
 var followOperationAdd = {
@@ -205,7 +205,7 @@ ws.on('open', async function open() {
     // ws.send(JSON.stringify(tokenPurchaseFinish));
     // ws.send(JSON.stringify(nftshow))
     // ws.send(JSON.stringify(itemDetails))
-    ws.send(JSON.stringify(marketUserList));
+    // ws.send(JSON.stringify(marketUserList));
     // ws.send(JSON.stringify(userMarketInfo));
     // ws.send(JSON.stringify(shoppingCartChangeAdd));
     // ws.send(JSON.stringify(shoppingCartList));
@@ -214,7 +214,7 @@ ws.on('open', async function open() {
     // ws.send(JSON.stringify(BindWallet));
     // ws.send(JSON.stringify(setNickname));
     // ws.send(JSON.stringify(isNicknameDuplicated));
-    // ws.send(JSON.stringify(followList));
+    ws.send(JSON.stringify(followList));
     // ws.send(JSON.stringify(followOperationAdd));
     // ws.send(JSON.stringify(followOperationDelete));
     // ws.send(JSON.stringify(isNickNameSet));
