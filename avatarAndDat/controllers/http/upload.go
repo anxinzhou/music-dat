@@ -478,6 +478,11 @@ func (this *UploadController) Upload() {
 		Qty: qty,
 		SupportedType: nftType,
 		Thumbnail: marketFileName,
+		CreatorPercent:creatorPercent,
+		LyricsWriterPercent:lyricsWriterPercent,
+		SongComposerPercent:songComposerPercent,
+		PublisherPercent:publisherPercent,
+		UserPercent:userPercent,
 	}
 	this.Data["json"] = res
 	this.ServeJSON()
