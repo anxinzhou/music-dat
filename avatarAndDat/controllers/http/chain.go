@@ -78,7 +78,7 @@ func (this *NftListController) Get() {
 	o:=orm.NewOrm()
 	var mkInfos []models.NftMarketTable
 	num,err:=o.QueryTable("nft_market_table").
-		Filter("seller_nickname",nickname).
+		Filter("seller_nickname",nickname).OrderBy("-timestamp").
 		All(&mkInfos,"nft_ldef_index")
 	if err!=nil {
 		if err == orm.ErrNoRows {

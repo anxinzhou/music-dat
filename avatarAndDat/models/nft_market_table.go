@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type NftMarketTable struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	SellerWalletId string
@@ -17,6 +19,7 @@ type NftMarketTable struct {
 	SongComposerPercent int
 	PublisherPercent int
 	UserPercent int
+	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
 }
 
 func (this *NftMarketTable) TableIndex() [][]string {
@@ -26,5 +29,6 @@ func (this *NftMarketTable) TableIndex() [][]string {
 		[]string{"SellerNickname"},
 	}
 }
+
 
 
