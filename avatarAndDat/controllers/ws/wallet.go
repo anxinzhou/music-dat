@@ -188,6 +188,9 @@ func (m *Manager) FollowListHandler(c *client.Client, bq *RQBaseInfo, data []byt
 
 	followInfo:=make([]*FollowInfo,num)
 	for i,_:= range queryResult {
+		if queryResult[i].UserIconUrl == "" {
+			queryResult[i].UserIconUrl = "default.jpg"
+		}
 		followInfo[i] = &FollowInfo{
 			Nickname: queryResult[i].FolloweeNickname,
 			Thumbnail: PathPrefixOfNFT("", PATH_KIND_USER_ICON)+queryResult[i].UserIconUrl,
