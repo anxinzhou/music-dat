@@ -121,7 +121,7 @@
                 ></el-input>
               </div>
               <div class="description">
-                <span>Publisher:</span>
+                <span>User:</span>
                 <el-input placeholder="User Percent" v-model.number="userPercent" label="Number"
                           @change="userPercentChange"
                 ></el-input>
