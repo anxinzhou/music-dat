@@ -1,4 +1,4 @@
-package ws
+package mobile
 
 import (
 	"context"
@@ -293,9 +293,9 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 		Coin string `bson:"coin"`
 	}
 
-	nickname := req.Nickname
+	uuid:= req.Uuid
 	filter := bson.M{
-		"nickname": nickname,
+		"uuid": uuid,
 	}
 
 	var queryResult fields
@@ -314,7 +314,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 		m.errorHandler(c, bq, err)
 		return
 	}
-	logs.Debug("nickname", nickname, "current balance:", currentBalance)
+	logs.Debug("uuid", uuid, "current balance:", currentBalance)
 
 	finalBalance := currentBalance - needToPay
 	if finalBalance < 0 {
@@ -333,7 +333,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, bq *RQBaseInfo, data 
 		return
 	}
 
-	logs.Warn("update balance of user", nickname, " to", finalBalance)
+	logs.Warn("update balance of user", uuid, " to", finalBalance)
 
 
 	walletAddress,err := models.WalletIdOfNickname(nickname)

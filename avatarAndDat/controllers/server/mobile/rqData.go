@@ -1,4 +1,4 @@
-package ws
+package mobile
 
 const (
 	GuestId = iota
@@ -75,7 +75,7 @@ type MpListResponse struct {
 
 type PurchaseConfirmRequest struct {
 	RQBaseInfo
-	Nickname string `json:"nickname"`
+	Uuid string `json:"uuid"`
 	NftTranData []*NftBaseInfo `json:"nftTranData"`
 }
 

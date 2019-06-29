@@ -1,6 +1,8 @@
-package ws
+package mobile
 
 import (
+	"encoding/json"
+	"github.com/astaxie/beego/logs"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/client"
 )
 
@@ -66,20 +68,26 @@ func (m *Manager) Init() {
 	m.RegisterHandler("is_nickname_set",m.IsNicknameSetHandler)
 }
 
-//func (m *Manager) DisPatchMsg() {
-//	for {
-//		select {
-//		case c := <-m.register:
-//			m.clients[c] = true
-//			log.Println("a new user connect")
-//		case <-m.unregister:
-//			//delete(m.clients, c)
-//			log.Println("a user unregister disconnect")
-//		case message := <-m.broadcast:
-//			log.Println("broadcast a message:", string(message))
-//			for c, _ := range m.clients {
-//				c.Send(message) // an active user may block other user here, fix in the future
-//			}
-//		}
-//	}
-//}
+func (m *Manager) errorHandler(c *client.Client, bq *RQBaseInfo, err error) {
+	bq.Event = "failed"
+	res := &ErrorResponse{
+		RQBaseInfo: *bq,
+		Reason:     err.Error(),
+	}
+	resWrapper, err := json.Marshal(res)
+	if err != nil {
+		panic(err)
+		return
+	}
+	c.Send(resWrapper)
+}
+
+func (m *Manager) wrapperAndSend(c *client.Client, bq *RQBaseInfo, v interface{}) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, bq, err)
+		return
+	}
+	c.Send(data)
+}

@@ -3,20 +3,20 @@ package routers
 import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
-	"github.com/xxRanger/music-dat/avatarAndDat/controllers/http"
-	"github.com/xxRanger/music-dat/avatarAndDat/controllers/ws"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/mobile"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/web"
 )
 
 func init() {
 	logs.Info("initial router")
 
-	m:=ws.NewManager()
+	m:= mobile.NewManager()
 	m.Init()
 	// set chain handler
-	chainHandler,err:= ws.NewChainHandler(&ws.ChainConfig{
+	chainHandler,err:= mobile.NewChainHandler(&mobile.ChainConfig{
 		ContractAddress: beego.AppConfig.String("contractAddress"),
 		Port: beego.AppConfig.String("chainWS"),
-		Account: ws.AccountConfig{
+		Account: mobile.AccountConfig{
 			Address: beego.AppConfig.String("masterAddress"),
 			PrivateKey:beego.AppConfig.String("masterPrivateKey"),
 		},
@@ -26,44 +26,40 @@ func init() {
 		panic(err)
 	}
 	m.SetChainHandler(chainHandler)
-	wsHandler:= &ws.WebSocketHandler{
+	wsHandler:= &mobile.WebSocketHandler{
 		M: m,
 	}
-	chainHelper:= http.NewChainHelper()
-	upLoadController:= &http.UploadController{}
+	chainHelper:= web.NewChainHelper()
+	upLoadController:= &web.UploadController{}
 	upLoadController.C = chainHelper
-	nftBalanceController:= &http.NftBalanceController{}
-	nftBalanceController.C = chainHelper
-	nftListController:= &http.NftListController{}
+	nftListController:= &web.NftListController{}
 	nftListController.C = chainHelper
-	rewardController:= &http.RewardController{}
+	rewardController:= &web.RewardController{}
 	rewardController.C = chainHelper
-	childrenOfNFTController := &http.ChildrenOfNFTController{}
+	childrenOfNFTController := &web.ChildrenOfNFTController{}
 	childrenOfNFTController.C = chainHelper
-	numOfChildrenController:= &http.NumOfChildrenController{}
+	numOfChildrenController:= &web.NumOfChildrenController{}
 	numOfChildrenController.C = chainHelper
-	marketTransactionHistoryController:= &http.MarketTransactionHistoryController{}
+	marketTransactionHistoryController:= &web.MarketTransactionHistoryController{}
 	marketTransactionHistoryController.C = chainHelper
-	nicknameController:= &http.NicknameController{}
-	introController:= &http.IntroController{}
-	avatarController:= &http.AvatarController{}
-	walletController:= &http.WalletController{}
+	nicknameController:= &web.NicknameController{}
+	introController:= &web.IntroController{}
+	avatarController:= &web.AvatarController{}
+	walletController:= &web.WalletController{}
 
-	beego.Router("/", &http.MainController{})
 	beego.Router("/ws", wsHandler)
-	beego.Router("/admin",&http.AdminController{},"post:Login")
+	beego.Router("/admin",&web.AdminController{},"post:Login")
 	beego.Router("/file/:kind(avatar|dat|other)",upLoadController,"get:Get;post:Upload")
-	beego.Router("/balance/:nickname:string",nftBalanceController)
-	beego.Router("/nftList/:nickname:string",nftListController)
-	beego.Router("/rewardDat/:nickname:string",rewardController,"get:RewardDat")
+	beego.Router("/nftList/:uuid:string",nftListController)
+	beego.Router("/rewardDat/:uuid:string",rewardController,"get:RewardDat")
 	beego.Router("/nfts/:parentIndex:string/children", childrenOfNFTController)
 	beego.Router("/nfts/:parentIndex:string/balance", numOfChildrenController)
 	//beego.Router("/wallet",&http.ImportWalletController{},"post:ImportWallet")
-	beego.Router("/market/transactionHistory/:nickname:string",marketTransactionHistoryController,"get:MarketTransactionHistory")
-	beego.Router("/profile/:nickname/nickname",nicknameController,"get:GetNickname;post:SetNickname")
-	beego.Router("/profile/:nickname/avatar",avatarController,"get:GetAvatar;post:SetAvatar")
-	beego.Router("/profile/:nickname/intro",introController,"get:GetIntro;post:SetIntro")
-	beego.Router("/profile/:nickname/wallet",walletController,"get:GetWallet;post:SetWallet")
+	beego.Router("/market/transactionHistory/:uuid:string",marketTransactionHistoryController,"get:MarketTransactionHistory")
+	beego.Router("/profile/:uuid/nickname",nicknameController,"get:GetNickname;post:SetNickname")
+	beego.Router("/profile/:uuid/avatar",avatarController,"get:GetAvatar;post:SetAvatar")
+	beego.Router("/profile/:uuid/intro",introController,"get:GetIntro;post:SetIntro")
+	beego.Router("/profile/:uuid/wallet",walletController,"get:GetWallet;post:SetWallet")
 }
 
 

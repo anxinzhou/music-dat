@@ -43,24 +43,15 @@
       signin: function () {
         let httpPath = this.$store.state.config.httpPath;
         this.axios.post(`${httpPath}/admin`,{
-          loginType: 3,
           username: this.username,
           password: this.password,
         }).then(res => {
-          let avatarUrl = res.data.avatarUrl;
-          let nickname = res.data.nickname;
-          let accessToken = res.data.accessToken;
-          let address = res.data.address;
-          if(address!=='') {
-            this.$cookies.set("address",address);
-          }
-          this.$cookies.set("avatarUrl",avatarUrl);
-          this.$cookies.set("nickname",nickname);
-          this.$cookies.set("access-token", accessToken);
-          this.$router.replace('/mnemonic');
+          this.$cookies.set("uuid",res.data.uuid);
+          this.$cookies.set("access-token", res.data.accessToken);
+          this.$router.replace('/');
         }).catch(err=>{
           if (err.response.status === 401) {
-            this.$store.state.notifyError("wrong user name or password");
+            this.$store.state.notifyError("wrong username or password");
           } else {
             this.$store.state.notifyError("server internal error");
           }

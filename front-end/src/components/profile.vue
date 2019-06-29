@@ -186,7 +186,7 @@
       return {
         avatarUrl: '',
         nickname: '',
-        address: '',
+        balance: '',
         nicknameEditing: false,
         avatarEditing: false,
         introEditing: false,
@@ -305,6 +305,30 @@
         }
         console.log(file.raw);
       },
+      getIntro: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/intro`).then(res=>{
+          this.intro = res.data.intro;
+        }).catch(console.log);
+      },
+      getNickname: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/nickname`).then(res=>{
+          this.nickname = res.data.nickname;
+        }).catch(console.log);
+      },
+      getWallet: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/wallet`).then(res=>{
+          this.address = res.data.address;
+        }).catch(console.log);
+      },
+      getAvatarUrl: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/avatar`).then(res=>{
+          this.address = res.data.avatarUrl;
+        }).catch(console.log);
+      }
     },
     mounted: function () {
       // var el = document.getElementById('mainNav')
@@ -320,14 +344,11 @@
       // window.addEventListener('scroll', scrollHandle)
     },
     created: function () {
-      this.avatarUrl = this.$cookies.get('avatarUrl');
-      this.nickname = this.$cookies.get('nickname');
-      this.address = this.$cookies.get('address');
-      let httpPath = this.$store.state.config.httpPath;
-      let nickname = this.nickname;
-      this.axios.get(`${httpPath}/profile/${nickname}/intro`).then(res=>{
-        this.intro = res.data.intro;
-      }).catch(console.log);
+      let uuid = this.$cookies.get('uuid');
+      this.getIntro(uuid);
+      this.getNickname(uuid);
+      this.getWallet(uuid);
+      this.getAvatarUrl(uuid);
     },
     beforeCreate: function () {
     }

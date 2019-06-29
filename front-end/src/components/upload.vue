@@ -1,3 +1,4 @@
+<script src="../router.js"></script>
 <template>
   <div>
     <section class="bg-white">
@@ -440,7 +441,6 @@
         nftList: undefined,
         nickname: undefined,
         avatarUrl: undefined,
-        username: undefined,
         imageUrl: undefined,
         selectedType: undefined,
         allowAirdrop: true,
@@ -639,24 +639,37 @@
         this.$set(this.uploadDatAdditionalData, 'allowAirdrop', value);
         this.$set(this.uploadOtherAdditionalData, 'allowAirdrop', value);
       },
-      getIntro: function (nickname) {
+      getIntro: function(uuid) {
         let httpPath = this.$store.state.config.httpPath;
-        this.axios.get(`${httpPath}/profile/${nickname}/intro`).then(res => {
+        this.axios.get(`${httpPath}/profile/${uuid}/intro`).then(res=>{
           this.intro = res.data.intro;
+        }).catch(console.log);
+      },
+      getNickname: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/nickname`).then(res=>{
+          this.nickname = res.data.nickname;
+          this.totalNFT = res.data.balance;
+        }).catch(console.log);
+      },
+      getWallet: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/wallet`).then(res=>{
+          this.address = res.data.address;
+        }).catch(console.log);
+      },
+      getAvatarUrl: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/avatar`).then(res=>{
+          this.address = res.data.avatarUrl;
         }).catch(console.log);
       }
     },
     created: function () {
       // console.log(this.$store.state.account)
       // init variables
-      this.username = this.$cookies.get('username');
-      this.nickname = this.$cookies.get('nickname');
-      this.avatarUrl = this.$cookies.get('avatarUrl');
-      let address = this.$cookies.get('address');
-      let nickname = this.nickname;
-      console.log("address:", address);
-      this.address = address;
-      this.httpPath = this.$store.state.config.httpPath;
+
+      let uuid = this.$cookies.get('uuid');
       this.uploadDatPath = this.httpPath + "/file/dat";
       this.uploadAvatarPath = this.httpPath + "/file/avatar";
       this.uploadOtherPath = this.httpPath + "/file/other";
@@ -680,7 +693,10 @@
 
       // set default select item
       this.selectedType = this.uploadOptions[0].type;
-      this.getIntro(nickname);
+      this.getIntro(uuid);
+      this.getNickname(uuid);
+      this.getWallet(uuid);
+      this.getAvatarUrl(uuid);
     }
   }
 </script>

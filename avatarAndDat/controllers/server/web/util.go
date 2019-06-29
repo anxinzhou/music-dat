@@ -1,18 +1,21 @@
-package http
+package web
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"github.com/astaxie/beego"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/xxRanger/blockchainUtil/chain"
 	"github.com/xxRanger/blockchainUtil/contract"
 	"github.com/xxRanger/blockchainUtil/contract/nft"
 	"github.com/xxRanger/blockchainUtil/sender"
+	"github.com/xxRanger/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/common"
+	"io"
+	"math/rand"
+	"strconv"
+	"time"
 )
 
-type ErrorResponse struct {
-	Reason string `json:"reason"`
-}
 
 type ContractController struct {
 	beego.Controller
@@ -56,4 +59,23 @@ func NewChainHelper() *ChainHelper {
 		account:account,
 		smartContract: smartContract,
 	}
+}
+
+func sendError(c beego.ControllerInterface,err error, statusCode int) {
+	type ErrorResponse struct {
+		Reason string `json:"reason"`
+	}
+	controller:=c.(*beego.Controller)
+	controller.Ctx.ResponseWriter.ResponseWriter.WriteHeader(statusCode)
+	controller.Data["json"] = &ErrorResponse{
+		Reason: err.Error(),
+	}
+	controller.ServeJSON()
+}
+
+func generateAccessToken() string{
+	h := md5.New()
+	io.WriteString(h, strconv.FormatInt(time.Now().UnixNano()|rand.Int63(), 10))
+	accessToken:= hex.EncodeToString(h.Sum(nil))
+	return accessToken
 }

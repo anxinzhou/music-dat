@@ -1,4 +1,4 @@
-package http
+package web
 
 import (
 	"crypto/md5"
@@ -9,6 +9,8 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"io/ioutil"
 	"os"
@@ -20,7 +22,30 @@ type NicknameController struct {
 }
 
 func (this *NicknameController) GetNickname() {
-
+	uuid:= this.Ctx.Input.Param(":uuid")
+	var userInfo models.UserInfo
+	o:=orm.NewOrm()
+	err:=o.QueryTable("user_info").Filter("uuid",uuid).
+		One(&userInfo,"nickname")
+	if err!=nil {
+		if err==orm.ErrNoRows {
+			err := errors.New("no such user")
+			sendError(&this.Controller,err,404)
+			return
+		} else {
+			sendError(&this.Controller,err,500)
+			return
+		}
+	}
+	nickname:= userInfo.Nickname
+	type response struct {
+		Nickname string `json:"nickname"`
+	}
+	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
+	this.Data["json"] = &response{
+		Nickname: nickname,
+	}
+	this.ServeJSON()
 }
 
 func (this *NicknameController) SetNickname() {
@@ -32,33 +57,28 @@ type IntroController struct {
 }
 
 func (this *IntroController) GetIntro() {
-	nickname:= this.Ctx.Input.Param(":nickname")
-	logs.Debug("user",nickname,"query intro")
-	userInfo:= models.MarketUserTable{
-		Nickname:nickname,
-	}
+	uuid:= this.Ctx.Input.Param(":uuid")
+	var userInfo models.UserInfo
 	o:=orm.NewOrm()
-	err:=o.Read(&userInfo)
+	err:=o.QueryTable("user_info").Filter("uuid",uuid).
+		One(&userInfo,"intro")
 	if err!=nil {
-		if err == orm.ErrNoRows {
-			err:= errors.New("no such user")
-			if err!=nil {
-				logs.Error(err.Error())
-				sendError(&this.Controller,err,400)
-				return
-			}
+		if err==orm.ErrNoRows {
+			err := errors.New("no such user")
+			sendError(&this.Controller,err,404)
+			return
 		} else {
-			logs.Error(err.Error())
 			sendError(&this.Controller,err,500)
 			return
 		}
 	}
-	type IntroResponse struct {
+	intro:= userInfo.Intro
+	type response struct {
 		Intro string `json:"intro"`
 	}
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
-	this.Data["json"] = &IntroResponse{
-		Intro: userInfo.Intro,
+	this.Data["json"] = &response{
+		Intro: intro,
 	}
 	this.ServeJSON()
 }
@@ -113,7 +133,46 @@ type WalletController struct {
 }
 
 func (this *WalletController) GetWallet() {
+	uuid:= this.Ctx.Input.Param(":uuid")
+	userInfo:=models.UserInfo {
+		Uuid:uuid,
+	}
+	o:=orm.NewOrm()
+	err:=o.Read(&userInfo)
+	if err!=nil {
+		if err==orm.ErrNoRows {
+			err := errors.New("no such user")
+			sendError(&this.Controller,err,404)
+			return
+		} else {
+			sendError(&this.Controller,err,500)
+			return
+		}
+	}
+	if userInfo.UserMarketInfo!=nil {
+		err:=o.Read(userInfo.UserMarketInfo)
+		if err!=nil {
+			sendError(&this.Controller,err,500)
+			return
+		}
+	} else {
+		err:= errors.New("user have not set wallet")
+		sendError(&this.Controller,err,404)
+		return
+	}
 
+	wallet:=userInfo.UserMarketInfo.Wallet
+	count:= userInfo.UserMarketInfo.Count
+	type response struct {
+		Wallet string `json:"wallet"`
+		Count int 	`json:"count"`
+	}
+	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
+	this.Data["json"] = &response{
+		Wallet: wallet,
+		Count: count,
+	}
+	this.ServeJSON()
 }
 
 type SetWalletRequest struct {
@@ -157,7 +216,33 @@ type AvatarController struct {
 }
 
 func (this *AvatarController) GetAvatar() {
+	uuid:= this.Ctx.Input.Param(":uuid")
+	var userInfo models.UserInfo
+	o:=orm.NewOrm()
+	err:=o.QueryTable("user_info").Filter("uuid",uuid).
+		One(&userInfo,"avatar_file_name")
+	if err!=nil {
+		if err==orm.ErrNoRows {
+			err := errors.New("no such user")
+			sendError(&this.Controller,err,404)
+			return
+		} else {
+			sendError(&this.Controller,err,500)
+			return
+		}
+	}
 
+	avatarFileName:= userInfo.AvatarFileName
+	avatarUrl:=util.PathPrefixOfNFT("",common.PATH_KIND_USER_ICON)+ avatarFileName
+
+	type response struct {
+		AvatarUrl string `json:"avatarUrl"`
+	}
+	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
+	this.Data["json"] = &response{
+		AvatarUrl: avatarUrl,
+	}
+	this.ServeJSON()
 }
 
 func (this *AvatarController) SetAvatar() {
@@ -216,4 +301,3 @@ func (this *AvatarController) SetAvatar() {
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 	this.ServeJSON()
 }
-

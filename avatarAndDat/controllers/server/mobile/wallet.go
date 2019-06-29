@@ -1,4 +1,4 @@
-package ws
+package mobile
 
 import (
 	"context"
@@ -104,11 +104,11 @@ func (m *Manager) SetNicknameHandler(c *client.Client, bq *RQBaseInfo, data []by
 	}
 
 	o:= orm.NewOrm()
-	userBaseInfo:= models.UserBaseInfo{
+	userBaseInfo:= models.MarketUserTable{
 		Uuid:uuid,
 		Nickname:nickname,
 	}
-	_,err=o.Insert(&userBaseInfo)
+	_,err=o.InsertOrUpdate(&userBaseInfo,"nickname")
 	if err!=nil {
 		logs.Error(err.Error())
 		m.errorHandler(c, bq, err)
