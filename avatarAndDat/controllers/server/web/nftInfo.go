@@ -8,17 +8,20 @@ import (
 	"github.com/astaxie/beego/orm"
 	"github.com/nfnt/resize"
 	"github.com/xxRanger/blockchainUtil/contract/nft"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"image"
 	"image/jpeg"
 	"io"
 	"io/ioutil"
 	"math/big"
-	"math/rand"
+	"mime/multipart"
 	"os"
 	"path"
 	"strconv"
 	"time"
+	"crypto/rand"
 )
 
 type RewardController struct {
@@ -281,147 +284,24 @@ type UploadController struct {
 	ContractController
 }
 
-func (this *UploadController) sendError(err error, statusCode int) {
-	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(500)
-	this.Data["json"] = &ErrorResponse{
-		Reason: err.Error(),
-	}
-	this.ServeJSON()
+type uplodBaseInfo struct {
+	File multipart.File
+	Uuid string
+	NftName string
+	ShortDesc string
+	LongDesc string
 }
 
-func (this *UploadController) Get() {
-	fileName := this.GetString("name")
-	logs.Debug("download", fileName)
-	this.Ctx.Output.Download(FILE_SAVING_PATH + fileName)
-	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
-}
+func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
+	fileNamePrefix := util.RandomPathFromFileName("file")
+	fileName:= fileNamePrefix+".jpg"
 
-func (this *UploadController) Upload() {
-	kind := this.Ctx.Input.Param(":kind")
-	file, header, err := this.GetFile("file")
-	if err != nil {
-		logs.Error(err.Error())
-		sendError(&this.Controller,err,400)
-		return
-	}
-
-	// check parameters from website
-
-	// nft metadata
-	var (
-		nftType        string
-		nftName        string
-		nftLdefIndex   string
-		nftLifeIndex   *big.Int
-		distIndex      string
-		nftPowerIndex  *big.Int
-		nftCharacterId string
-		publicKey      []byte
-		shortDesc string
-		longDesc string
-		nftParentLdef string
-		typeId string
-		qty int
-		price int
-		allowAirdrop bool
-		creatorPercent int
-		lyricsWriterPercent int
-		songComposerPercent int
-		publisherPercent int
-		userPercent int
-	)
-
-	// set nftmetadata from website
-	// TODO
-	// now can set price and qty from website
-	if kind == NAME_NFT_MUSIC {
-		price,err = this.GetInt("price")
-		if err!=nil {
-			err:= errors.New("price should be integer")
-			logs.Error(err.Error())
-			sendError(&this.Controller,err,400)
-			return
-		}
-		qty,err =this.GetInt("number")
-		if err!=nil {
-			err:= errors.New("number should be integer")
-			logs.Error(err.Error())
-			sendError(&this.Controller,err,400)
-			return
-		}
-		creatorPercent,err = this.GetInt("creatorPercent")
-		if err!=nil {
-			err:= errors.New("creator percent should be integer")
-			logs.Error(err.Error())
-			sendError(&this.Controller,err,400)
-			return
-		}
-		lyricsWriterPercent,err = this.GetInt("lyricsWriterPercent")
-		if err!=nil {
-			err:= errors.New("lyrics writer percent should be integer")
-			logs.Error(err.Error())
-			sendError(&this.Controller,err,400)
-			return
-		}
-		songComposerPercent,err = this.GetInt("songComposerPercent")
-		if err!=nil {
-			err:= errors.New("song composer percent should be integer")
-			logs.Error(err.Error())
-			sendError(&this.Controller,err,400)
-			return
-		}
-		publisherPercent,err = this.GetInt("publisherPercent")
-		if err!=nil {
-			err:= errors.New("publisher percent should be integer")
-			logs.Error(err.Error())
-			sendError(&this.Controller,err,400)
-			return
-		}
-		userPercent,err = this.GetInt("userPercent")
-		if err!=nil {
-			err:= errors.New("user percent should be integer")
-			logs.Error(err.Error())
-			sendError(&this.Controller,err,400)
-			return
-		}
-	} else {
-		price=1
-		qty= 100
-	}
-
-	allowAirdrop,err = this.GetBool("allowAirdrop")
-	if err!=nil {
-		logs.Error(err.Error())
-		sendError(&this.Controller,err,400)
-		return
-	}
-
-	nickname:= this.GetString("nickname")
-	walletAddress,err := models.WalletIdOfNickname(nickname)
-	if err!=nil {
-		logs.Error(err.Error())
-		sendError(&this.Controller,err,400)
-		return
-	}
-
-	//// get input from user
-	nftName = this.GetString("nftName")
-	shortDesc = this.GetString("shortDesc")
-	longDesc = this.GetString("longDesc")
-	fileNamePrefix := RandomPathFromFileName(header.Filename)
-	var fileName string
-	if kind == NAME_NFT_AVATAR {
-		fileName = fileNamePrefix + ".jpg"
-	} else if kind == NAME_NFT_MUSIC {
-		fileName = fileNamePrefix + ".mp3"
-	} else if kind == NAME_NFT_OTHER {
-		fileName = fileNamePrefix + ".jpg"
-	} else {
-		panic("unexpected kind name")
-	}
-
-	// calculate ciphertext
-	data,err:= ReadFileFromRequest(file)
+	typeOfNft:= common.TYPE_NFT_AVATAR
+	nameOfNftType:= common.NAME_NFT_AVATAR
+	// ---------------------------------------
+	// calculate ciphertext and save
+	// ---------------------------------------
+	data,err:= util.ReadFile(reqBaseInfo.File)
 	if err!=nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller,err, 500)
@@ -429,25 +309,17 @@ func (this *UploadController) Upload() {
 	}
 
 	logs.Debug("len of data", len(data))
-	nonce := make([]byte, aesgcm.NonceSize())
+	nonce := make([]byte, util.Aesgcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller,err, 500)
 		return
 	}
-	cipherText := aesgcm.Seal(nonce, nonce, data, nil)
+	cipherText := util.Aesgcm.Seal(nonce, nonce, data, nil)
 
 	// saving ciphertext
 	logs.Debug("saving ciphertext")
-	var cipherSavingPath string
-	if kind == NAME_NFT_AVATAR {
-		cipherSavingPath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_AVATAR, fileName)
-	} else if kind == NAME_NFT_MUSIC {
-		cipherSavingPath = path.Join(ENCRYPTION_FILE_PATH, NAME_NFT_MUSIC, fileName)
-	} else if kind == NAME_NFT_OTHER {
-		cipherSavingPath = path.Join(ENCRYPTION_FILE_PATH,NAME_NFT_OTHER,fileName)
-	}
-
+	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, typeOfNft, fileName)
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
 		logs.Error(err.Error())
@@ -456,36 +328,391 @@ func (this *UploadController) Upload() {
 	}
 	logs.Debug("saving file", fileName, "to", cipherSavingPath)
 
+	// ---------------------------------------
+	// resize image and save to folder market
+	// ---------------------------------------
+	originImage, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	newImage := resize.Resize(200, 200, originImage, resize.Lanczos3)
+	filePath:= path.Join(common.MARKET_PATH,nameOfNftType,fileName)
+	err=util.SaveImage(newImage,filePath)
+	if err!=nil {
+		logs.Error(err.Error())
+		err:= errors.New("can not save resized image")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+
+	// ---------------------------------------
+	// initialize nft info
+	// ---------------------------------------
+	//nft info
+	nftLdefIndex:= util.RandomNftLdefIndex(typeOfNft)
+	nftLifeIndex:= util.SmallRandInt()
+	nftPowerIndex:= util.SmallRandInt()
+	// nft market info
+	price:= util.SmallRandInt()
+	qty:= util.SmallRandInt()
+	// ---------------------------------------
+	// save nft info to database
+	// ---------------------------------------
+	o:= orm.NewOrm()
+	o.Begin()
+	// set nftInfo
+	nftInfo:= models.NftInfo{
+		NftLdefIndex: nftLdefIndex,
+		NftType: typeOfNft,
+		NftName: reqBaseInfo.NftName,
+		ShortDescription: reqBaseInfo.ShortDesc,
+		LongDescription: reqBaseInfo.LongDesc,
+		FileName: fileName,
+		NftParentLdef: "",
+	}
+	_,err=o.Insert(&nftInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("can not insert nft into database")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	// set avatar info
+	avatarInfo:= models.AvatarNftInfo{
+		NftLdefIndex: nftLdefIndex,
+		NftLifeIndex: nftLifeIndex,
+		NftPowerIndex: nftPowerIndex,
+	}
+	_,err= o.Insert(&avatarInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("can not insert avatar into database")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	// ---------------------------------------
+	// save nft market info to database
+	// ---------------------------------------
+	userMarketInfo:= models.UserMarketInfo{
+		Uuid: reqBaseInfo.Uuid,
+	}
+	err=o.Read(&userMarketInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("unknown error when query db")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	nftMarketInfo:= models.NftMarketInfo{
+		NftLdefIndex: nftLdefIndex,
+		SellerWallet: userMarketInfo.Wallet,
+		SellerUuid: reqBaseInfo.Uuid,
+		Price: price,
+		Qty: qty,
+		NumSold: 0,
+	}
+	_,err=o.Insert(&nftMarketInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("can not insert nft market into database")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+
+	avatarMarketInfo:= models.AvatarNftMarketInfo{
+		NftLdefIndex: nftLdefIndex,
+	}
+	_,err=o.Insert(&avatarMarketInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("can not insert avatar market into database")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	o.Commit()
+	// ---------------------------------------
+	// call smart contract to create nft
+	// ---------------------------------------
+	// TODO use message queue to deal with transaction.
+}
+
+func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
+	allowAirdrop,err:= this.GetBool("allowAirdrop")
+	if err!=nil {
+		err:=errors.New("value of allowAirDrop should be bool")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	number,err:= this.GetInt("number")
+	if err!=nil {
+		err:=errors.New("value of number should be int")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	price,err:= this.GetInt("price")
+	if err!=nil {
+		err:=errors.New("value of price should be int")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	creatorPercent,err:= this.GetFloat("creatorPercent")
+	if err!=nil {
+		err:=errors.New("value of creator percent should be float")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	lyricsWriterPercent,err:= this.GetFloat("lyricsWriterPercent")
+	if err!=nil {
+		err:=errors.New("value of lyricsWriterPercent should be float")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	songComposerPercent,err:= this.GetFloat("songComposerPercent")
+	if err!=nil {
+		err:=errors.New("value of songComposerPercent should be float")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	publisherPercent,err:= this.GetFloat("publisherPercent")
+	if err!=nil {
+		err:=errors.New("value of publisherPercent should be float")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	userPercent,err:= this.GetFloat("userPercent")
+	if err!=nil {
+		err:=errors.New("value of user percent should be float")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	fileNamePrefix := util.RandomPathFromFileName("file")
+	fileName:= fileNamePrefix+".mp3"
+}
+
+func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
+	fileNamePrefix := util.RandomPathFromFileName("file")
+	fileName:= fileNamePrefix+".jpg"
+
+	typeOfNft:= common.TYPE_NFT_OTHER
+	nameOfNftType:= common.TYPE_NFT_OTHER
+	// ---------------------------------------
+	// calculate ciphertext and save
+	// ---------------------------------------
+	data,err:= util.ReadFile(reqBaseInfo.File)
+	if err!=nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err, 500)
+		return
+	}
+
+	logs.Debug("len of data", len(data))
+	nonce := make([]byte, util.Aesgcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	cipherText := util.Aesgcm.Seal(nonce, nonce, data, nil)
+
+	// saving ciphertext
+	logs.Debug("saving ciphertext")
+	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, typeOfNft, fileName)
+	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
+	if err != nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	logs.Debug("saving file", fileName, "to", cipherSavingPath)
+
+	// ---------------------------------------
+	// resize image and save to folder market
+	// ---------------------------------------
+	originImage, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	newImage := resize.Resize(200, 200, originImage, resize.Lanczos3)
+	filePath:= path.Join(common.MARKET_PATH,nameOfNftType,fileName)
+	err=util.SaveImage(newImage,filePath)
+	if err!=nil {
+		logs.Error(err.Error())
+		err:= errors.New("can not save resized image")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+
+	// ---------------------------------------
+	// initialize nft info
+	// ---------------------------------------
+	//nft info
+	nftLdefIndex:= util.RandomNftLdefIndex(typeOfNft)
+	nftLifeIndex:= util.SmallRandInt()
+	nftPowerIndex:= util.SmallRandInt()
+	// nft market info
+	price:= util.SmallRandInt()
+	qty:= util.SmallRandInt()
+	// ---------------------------------------
+	// save nft info to database
+	// ---------------------------------------
+	o:= orm.NewOrm()
+	o.Begin()
+	// set nftInfo
+	nftInfo:= models.NftInfo{
+		NftLdefIndex: nftLdefIndex,
+		NftType: typeOfNft,
+		NftName: reqBaseInfo.NftName,
+		ShortDescription: reqBaseInfo.ShortDesc,
+		LongDescription: reqBaseInfo.LongDesc,
+		FileName: fileName,
+		NftParentLdef: "",
+	}
+	_,err=o.Insert(&nftInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("can not insert nft into database")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	// set avatar info
+	avatarInfo:= models.AvatarNftInfo{
+		NftLdefIndex: nftLdefIndex,
+		NftLifeIndex: nftLifeIndex,
+		NftPowerIndex: nftPowerIndex,
+	}
+	_,err= o.Insert(&avatarInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("can not insert avatar into database")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	// ---------------------------------------
+	// save nft market info to database
+	// ---------------------------------------
+	userMarketInfo:= models.UserMarketInfo{
+		Uuid: reqBaseInfo.Uuid,
+	}
+	err=o.Read(&userMarketInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("unknown error when query db")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	nftMarketInfo:= models.NftMarketInfo{
+		NftLdefIndex: nftLdefIndex,
+		SellerWallet: userMarketInfo.Wallet,
+		SellerUuid: reqBaseInfo.Uuid,
+		Price: price,
+		Qty: qty,
+		NumSold: 0,
+	}
+	_,err=o.Insert(&nftMarketInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("can not insert nft market into database")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+
+	otherMarketInfo:= models.OtherNftMarketInfo{
+		NftLdefIndex: nftLdefIndex,
+	}
+	_,err=o.Insert(&otherMarketInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("can not insert other market into database")
+		sendError(&this.Controller,err, 500)
+		return
+	}
+	o.Commit()
+	// ---------------------------------------
+	// call smart contract to create nft
+	// ---------------------------------------
+	// TODO use message queue to deal with transaction.
+}
+
+func (this *UploadController) Upload() {
+	kind := this.GetString(":kind")
+	if kind != common.NAME_NFT_AVATAR && kind!= common.NAME_NFT_OTHER && kind!=common.NAME_NFT_MUSIC {
+		err:= errors.New("no such nft kind")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,400)
+		return
+	}
+	uuid:= this.GetString("uuid")
+	userMarketInfo:= models.UserMarketInfo{
+		Uuid: uuid,
+	}
+
+	// check if user bind wallet
+	o:=orm.NewOrm()
+	err:=o.Read(&userMarketInfo)
+	if err!=nil {
+		if err == orm.ErrNoRows {
+			err:=errors.New("user has not bind wallet")
+			logs.Error(err.Error())
+			sendError(&this.Controller,err,400)
+			return
+		} else {
+			logs.Error(err.Error())
+			err:=errors.New("unknown error when query db")
+			sendError(&this.Controller,err,400)
+			return
+		}
+	}
+	nftName:= this.GetString("nftName")
+	shortDesc:= this.GetString("shortDesc")
+	longDesc:= this.GetString("longDesc")
+	file, _, err := this.GetFile("file")
+	if err != nil {
+		logs.Error(err.Error())
+		err:=errors.New("can not parse file")
+		sendError(&this.Controller,err,400)
+		return
+	}
+	reqBaseInfo:= &uplodBaseInfo{
+		File:file,
+		Uuid:uuid,
+		NftName:nftName,
+		ShortDesc:shortDesc,
+		LongDesc:longDesc,
+	}
+	switch kind {
+	case common.NAME_NFT_AVATAR:
+		this.uploadAvatar(reqBaseInfo)
+	case common.NAME_NFT_OTHER:
+		this.uploadOther(reqBaseInfo)
+	case common.NAME_NFT_MUSIC:
+		this.uploadDat(reqBaseInfo)
+	}
+
 	// resize image and save
 	var marketFileName string = fileName
 	if kind == NAME_NFT_AVATAR || kind == NAME_NFT_OTHER {
-		originImage, _, err := image.Decode(bytes.NewReader(data))
-		if err != nil {
-			logs.Error(err.Error())
-			sendError(&this.Controller,err, 500)
-			return
-		}
-		newImage := resize.Resize(200, 200, originImage, resize.Lanczos3)
-		var filePath string
-		if kind == NAME_NFT_AVATAR {
-			filePath = path.Join(MARKET_PATH, NAME_NFT_AVATAR, fileName)
-		} else if kind == NAME_NFT_OTHER {
-			filePath = path.Join(MARKET_PATH, NAME_NFT_OTHER, fileName)
-		}
-
-		out, err := os.Create(filePath)
-		defer out.Close()
-		if err != nil {
-			logs.Error(err.Error())
-			sendError(&this.Controller,err, 500)
-			return
-		}
-		err = jpeg.Encode(out, newImage, nil)
-		if err != nil {
-			logs.Error(err.Error())
-			sendError(&this.Controller,err, 500)
-			return
-		}
 	} else if kind == NAME_NFT_MUSIC {
 		iconFile,iconFileHeader,err:= this.GetFile("icon")
 		if err!=nil {

@@ -12,8 +12,8 @@ type NftInfo struct {
 
 type AvatarNftInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
-	NftLifeIndex int64
-	NftPowerIndex int64
+	NftLifeIndex int
+	NftPowerIndex int
 	NftInfo * NftInfo `orm:"rel(one);on_delete(cascade);"`
 }
 

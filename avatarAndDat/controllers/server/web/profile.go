@@ -49,7 +49,63 @@ func (this *NicknameController) GetNickname() {
 }
 
 func (this *NicknameController) SetNickname() {
+	uuid:= this.Ctx.Input.Param(":uuid")
+	type request struct {
+		Nickname string `json:"nickname"`
+	}
+	var req request
+	data, err := ioutil.ReadAll(this.Ctx.Request.Body)
+	if err!=nil {
+		logs.Error(err.Error())
+		err:= errors.New("can not parse request")
+		sendError(&this.Controller,err,400)
+		return
+	}
+	err=json.Unmarshal(data,&req)
+	if err!=nil {
+		logs.Error(err.Error())
+		err:= errors.New("data format error")
+		sendError(&this.Controller,err,400)
+		return
+	}
 
+	nickname:= req.Nickname
+	userInfo:=models.UserInfo {
+		Uuid: uuid,
+		Nickname: nickname,
+	}
+	o:=orm.NewOrm()
+	o.Begin()
+	tmpInfo:= models.UserInfo{
+		Nickname: nickname,
+	}
+	err=o.Read(&tmpInfo,"nickname")
+	if err!=nil {
+		if err!=orm.ErrNoRows {
+			logs.Error("unknown error when query db")
+			sendError(&this.Controller,err,500)
+			return
+		}
+	}
+	if err == nil && tmpInfo.Uuid != uuid {
+		err:=errors.New("duplicate nickname")
+		logs.Error(err.Error())
+		sendError(&this.Controller,err,500)
+		return
+	}
+	_,err=o.Update(&userInfo,"nickname")
+	if err!=nil {
+		if err==orm.ErrNoRows {
+			err := errors.New("no such user")
+			sendError(&this.Controller,err,404)
+			return
+		} else {
+			sendError(&this.Controller,err,500)
+			return
+		}
+	}
+	logs.Info("update",uuid,"intro")
+	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 }
 
 type IntroController struct {
@@ -83,48 +139,45 @@ func (this *IntroController) GetIntro() {
 	this.ServeJSON()
 }
 
-type SetIntroRequest struct {
-	Intro string `json:"intro"`
-}
-
 func (this *IntroController) SetIntro() {
-	var req SetIntroRequest
+	uuid:= this.Ctx.Input.Param(":uuid")
+	type request struct {
+		Intro string `json:"intro"`
+	}
+	var req request
 	data, err := ioutil.ReadAll(this.Ctx.Request.Body)
 	if err!=nil {
 		logs.Error(err.Error())
+		err:= errors.New("can not parse request")
 		sendError(&this.Controller,err,400)
 		return
 	}
 	err=json.Unmarshal(data,&req)
 	if err!=nil {
 		logs.Error(err.Error())
+		err:= errors.New("data format error")
 		sendError(&this.Controller,err,400)
 		return
 	}
 
-	nickname:= this.Ctx.Input.Param(":nickname")
 	intro:= req.Intro
-	logs.Debug("user",nickname,"query intro")
-	o:=orm.NewOrm()
-	userInfo:= models.MarketUserTable{
-		Nickname: nickname,
+	userInfo:=models.UserInfo {
+		Uuid: uuid,
 		Intro: intro,
 	}
+	o:=orm.NewOrm()
 	_,err=o.Update(&userInfo,"intro")
 	if err!=nil {
-		if err == orm.ErrNoRows {
-			err:= errors.New("no such user")
-			if err!=nil {
-				logs.Error(err.Error())
-				sendError(&this.Controller,err,400)
-				return
-			}
+		if err==orm.ErrNoRows {
+			err := errors.New("no such user")
+			sendError(&this.Controller,err,404)
+			return
 		} else {
-			logs.Error(err.Error())
 			sendError(&this.Controller,err,500)
 			return
 		}
 	}
+	logs.Info("update",uuid,"intro")
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 }
 
@@ -175,40 +228,58 @@ func (this *WalletController) GetWallet() {
 	this.ServeJSON()
 }
 
-type SetWalletRequest struct {
-	Address string `json:"Address"`
-}
-
 func (this *WalletController) SetWallet() {
-	var req SetWalletRequest
-	nickname:= this.Ctx.Input.Param(":nickname")
+	type request struct {
+		Wallet string `json:"wallet"`
+	}
+	uuid:= this.Ctx.Input.Param(":uuid")
+	var req request
 	data, err := ioutil.ReadAll(this.Ctx.Request.Body)
 	if err!=nil {
 		logs.Error(err.Error())
+		err:= errors.New("can not parse request")
 		sendError(&this.Controller,err,400)
 		return
 	}
 	err=json.Unmarshal(data,&req)
 	if err!=nil {
 		logs.Error(err.Error())
+		err:= errors.New("data format error")
 		sendError(&this.Controller,err,400)
 		return
 	}
-	address:= req.Address
-	walletInfo:= models.MarketUserTable{
-		WalletId: address,
-		Nickname: nickname,
-	}
+
 	o:=orm.NewOrm()
-	_,err=o.Update(&walletInfo,"wallet_id")
+	userInfo:= models.UserInfo{
+		Uuid: uuid,
+	}
+	err=o.Read(&userInfo)
 	if err!=nil {
-		logs.Error(err.Error())
+		if err== orm.ErrNoRows {
+			err:= errors.New("user not exist")
+			sendError(&this.Controller,err,400)
+			return
+		} else {
+			logs.Error(err.Error())
+			err:= errors.New("unknown error when query databse")
+			sendError(&this.Controller,err,500)
+			return
+		}
+	}
+
+	wallet:= req.Wallet
+	userMKInfo:=models.UserMarketInfo {
+		Uuid: uuid,
+		Wallet: wallet,
+		Count: 0,
+	}
+	_,err=o.InsertOrUpdate(&userMKInfo,"wallet")
+	if err!=nil {
 		sendError(&this.Controller,err,500)
 		return
 	}
-	logs.Warn("set wallet of nickname",nickname,"to",address)
+	logs.Info("inser or update",uuid,"wallet")
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
-	return
 }
 
 type AvatarController struct {
@@ -246,6 +317,7 @@ func (this *AvatarController) GetAvatar() {
 }
 
 func (this *AvatarController) SetAvatar() {
+	uuid:= this.Ctx.Input.Param(":uuid")
 	file,_,err:=this.GetFile("avatar")
 	defer file.Close()
 	if err != nil {
@@ -254,7 +326,7 @@ func (this *AvatarController) SetAvatar() {
 		return
 	}
 
-	data,err:= ReadFileFromRequest(file)
+	data,err:= util.ReadFile(file)
 	if err!=nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller,err, 500)
@@ -265,8 +337,7 @@ func (this *AvatarController) SetAvatar() {
 	fileName:=hex.EncodeToString(h.Sum(nil))+".jpg"
 
 
-	nickname:= this.Ctx.Input.Param(":nickname")
-	savingPath:= path.Join(USER_ICON_PATH,fileName)
+	savingPath:= path.Join(common.USER_ICON_PATH,fileName)
 	f, err := os.OpenFile(savingPath, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		fmt.Println(err)
@@ -279,23 +350,30 @@ func (this *AvatarController) SetAvatar() {
 		return
 	}
 	defer f.Close()
-	userInfo:= models.MarketUserTable{
-		Nickname:nickname,
-		UserIconUrl: fileName,
+	userInfo:= models.UserInfo{
+		Uuid:uuid,
+		AvatarFileName:fileName,
 	}
 	o:= orm.NewOrm()
-	_,err=o.Update(&userInfo,"user_icon_url")
+	_,err=o.Update(&userInfo,"avatar_file_name")
 	if err!=nil {
-		logs.Error(err.Error())
-		sendError(&this.Controller,err,500)
-		return
+		if err== orm.ErrNoRows {
+			err:= errors.New("user not exist")
+			sendError(&this.Controller,err,400)
+			return
+		} else {
+			logs.Error(err.Error())
+			err:= errors.New("unknown error when query databse")
+			sendError(&this.Controller,err,500)
+			return
+		}
 	}
-	logs.Info("save user icon")
-	type setAvatarResponse struct {
+	logs.Info("update",uuid,"file path")
+	type response struct {
 		AvatarUrl string `json:"avatarUrl"`
 	}
-	res:= &setAvatarResponse{
-		AvatarUrl: PathPrefixOfNFT("",PATH_KIND_USER_ICON)+fileName,
+	res:= &response{
+		AvatarUrl: util.PathPrefixOfNFT("",common.PATH_KIND_USER_ICON)+fileName,
 	}
 	this.Data["json"]= res
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)

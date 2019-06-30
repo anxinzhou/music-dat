@@ -23,11 +23,11 @@ func (this *NftMarketInfo) TableIndex() [][]string {
 type DatNftMarketInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	AllowAirdrop bool
-	CreatorPercent int
-	LyricsWriterPercent int
-	SongComposerPercent int
-	PublisherPercent int
-	UserPercent int
+	CreatorPercent float64
+	LyricsWriterPercent float64
+	SongComposerPercent float64
+	PublisherPercent float64
+	UserPercent float64
 	NftMarketInfo *NftMarketInfo `orm:"rel(one);on_delete(cascade);"`
 }
 

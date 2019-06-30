@@ -24,7 +24,7 @@ import (
 
 var (
 	symmetricKey []byte
-	aesgcm cipher.AEAD
+	Aesgcm cipher.AEAD
 )
 
 func init() {
@@ -34,7 +34,7 @@ func init() {
 	if err!=nil {
 		panic(err)
 	}
-	aesgcm,err =cipher.NewGCM(bc)
+	Aesgcm,err =cipher.NewGCM(bc)
 	if err!=nil {
 		panic(err)
 	}
@@ -121,8 +121,8 @@ func DecryptFile(fileName string, nftType string) (string,error) {
 		return "",err
 	}
 
-	nonce, ct := cipherText[:aesgcm.NonceSize()], cipherText[aesgcm.NonceSize():]
-	originalData, err := aesgcm.Open(nil, nonce, ct, nil)
+	nonce, ct := cipherText[:Aesgcm.NonceSize()], cipherText[Aesgcm.NonceSize():]
+	originalData, err := Aesgcm.Open(nil, nonce, ct, nil)
 	if err!=nil {
 		return "",err
 	}
@@ -187,4 +187,31 @@ func RandomPathFromFileName(fileName string) string {
 
 func SmallRandInt() int {
 	return int(rand.Int31())%75 + 26    //26 to 100
+}
+
+func SaveImage(img image.Image, filePath string) error {
+	out, err := os.Create(filePath)
+	defer out.Close()
+	if err != nil {
+		return err
+	}
+	err = jpeg.Encode(out, img, nil)
+	if err!=nil {
+		return err
+	}
+	return nil
+}
+
+func RandomNftLdefIndex(nftType string) string {
+	postPrefix:= strconv.FormatInt(time.Now().UnixNano()|rand.Int63(), 10)
+	prefix:=""
+	switch nftType {
+	case common.TYPE_NFT_AVATAR:
+		prefix = "A"
+	case common.TYPE_NFT_MUSIC:
+		prefix = "M"
+	case common.TYPE_NFT_OTHER:
+		prefix = "O"
+	}
+	return prefix+postPrefix
 }
