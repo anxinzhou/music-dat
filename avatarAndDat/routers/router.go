@@ -50,7 +50,7 @@ func init() {
 	beego.Router("/ws", wsHandler)
 	beego.Router("/admin",&web.AdminController{},"post:Login")
 	beego.Router("/file/:kind(avatar|dat|other)",upLoadController,"post:Upload")
-	beego.Router("/nftList/:uuid:string",nftListController)
+	beego.Router("/nftList/:kind(avatar|dat|other)/:uuid:string",nftListController)
 	beego.Router("/rewardDat/:uuid:string",rewardController,"get:RewardDat")
 	beego.Router("/nfts/:parentIndex:string/children", childrenOfNFTController)
 	beego.Router("/nfts/:parentIndex:string/balance", numOfChildrenController)

@@ -72,9 +72,17 @@ func PathPrefixOfNFT(nftType string, pathKind string) string {
 	return pathPrefix
 }
 
-func ValidSupportedType(supportedType string) error {
+func ValidNftType(supportedType string) error {
 	if supportedType!= common.TYPE_NFT_MUSIC && supportedType!= common.TYPE_NFT_OTHER && supportedType!=common.TYPE_NFT_AVATAR {
 		err:= errors.New("unsupported nft type")
+		return err
+	}
+	return nil
+}
+
+func ValidNftName(nftName string) error {
+	if nftName != common.NAME_NFT_AVATAR && nftName != common.NAME_NFT_OTHER && nftName != common.NAME_NFT_MUSIC {
+		err := errors.New("no such nft name")
 		return err
 	}
 	return nil
@@ -98,7 +106,7 @@ func TokenIdFromNftLdefIndex(nftLdefIndex string) (*big.Int,error) {
 
 
 func DecryptFile(fileName string, nftType string) (string,error) {
-	if err:=ValidSupportedType(nftType);err!=nil {
+	if err:=ValidNftType(nftType);err!=nil {
 		err:= errors.New("unknown decryption type")
 		return "",err
 	}

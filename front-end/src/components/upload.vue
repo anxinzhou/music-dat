@@ -593,6 +593,9 @@
       datNumberChange: function () {
         this.$set(this.uploadDatAdditionalData, 'number', this.datNumber);
       },
+      datPriceChange: function () {
+        this.$set(this.uploadDatAdditionalData, 'price', this.datPrice);
+      },
       creatorPercentChange: function() {
         this.$set(this.uploadDatAdditionalData, 'creatorPercent', this.creatorPercent);
       },
@@ -607,9 +610,6 @@
       },
       userPercentChange: function() {
         this.$set(this.uploadDatAdditionalData, 'userPercent', this.userPercent);
-      },
-      datPriceChange: function () {
-        this.$set(this.uploadDatAdditionalData, 'price', this.datPrice);
       },
       otherNameChange: function () {
         this.$set(this.uploadOtherAdditionalData, 'nftName', this.otherName);

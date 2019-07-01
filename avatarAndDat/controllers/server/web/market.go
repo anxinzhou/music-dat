@@ -10,33 +10,22 @@ type NftListController struct {
 	ContractController
 }
 
-type nftInfoListRes struct {
-	SupportedType string `json:"supportedType" orm:"column(nft_type)"`
-	NftName       string `json:"nftName"`
-	NftValue      int    `json:"nftValue" orm:"column(price)"`
-	ActiveTicker  string `json:"activeTicker"`
-	NftLifeIndex  int64  `json:"nftLifeIndex"`
-	NftPowerIndex int64  `json:"nftPowerIndex"`
-	NftLdefIndex  string `json:"nftLdefIndex"`
-	NftCharacId   string `json:"nftCharacId"`
-	ShortDesc     string `json:"shortDesc" orm:"column(short_description)"`
-	LongDesc      string `json:"longDesc" orm:"column(long_description)"`
-	Thumbnail     string `json:"thumbnail" orm:"column(file_name)"`
-	Qty           int    `json:"qty"`
-	CreatorPercent int `json:"creatorPercent"`
-	LyricsWriterPercent int `json:"lyricsWriterPercent"`
-	SongComposerPercent int `json:"songComposerPercent"`
-	PublisherPercent int `json:"publisherPercent"`
-	UserPercent int `json:"userPercent"`
+func (this *NftListController) GetAvatar() {
+
 }
 
-type nftListResponse struct {
-	NftTranData []*nftInfoListRes `json:"nftTranData"`
+func (this *NftListController) GetOther() {
+
+}
+
+func (this *NftListController) GetDat() {
+
 }
 
 func (this *NftListController) Get() {
-	nickname := this.Ctx.Input.Param(":nickname")
-	logs.Debug("user", nickname, "query nft list")
+	kind:= this.Ctx.Input.Param(":kind")
+	uuid:= this.Ctx.Input.Param("uuid")
+
 	o:=orm.NewOrm()
 	var mkInfos []models.NftMarketTable
 	num,err:=o.QueryTable("nft_market_table").

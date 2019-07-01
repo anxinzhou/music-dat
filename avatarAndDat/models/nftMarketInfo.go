@@ -9,7 +9,6 @@ type NftMarketInfo struct {
 	Price int
 	Qty int
 	NumSold int
-	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
 	NftInfoTable *NftInfo `orm:"rel(one);on_delete(cascade);"`
 }
 

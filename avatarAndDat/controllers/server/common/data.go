@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 const FILE_SAVING_PATH = "./resource/"
 const ENCRYPTION_FILE_PATH = FILE_SAVING_PATH+ "encryption/"
 const DECRYPTION_FILE_PATH = FILE_SAVING_PATH+"public/"
@@ -54,3 +56,62 @@ const (
 const (
 	LOGIN_TYPE_USERNAME = 3
 )
+
+const (
+	MARKETPLACE_ID = "musicHotpot"
+)
+
+type NftInfo struct {
+	NftLdefIndex string `json:"nftLdefIndex"`
+	NftType string	`json:"nftType"`
+	NftName string	`json:"nftName"`
+	ShortDescription string	`json:"shortDesc"`
+	LongDescription string	`json:"longDesc"`
+	FileName string	`json:"fileName"`
+	NftParentLdef string	`json:"nftParentLdef"`
+}
+
+type AvatarNftInfo struct {
+	NftInfo
+	NftLifeIndex int	`json:"nftLifeIndex"`
+	NftPowerIndex int	`json:"nftPowerIndex"`
+}
+
+type DatNftInfo struct {
+	NftInfo
+	IconFileName string `json:"iconFileName"`
+}
+
+type OtherNftInfo struct {
+	NftInfo
+}
+
+type NftMarketInfo struct {
+	SellerWallet string	`json:"sellerWallet"`
+	SellerUuid string	`json:"sellerUuid"`
+	Price int	`json:"price"`
+	Qty int	`json:"qty"`
+	NumSold int	`json:"numSold"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+type DatNftMarketInfo struct {
+	DatNftInfo
+	NftMarketInfo
+	AllowAirdrop bool `json:"allowAirdrop"`
+	CreatorPercent float64	`json:"creatorPercent"`
+	LyricsWriterPercent float64	`json:"lyricsWriterPercent"`
+	SongComposerPercent float64	`json:"songComposerPercent"`
+	PublisherPercent float64	`json:"publisherPercent"`
+	UserPercent float64	`json:"userPercent"`
+}
+
+type AvatarNftMarketInfo struct {
+	AvatarNftInfo
+	NftMarketInfo
+}
+
+type OtherNftMarketInfo struct {
+	OtherNftInfo
+	NftMarketInfo
+}

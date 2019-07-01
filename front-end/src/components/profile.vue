@@ -246,10 +246,9 @@
         let httpPath = this.$store.state.config.httpPath;
         let nickname = this.nickname;
         this.axios.post(`${httpPath}/profile/${nickname}/wallet`,{
-          address: this.newAddress,
+          wallet: this.newAddress,
         }).then(res=>{
           this.address = this.newAddress;
-          this.$cookies.set('address',this.address);
           this.walletEditing = false;
         }).catch(err=>{
           this.$store.state.notifyError(err.response.data.reason);
@@ -279,7 +278,6 @@
         }).then(res=>{
             this.avatarEditing = false;
             let url = res.data.avatarUrl;
-            this.$cookies.set('avatarUrl',url);
             this.avatarUrl = undefined;
             this.avatarUrl  = url;
             this.newAvatar = undefined;
