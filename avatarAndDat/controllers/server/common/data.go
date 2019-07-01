@@ -115,3 +115,9 @@ type OtherNftMarketInfo struct {
 	OtherNftInfo
 	NftMarketInfo
 }
+
+type MarketPlaceInfo struct {
+	MpId string `json:"mpId"`
+	Active bool `json:"active"`
+	ActiveTicker string `json:"active_ticker"`
+}

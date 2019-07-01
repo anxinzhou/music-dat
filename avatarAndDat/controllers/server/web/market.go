@@ -1,8 +1,12 @@
 package web
 
 import (
+	"errors"
+	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 )
 
@@ -10,77 +14,166 @@ type NftListController struct {
 	ContractController
 }
 
-func (this *NftListController) GetAvatar() {
-
-}
-
-func (this *NftListController) GetOther() {
-
-}
-
-func (this *NftListController) GetDat() {
-
-}
-
-func (this *NftListController) Get() {
-	kind:= this.Ctx.Input.Param(":kind")
-	uuid:= this.Ctx.Input.Param("uuid")
-
+func (this *NftListController) GetAvatar(uuid string) {
 	o:=orm.NewOrm()
-	var mkInfos []models.NftMarketTable
-	num,err:=o.QueryTable("nft_market_table").
-		Filter("seller_nickname",nickname).OrderBy("-timestamp").
-		All(&mkInfos,"nft_ldef_index")
-	if err!=nil {
-		if err == orm.ErrNoRows {
-			logs.Info("no row in marketplace now")
-			mkInfos = make([]models.NftMarketTable,0)
-		} else {
-			logs.Error(err.Error())
-			sendError(&this.Controller, err, 500)
-			return
-		}
+	dbEngine := beego.AppConfig.String("dbEngine")
+	qb,_:=orm.NewQueryBuilder(dbEngine)
+	type nftTranData struct {
+		common.AvatarNftMarketInfo
+		common.MarketPlaceInfo
 	}
-	logs.Debug("number of list",num)
-
-	nftTranResponseData := make([]*nftInfoListRes, 0, num)
-	for i:=len(mkInfos)-1;i>=0;i-- {
-		mkInfo:= mkInfos[i]
-		nftLdefIndex:= mkInfo.NftLdefIndex
-		r := o.Raw(`
-		select mk.creator_percent, mk.lyrics_writer_percent, mk.song_composer_percent,
-		mk.publisher_percent, mk.user_percent, mk.price,mk.active_ticker, 
-		ni.nft_type, ni.nft_name, ni.nft_life_index, ni.nft_power_index, ni.nft_ldef_index,
-		ni.nft_charac_id,na.short_description, na.long_description,mp.file_name,mk.qty from
-		nft_market_table as mk,
-		nft_mapping_table as mp,
-		nft_info_table as ni,
-		nft_item_admin as na
-		where mk.nft_ldef_index = mp.nft_ldef_index and mk.nft_ldef_index = ni.nft_ldef_index and  mp.nft_admin_id = na.nft_admin_id and  ni.nft_ldef_index = ? `, nftLdefIndex)
-		var nftResponseInfo nftInfoListRes
-		err = r.QueryRow(&nftResponseInfo)
-		if err != nil {
-			if err == orm.ErrNoRows {
-				logs.Debug(err.Error())
-				continue
-			} else {
-				logs.Error(err.Error())
-				sendError(&this.Controller, err, 500)
-				return
-			}
-		}
-
-		thumbnail := PathPrefixOfNFT(nftResponseInfo.SupportedType, PATH_KIND_MARKET)
-		nftResponseInfo.Thumbnail = thumbnail + nftResponseInfo.Thumbnail
-		nftTranResponseData = append(nftTranResponseData, &nftResponseInfo)
+	var avatarMKPlaceInfo []nftTranData
+	qb.Select("*").
+		From("nft_market_place").
+		InnerJoin("nft_market_info").
+		On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
+		InnerJoin("avatar_nft_market_info").
+		On("nft_market_place.nft_ldef_index = avatar_nft_market_info.nft_ldef_index").
+		InnerJoin("nft_info").
+		On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
+		InnerJoin("avatar_nft_info").
+		On("nft_market_place.nft_ldef_index = avatar_nft_info.nft_ldef_index").
+		Where("nft_market_info.seller_uuid = ?")
+	sql := qb.String()
+	num,err:=o.Raw(sql,uuid).QueryRows(&avatarMKPlaceInfo)
+	if err != nil && err!=orm.ErrNoRows {
+		logs.Error(err.Error())
+		err:= errors.New("unknown error when query database")
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	logs.Debug("get",num,"from database")
+	type response struct {
+		NftTranData []nftTranData `json:"nftTranData"`
 	}
 
-	res := &nftListResponse{
-		NftTranData: nftTranResponseData,
+	res:= response{
+		NftTranData: avatarMKPlaceInfo,
 	}
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 	this.Data["json"] = &res
 	this.ServeJSON()
+}
+
+func (this *NftListController) GetOther(uuid string) {
+	o:=orm.NewOrm()
+	dbEngine := beego.AppConfig.String("dbEngine")
+	qb,_:=orm.NewQueryBuilder(dbEngine)
+	type nftTranData struct {
+		common.OtherNftInfo
+		common.MarketPlaceInfo
+	}
+	var avatarMKPlaceInfo []nftTranData
+	qb.Select("*").
+		From("nft_market_place").
+		InnerJoin("nft_market_info").
+		On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
+		InnerJoin("other_nft_market_info").
+		On("nft_market_place.nft_ldef_index = other_nft_market_info.nft_ldef_index").
+		InnerJoin("nft_info").
+		On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
+		InnerJoin("other_nft_info").
+		On("nft_market_place.nft_ldef_index = other_nft_info.nft_ldef_index").
+		Where("nft_market_info.seller_uuid = ?")
+	sql := qb.String()
+	num,err:=o.Raw(sql,uuid).QueryRows(&avatarMKPlaceInfo)
+	if err != nil && err!=orm.ErrNoRows {
+		logs.Error(err.Error())
+		err:= errors.New("unknown error when query database")
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	logs.Debug("get",num,"from database")
+	type response struct {
+		NftTranData []nftTranData `json:"nftTranData"`
+	}
+
+	res:= response{
+		NftTranData: avatarMKPlaceInfo,
+	}
+	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
+	this.Data["json"] = &res
+	this.ServeJSON()
+}
+
+func (this *NftListController) GetDat(uuid string) {
+	o:=orm.NewOrm()
+	type nftTranData struct {
+		common.DatNftInfo
+		common.MarketPlaceInfo
+	}
+	dbEngine := beego.AppConfig.String("dbEngine")
+	qb,_:=orm.NewQueryBuilder(dbEngine)
+	var avatarMKPlaceInfo []nftTranData
+	qb.Select("*").
+		From("nft_market_place").
+		InnerJoin("nft_market_info").
+		On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
+		InnerJoin("dat_nft_market_info").
+		On("nft_market_place.nft_ldef_index = dat_nft_market_info.nft_ldef_index").
+		InnerJoin("nft_info").
+		On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
+		InnerJoin("dat_nft_info").
+		On("nft_market_place.nft_ldef_index = dat_nft_info.nft_ldef_index").
+		Where("nft_market_info.seller_uuid = ?")
+	sql := qb.String()
+	num,err:=o.Raw(sql,uuid).QueryRows(&avatarMKPlaceInfo)
+	if err != nil && err!=orm.ErrNoRows {
+		logs.Error(err.Error())
+		err:= errors.New("unknown error when query database")
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	logs.Debug("get",num,"from database")
+	type response struct {
+		NftTranData []nftTranData `json:"nftTranData"`
+	}
+
+	res:= response{
+		NftTranData: avatarMKPlaceInfo,
+	}
+	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
+	this.Data["json"] = &res
+	this.ServeJSON()
+}
+
+func (this *NftListController) Get() {
+	kind:= this.Ctx.Input.Param(":kind")
+	if err:= util.ValidNftName(kind); err!=nil {
+		logs.Error(err.Error())
+		sendError(&this.Controller, err, 400)
+		return
+	}
+	uuid:= this.Ctx.Input.Param("uuid")
+	userMarketInfo := models.UserMarketInfo{
+		Uuid: uuid,
+	}
+
+	// check if user exist
+	o := orm.NewOrm()
+	err := o.Read(&userMarketInfo)
+	if err != nil {
+		if err == orm.ErrNoRows {
+			err := errors.New("no such user in marketplace")
+			logs.Error(err.Error())
+			sendError(&this.Controller, err, 400)
+			return
+		} else {
+			logs.Error(err.Error())
+			err := errors.New("unknown error when query db")
+			sendError(&this.Controller, err, 500)
+			return
+		}
+	}
+
+	switch kind {
+	case common.NAME_NFT_AVATAR:
+		this.GetAvatar(uuid)
+	case common.NAME_NFT_OTHER:
+		this.GetOther(uuid)
+	case common.NAME_NFT_MUSIC:
+		this.GetDat(uuid)
+	}
 }
 
 type MarketTransactionHistoryController struct {
@@ -100,39 +193,33 @@ type MarketHistoryResponse struct {
 }
 
 func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
-	nickname:= this.Ctx.Input.Param(":nickname")
-	var purchaseHistory [] models.StorePurchaseHistroy
+	uuid:= this.Ctx.Input.Param(":uuid")
+	type purchaseNftInfo struct {
+		Uuid string `json:"uuid"`
+		SellerUuid string `json:"seller_uuid"`
+		TransactionAddress string `json:"transactionAddress"`
+		NftLdefIndex string `json:"nftLdefIndex"`
+		Timestamp string `json:"timestamp"`
+	}
+	var nftTranData []purchaseNftInfo
 	o:=orm.NewOrm()
-	cond:= orm.NewCondition()
-	cond = cond.And("seller_nickname",nickname).Or("buyer_nickname",nickname)
-	num,err:=o.QueryTable("store_purchase_histroy").
-		SetCond(cond).
-		All(&purchaseHistory,"buyer_nickname","seller_nickname","transaction_address","nft_ldef_index","timestamp")
-	if err!=nil {
-		if err==orm.ErrNoRows {
-			purchaseHistory = make([]models.StorePurchaseHistroy,0)
-			logs.Error(err.Error())
-		} else {
-			logs.Error(err.Error())
-			sendError(&this.Controller, err, 500)
-			return
-		}
+	num,err:=o.QueryTable("nft_purchase_info").
+		Filter("uuid",uuid).
+		All(&nftTranData,"transaction_address","nft_ldef_index","uuid","seller_uuid","timestamp")
+	if err!=nil && err!=orm.ErrNoRows {
+		logs.Error(err.Error())
+		err:=errors.New("unexpected error when query db")
+		sendError(&this.Controller, err, 500)
+		return
 	}
-
-	nftPurchaseInfo:=make([]*NftPurchaseInfo,num)
-	for i,v:=range purchaseHistory {
-		ni:= &NftPurchaseInfo{
-			NftLdefIndex: v.NftLdefIndex,
-			Buyer:v.BuyerNickname,
-			Seller:v.SellerNickname,
-			TransactionAddress:v.TransactionAddress,
-			Time: chinaTimeFromTimeStamp(v.Timestamp),
-		}
-		nftPurchaseInfo[i] = ni
+	type response struct {
+		NftTranData []purchaseNftInfo `json:"nftTranData"`
 	}
-	logs.Debug("purchase history record of",nickname,"has",num,"record")
-	res:=&MarketHistoryResponse{
-		NftPurchaseInfo: nftPurchaseInfo,
+	if num == 0 {
+		nftTranData = make([]purchaseNftInfo,num)
+	}
+	res:= response{
+		NftTranData: nftTranData,
 	}
 	this.Data["json"] = &res
 	this.ServeJSON()

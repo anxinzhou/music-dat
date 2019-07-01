@@ -10,12 +10,16 @@ type NftMarketInfo struct {
 	Qty int
 	NumSold int
 	NftInfoTable *NftInfo `orm:"rel(one);on_delete(cascade);"`
+	AvatarNftMarketInfo *AvatarNftMarketInfo `orm:"reverse(one)"`
+	DatNftMarketInfo *DatNftMarketInfo `orm:"reverse(one)"`
+	OtherNftMarketInfo *OtherNftMarketInfo `orm:"reverse(one)"`
+	NftMarketPlace *NftMarketPlace `orm:"reverse(one)"`
 }
 
 func (this *NftMarketInfo) TableIndex() [][]string {
 	return [][]string {
-		[]string{"SellerWalletId"},
-		[]string{"SellerNickname"},
+		[]string{"SellerWallet"},
+		[]string{"SellerUuid"},
 	}
 }
 
@@ -42,7 +46,6 @@ type OtherNftMarketInfo struct {
 
 type NftMarketPlace struct {
 	NftLdefIndex string `orm:"pk;unique"`
-	NftType string
 	MpId string
 	Active bool
 	ActiveTicker string

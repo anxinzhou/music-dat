@@ -193,6 +193,12 @@ func RandomPathFromFileName(fileName string) string {
 	return new(big.Int).SetBytes(h.Sum(nil)[:10]).String()
 }
 
+func RandomPurchaseId() string {
+	h := md5.New()
+	io.WriteString(h, strconv.FormatInt(time.Now().UnixNano()|rand.Int63(), 10))
+	return new(big.Int).SetBytes(h.Sum(nil)[:10]).String()
+}
+
 func SmallRandInt() int {
 	return int(rand.Int31())%75 + 26    //26 to 100
 }

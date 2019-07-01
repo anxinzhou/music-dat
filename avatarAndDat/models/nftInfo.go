@@ -8,6 +8,10 @@ type NftInfo struct {
 	LongDescription string
 	FileName string
 	NftParentLdef string
+	AvatarNftInfo `orm:"reverse(one)"`
+	DatNftInfo `orm:"reverse(one)"`
+	OtherNftInfo `orm:"reverse(one)"`
+	NftMarketInfo `orm:"reverse(one)"`
 }
 
 type AvatarNftInfo struct {
