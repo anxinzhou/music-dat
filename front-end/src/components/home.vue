@@ -51,18 +51,23 @@
     },
     data() {
       return {
-        avatarUrl:'',
+        avatarUrl: undefined,
       }
     },
     methods: {
       logout: function () {
         console.log("logout")
-        this.$cookies.remove("avatarUrl");
-        this.$cookies.remove("nickname");
-        this.$cookies.remove("address");
         this.$cookies.remove("access-token");
-        this.$cookies.remove("account");
+        this.$cookies.remove("uuid");
         this.$router.replace('/login');
+      },
+      getAvatarUrl: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/avatar`).then(res=>{
+          this.avatarUrl = res.data.avatarUrl;
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
       },
     },
     mounted: function () {
@@ -79,7 +84,8 @@
       // window.addEventListener('scroll', scrollHandle)
     },
     created: function () {
-      this.avatarUrl = this.$cookies.get('avatarUrl');
+      let uuid = this.$cookies.get("uuid");
+      this.getAvatarUrl(uuid);
     },
     beforeCreate: function () {
     }

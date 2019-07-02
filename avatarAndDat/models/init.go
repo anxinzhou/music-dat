@@ -32,17 +32,21 @@ func init() {
 	}
 
 	orm.RegisterModel(
-		new(BerryPurchaseTable),
-		new(NftItemAdmin),
-		new(NftMappingTable),
-		new(StorePurchaseHistroy),
-		new(NftMarketTable),
-		new(NftInfoTable),
-		new(MarketUserTable),
-		new(NftShoppingCart),
-		new(FollowTable),
+		new(UserInfo),
 		new(CreatorInfo),
-		//new(CoinRecords),
+		new(NftInfo),
+		new(NftPurchaseInfo),
+		new(AvatarNftInfo),
+		new(DatNftInfo),
+		new(OtherNftInfo),
+		new(NftMarketInfo),
+		new(DatNftMarketInfo),
+		new(AvatarNftMarketInfo),
+		new(OtherNftMarketInfo),
+		new(NftMarketPlace),
+		new(NftShoppingCart),
+		new(UserMarketInfo),
+		new(FollowTable),
 	)
 
 	// auto generate table

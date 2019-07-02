@@ -40,14 +40,6 @@ const router = new Router({
             requireAuth: false
         }
     },{
-      path: '/mnemonic',
-      name: 'Mnemonic',
-      component: ()=>import('@/components/mnemonic.vue'),
-      meta: {
-        title:'alpha',
-        requireAuth: false
-      }
-    },{
       path: '/child/:nftLdefIndex',
       name: 'Child',
       component: ()=>import('@/components/child.vue'),

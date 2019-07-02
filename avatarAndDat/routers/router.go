@@ -3,32 +3,31 @@ package routers
 import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
-	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/mobile"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/web"
 )
 
 func init() {
 	logs.Info("initial router")
 
-	m:= mobile.NewManager()
-	m.Init()
-	// set chain handler
-	chainHandler,err:= mobile.NewChainHandler(&mobile.ChainConfig{
-		ContractAddress: beego.AppConfig.String("contractAddress"),
-		Port: beego.AppConfig.String("chainWS"),
-		Account: mobile.AccountConfig{
-			Address: beego.AppConfig.String("masterAddress"),
-			PrivateKey:beego.AppConfig.String("masterPrivateKey"),
-		},
-	})
-	if err!=nil {
-		logs.Error(err.Error())
-		panic(err)
-	}
-	m.SetChainHandler(chainHandler)
-	wsHandler:= &mobile.WebSocketHandler{
-		M: m,
-	}
+	//m:= mobile.NewManager()
+	//m.Init()
+	//// set chain handler
+	//chainHandler,err:= mobile.NewChainHandler(&mobile.ChainConfig{
+	//	ContractAddress: beego.AppConfig.String("contractAddress"),
+	//	Port: beego.AppConfig.String("chainWS"),
+	//	Account: mobile.AccountConfig{
+	//		Address: beego.AppConfig.String("masterAddress"),
+	//		PrivateKey:beego.AppConfig.String("masterPrivateKey"),
+	//	},
+	//})
+	//if err!=nil {
+	//	logs.Error(err.Error())
+	//	panic(err)
+	//}
+	//m.SetChainHandler(chainHandler)
+	//wsHandler:= &mobile.WebSocketHandler{
+	//	M: m,
+	//}
 	chainHelper:= web.NewChainHelper()
 	upLoadController:= &web.UploadController{}
 	upLoadController.C = chainHelper
@@ -47,7 +46,7 @@ func init() {
 	avatarController:= &web.AvatarController{}
 	walletController:= &web.WalletController{}
 
-	beego.Router("/ws", wsHandler)
+	//beego.Router("/ws", wsHandler)
 	beego.Router("/admin",&web.AdminController{},"post:Login")
 	beego.Router("/file/:kind(avatar|dat|other)",upLoadController,"post:Upload")
 	beego.Router("/nftList/:kind(avatar|dat|other)/:uuid:string",nftListController)

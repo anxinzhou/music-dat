@@ -43,7 +43,6 @@ func (this *RewardController) RewardDat() {
 	type response struct {
 		NftTranData []nftRewardInfo `json:"nftTranData"`
 	}
-	var nftInfo nftRewardInfo
 
 	type queryInfo struct {
 		NftLdefIndex string
@@ -64,7 +63,7 @@ func (this *RewardController) RewardDat() {
 		"nft_market_info.seller_uuid",
 		"nft_market_info.seller_wallet",
 		"nft_market_info.price",
-		"nft_market_place.active_ticker" +
+		"nft_market_place.active_ticker",
 		"nft_market_place.timestamp").
 		From("nft_market_place").
 		InnerJoin("nft_market_info").
@@ -75,7 +74,7 @@ func (this *RewardController) RewardDat() {
 		On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
 		InnerJoin("dat_nft_info").
 		On("nft_market_place.nft_ldef_index = dat_nft_info.nft_ldef_index").
-		Where("dat_nft_market_info.allow_air_drop = true").
+		Where("dat_nft_market_info.allow_airdrop = true").
 		Limit(1)
 	sql := qb.String()
 	err:=o.Raw(sql).QueryRow(&nftMarketInfo)
@@ -151,8 +150,8 @@ func (this *RewardController) RewardDat() {
 
 	// delete from marketplace
 	//
-	_,err=o.Delete(&models.NftMarketInfo{
-		NftLdefIndex: nftInfo.NftLdefIndex,
+	_,err=o.Delete(&models.NftMarketPlace{
+		NftLdefIndex: nftMarketInfo.NftLdefIndex,
 	})
 	if err!=nil {
 		o.Rollback()
@@ -179,6 +178,9 @@ func (this *RewardController) RewardDat() {
 		ActiveTicker: nftMarketInfo.ActiveTicker,
 		NftLdefIndex: nftMarketInfo.NftLdefIndex,
 		Status: common.PURCHASE_PENDING, // change to finish after send transaction
+		UserInfo: &models.UserInfo{
+			Uuid:uuid,
+		},
 	}
 	_,err=o.Insert(&nftPuchaseInfo)
 	if err!=nil {
@@ -216,9 +218,9 @@ func (this *NumOfChildrenController) Get() {
 	parentIndex := this.Ctx.Input.Param(":parentIndex")
 	o := orm.NewOrm()
 	r := o.Raw(`
-		select count(a.nft_ldef_index) as num 
-		from nft_info as a,
-		where a.nft_parent_ldef = ? `, parentIndex)
+		select count(a.nft_ldef_index) as num  
+		from nft_info as a 
+		where nft_parent_ldef = ? `, parentIndex)
 	type CountQuery struct {
 		Num int
 	}
@@ -284,6 +286,11 @@ func (this *ChildrenOfNFTController) Get() {
 		NftTranData []nftTranData `json:"nftTranData"`
 	}
 
+	// in case no row in database
+	if num == 0 {
+		avatarMKPlaceInfo=make([]nftTranData,0)
+	}
+
 	res:= response{
 		NftTranData: avatarMKPlaceInfo,
 	}
@@ -332,7 +339,7 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 
 	// saving ciphertext
 	logs.Debug("saving ciphertext")
-	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, typeOfNft, fileName)
+	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, nameOfNftType, fileName)
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
 		logs.Error(err.Error())
@@ -398,6 +405,9 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		NftLdefIndex: nftLdefIndex,
 		NftLifeIndex: nftLifeIndex,
 		NftPowerIndex: nftPowerIndex,
+		NftInfo: &models.NftInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
 	_,err= o.Insert(&avatarInfo)
 	if err!=nil {
@@ -412,6 +422,9 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 	// ---------------------------------------
 	userMarketInfo:= models.UserMarketInfo{
 		Uuid: reqBaseInfo.Uuid,
+		UserInfo: &models.UserInfo{
+			Uuid: reqBaseInfo.Uuid,
+		},
 	}
 	err=o.Read(&userMarketInfo)
 	if err!=nil {
@@ -421,6 +434,15 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err, 500)
 		return
 	}
+	//  update user nft count
+	_,err=o.QueryTable("user_market_info").Update(orm.Params{
+		"count": orm.ColValue(orm.ColAdd,1),
+	})
+	if err!=nil {
+		logs.Error(err.Error())
+		err:=errors.New("unexpected error when query db")
+		sendError(&this.Controller,err, 500)
+	}
 	nftMarketInfo:= models.NftMarketInfo{
 		NftLdefIndex: nftLdefIndex,
 		SellerWallet: userMarketInfo.Wallet,
@@ -428,6 +450,9 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		Price: price,
 		Qty: qty,
 		NumSold: 0,
+		NftInfo: &models.NftInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
 	_,err=o.Insert(&nftMarketInfo)
 	if err!=nil {
@@ -440,6 +465,9 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 
 	avatarMarketInfo:= models.AvatarNftMarketInfo{
 		NftLdefIndex: nftLdefIndex,
+		NftMarketInfo:&models.NftMarketInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
 	_,err=o.Insert(&avatarMarketInfo)
 	if err!=nil {
@@ -458,6 +486,9 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		MpId: common.MARKETPLACE_ID,
 		Active: true,
 		ActiveTicker: common.ACTIVE_TICKER,
+		NftMarketInfo: &models.NftMarketInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
 	_,err=o.Insert(&mkPlace)
 	if err!=nil {
@@ -564,7 +595,7 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 	fileName:= fileNamePrefix+".mp3"
 
 	typeOfNft:= common.TYPE_NFT_MUSIC
-	nameOfNftType:= common.TYPE_NFT_MUSIC
+	nameOfNftType:= common.NAME_NFT_MUSIC
 	// ---------------------------------------
 	// calculate ciphertext and save
 	// ---------------------------------------
@@ -586,7 +617,7 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 
 	// saving ciphertext
 	logs.Debug("saving ciphertext")
-	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, typeOfNft, fileName)
+	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, nameOfNftType, fileName)
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
 		logs.Error(err.Error())
@@ -663,6 +694,9 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 	DatInfo:= models.DatNftInfo{
 		NftLdefIndex: nftLdefIndex,
 		IconFileName:iconFileName,
+		NftInfo: &models.NftInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
 	_,err= o.Insert(&DatInfo)
 	if err!=nil {
@@ -677,6 +711,9 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 	// ---------------------------------------
 	userMarketInfo:= models.UserMarketInfo{
 		Uuid: reqBaseInfo.Uuid,
+		UserInfo: &models.UserInfo{
+			Uuid: reqBaseInfo.Uuid,
+		},
 	}
 	err=o.Read(&userMarketInfo)
 	if err!=nil {
@@ -686,6 +723,15 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err, 500)
 		return
 	}
+	//  update user nft count
+	_,err=o.QueryTable("user_market_info").Update(orm.Params{
+		"count": orm.ColValue(orm.ColAdd,1),
+	})
+	if err!=nil {
+		logs.Error(err.Error())
+		err:=errors.New("unexpected error when query db")
+		sendError(&this.Controller,err, 500)
+	}
 	nftMarketInfo:= models.NftMarketInfo{
 		NftLdefIndex: nftLdefIndex,
 		SellerWallet: userMarketInfo.Wallet,
@@ -693,6 +739,9 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		Price: price,
 		Qty: number,
 		NumSold: 0,
+		NftInfo: &models.NftInfo{
+			NftLdefIndex: nftLdefIndex,
+		},
 	}
 	_,err=o.Insert(&nftMarketInfo)
 	if err!=nil {
@@ -711,6 +760,9 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		SongComposerPercent: songComposerPercent,
 		PublisherPercent: publisherPercent,
 		UserPercent: userPercent,
+		NftMarketInfo: &models.NftMarketInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
 	_,err=o.Insert(&datMarketInfo)
 	if err!=nil {
@@ -728,6 +780,9 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		MpId: common.MARKETPLACE_ID,
 		Active: true,
 		ActiveTicker: common.ACTIVE_TICKER,
+		NftMarketInfo: &models.NftMarketInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
 	_,err=o.Insert(&mkPlace)
 	if err!=nil {
@@ -771,9 +826,10 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 	fileNamePrefix := util.RandomPathFromFileName("file")
 	fileName:= fileNamePrefix+".jpg"
 	parentNftLdefIndex:= this.GetString("parent")
+	logs.Debug("parent index",parentNftLdefIndex)
 
 	typeOfNft:= common.TYPE_NFT_OTHER
-	nameOfNftType:= common.TYPE_NFT_OTHER
+	nameOfNftType:= common.NAME_NFT_OTHER
 	// ---------------------------------------
 	// calculate ciphertext and save
 	// ---------------------------------------
@@ -795,7 +851,7 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 
 	// saving ciphertext
 	logs.Debug("saving ciphertext")
-	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, typeOfNft, fileName)
+	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, nameOfNftType, fileName)
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
 		logs.Error(err.Error())
@@ -828,8 +884,6 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 	// ---------------------------------------
 	//nft info
 	nftLdefIndex:= util.RandomNftLdefIndex(typeOfNft)
-	nftLifeIndex:= util.SmallRandInt()
-	nftPowerIndex:= util.SmallRandInt()
 	// nft market info
 	price:= util.SmallRandInt()
 	qty:= util.SmallRandInt()
@@ -838,6 +892,8 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 	// ---------------------------------------
 	o:= orm.NewOrm()
 	o.Begin()
+	// update nft count
+
 	// set nftInfo
 	nftInfo:= models.NftInfo{
 		NftLdefIndex: nftLdefIndex,
@@ -846,7 +902,7 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		ShortDescription: reqBaseInfo.ShortDesc,
 		LongDescription: reqBaseInfo.LongDesc,
 		FileName: fileName,
-		NftParentLdef: "",
+		NftParentLdef: parentNftLdefIndex,
 	}
 	_,err=o.Insert(&nftInfo)
 	if err!=nil {
@@ -857,12 +913,13 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		return
 	}
 	// set avatar info
-	avatarInfo:= models.AvatarNftInfo{
+	ohterInfo:= models.OtherNftInfo{
 		NftLdefIndex: nftLdefIndex,
-		NftLifeIndex: nftLifeIndex,
-		NftPowerIndex: nftPowerIndex,
+		NftInfo: &models.NftInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
-	_,err= o.Insert(&avatarInfo)
+	_,err= o.Insert(&ohterInfo)
 	if err!=nil {
 		o.Rollback()
 		logs.Error(err.Error())
@@ -884,6 +941,15 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err, 500)
 		return
 	}
+	//  update user nft count
+	_,err=o.QueryTable("user_market_info").Update(orm.Params{
+		"count": orm.ColValue(orm.ColAdd,1),
+	})
+	if err!=nil {
+		logs.Error(err.Error())
+		err:=errors.New("unexpected error when query db")
+		sendError(&this.Controller,err, 500)
+	}
 	nftMarketInfo:= models.NftMarketInfo{
 		NftLdefIndex: nftLdefIndex,
 		SellerWallet: userMarketInfo.Wallet,
@@ -891,6 +957,9 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		Price: price,
 		Qty: qty,
 		NumSold: 0,
+		NftInfo: & models.NftInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
 	_,err=o.Insert(&nftMarketInfo)
 	if err!=nil {
@@ -903,6 +972,9 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 
 	otherMarketInfo:= models.OtherNftMarketInfo{
 		NftLdefIndex: nftLdefIndex,
+		NftMarketInfo: &models.NftMarketInfo{
+			NftLdefIndex: nftLdefIndex,
+		},
 	}
 	_,err=o.Insert(&otherMarketInfo)
 	if err!=nil {
@@ -920,6 +992,9 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		MpId: common.MARKETPLACE_ID,
 		Active: true,
 		ActiveTicker: common.ACTIVE_TICKER,
+		NftMarketInfo: &models.NftMarketInfo{
+			NftLdefIndex:nftLdefIndex,
+		},
 	}
 	_,err=o.Insert(&mkPlace)
 	if err!=nil {
@@ -960,7 +1035,7 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 }
 
 func (this *UploadController) Upload() {
-	kind := this.GetString(":kind")
+	kind := this.Ctx.Input.Param(":kind")
 	if err:= util.ValidNftName(kind); err!=nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller, err, 400)

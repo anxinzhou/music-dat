@@ -79,15 +79,17 @@ func (this *NicknameController) SetNickname() {
 	tmpInfo:= models.UserInfo{
 		Nickname: nickname,
 	}
-	err=o.Read(&tmpInfo,"nickname")
+	err=o.ReadForUpdate(&tmpInfo,"nickname")
 	if err!=nil {
 		if err!=orm.ErrNoRows {
+			o.Rollback()
 			logs.Error("unknown error when query db")
 			sendError(&this.Controller,err,500)
 			return
 		}
 	}
 	if err == nil && tmpInfo.Uuid != uuid {
+		o.Rollback()
 		err:=errors.New("duplicate nickname")
 		logs.Error(err.Error())
 		sendError(&this.Controller,err,500)
@@ -95,6 +97,7 @@ func (this *NicknameController) SetNickname() {
 	}
 	_,err=o.Update(&userInfo,"nickname")
 	if err!=nil {
+		o.Rollback()
 		if err==orm.ErrNoRows {
 			err := errors.New("no such user")
 			sendError(&this.Controller,err,404)
@@ -104,6 +107,7 @@ func (this *NicknameController) SetNickname() {
 			return
 		}
 	}
+	o.Commit()
 	logs.Info("update",uuid,"intro")
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 }
@@ -202,20 +206,23 @@ func (this *WalletController) GetWallet() {
 			return
 		}
 	}
-	if userInfo.UserMarketInfo!=nil {
-		err:=o.Read(userInfo.UserMarketInfo)
-		if err!=nil {
+	userMarketInfo:= models.UserMarketInfo{
+		Uuid:uuid,
+	}
+	err = o.Read(&userMarketInfo)
+	if err!=nil {
+		if err==orm.ErrNoRows {
+			err := errors.New("user has not bind wallet")
+			sendError(&this.Controller,err,404)
+			return
+		} else {
 			sendError(&this.Controller,err,500)
 			return
 		}
-	} else {
-		err:= errors.New("user have not set wallet")
-		sendError(&this.Controller,err,404)
-		return
 	}
 
-	wallet:=userInfo.UserMarketInfo.Wallet
-	count:= userInfo.UserMarketInfo.Count
+	wallet:=userMarketInfo.Wallet
+	count:= userMarketInfo.Count
 	type response struct {
 		Wallet string `json:"wallet"`
 		Count int 	`json:"count"`
@@ -272,6 +279,9 @@ func (this *WalletController) SetWallet() {
 		Uuid: uuid,
 		Wallet: wallet,
 		Count: 0,
+		UserInfo: &models.UserInfo{
+			Uuid: uuid,
+		},
 	}
 	_,err=o.InsertOrUpdate(&userMKInfo,"wallet")
 	if err!=nil {
@@ -304,6 +314,9 @@ func (this *AvatarController) GetAvatar() {
 	}
 
 	avatarFileName:= userInfo.AvatarFileName
+	if avatarFileName == "" {
+		avatarFileName = "default.jpg"
+	}
 	avatarUrl:=util.PathPrefixOfNFT("",common.PATH_KIND_USER_ICON)+ avatarFileName
 
 	type response struct {

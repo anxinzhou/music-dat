@@ -85,9 +85,9 @@
             <el-col :span="6" class="text-center">
               <span>{{nickname}}</span>
             </el-col>
-<!--            <el-col :span="6" class="text-center">-->
-<!--              <button class="alpha-button" @click="editNickname">Edit</button>-->
-<!--            </el-col>-->
+            <el-col :span="6" class="text-center">
+              <button class="alpha-button" @click="editNickname">Edit</button>
+            </el-col>
           </div>
           <div v-else>
             <el-col :span="6" class="text-center">
@@ -197,65 +197,94 @@
         newAvatar: undefined,
         imageUrl: undefined,
         intro: '',
+        address: undefined,
       }
     },
     methods: {
       logout: function () {
         console.log("logout")
-        this.$cookies.remove("avatarUrl");
-        this.$cookies.remove("nickname");
         this.$cookies.remove("access-token");
-        this.$cookies.remove("address");
-        this.$cookies.remove("account");
+        this.$cookies.remove("uuid");
         this.$router.replace('/login');
       },
       editNickname: function () {
         console.log("edit nickname");
+        this.newNickname = this.nickname
         this.nicknameEditing = true;
       },
       saveNickname: function() {
+        if(this.newNickname === this.nickname) {
+          this.$store.state.notifySuccess("set nickname success")
+          this.nicknameEditing = false;
+          return
+        }
         console.log("save nickname");
-        this.nicknameEditing = false;
+        let uuid = this.$cookies.get('uuid');
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.post(`${httpPath}/profile/${uuid}/nickname`,{
+          nickname: this.newNickname,
+        }).then(res=>{
+          this.nickname = this.newNickname;
+          this.nicknameEditing = false;
+          this.$store.state.notifySuccess("set nickname success")
+        }).catch(err=>{
+          console.log(err.response.data.reason);
+          this.$store.state.notifyError(err.response.data.reason)
+        });
       },
       cancelEditNickname: function() {
         this.nicknameEditing = false;
       },
       saveIntro: function() {
+        if(this.newIntro === this.intro) {
+          this.introEditing = false;
+          this.$store.state.notifySuccess("set intro success")
+          return
+        }
         console.log("save intro");
+        let uuid = this.$cookies.get('uuid');
         let httpPath = this.$store.state.config.httpPath;
-        let nickname = this.nickname;
-        this.axios.post(`${httpPath}/profile/${nickname}/intro`,{
+        this.axios.post(`${httpPath}/profile/${uuid}/intro`,{
           intro: this.newIntro,
         }).then(res=>{
           this.intro = this.newIntro;
           this.introEditing = false;
+          this.$store.state.notifySuccess("set intro success")
         }).catch(err=>{
-            this.$store.state.notifyError(err.response.data.reason);
             console.log(err.response.data.reason);
+          this.$store.state.notifyError(err.response.data.reason)
         });
       },
       cancelEditIntro: function() {
         this.introEditing = false;
       },
       editIntro: function() {
+          this.newIntro = this.intro;
           this.introEditing = true;
       },
       saveWallet: function() {
+        if(this.newAddress === this.address) {
+          this.walletEditing = false;
+          this.$store.state.notifySuccess("set wallet success")
+          return
+        }
         console.log("save wallet");
         this.newAddress = this.newAddress.replace(' ','');
         let httpPath = this.$store.state.config.httpPath;
-        let nickname = this.nickname;
-        this.axios.post(`${httpPath}/profile/${nickname}/wallet`,{
+        let uuid = this.$cookies.get('uuid');
+        this.axios.post(`${httpPath}/profile/${uuid}/wallet`,{
           wallet: this.newAddress,
         }).then(res=>{
           this.address = this.newAddress;
           this.walletEditing = false;
+          this.$store.state.notifySuccess("set wallet success")
         }).catch(err=>{
-          this.$store.state.notifyError(err.response.data.reason);
           console.log(err.response.data.reason);
+          this.$store.state.notifyError(err.response.data.reason)
         });
       },
       editWallet: function() {
+        this.newAddress = this.address;
           this.walletEditing = true;
       },
       cancelEditWallet: function() {
@@ -271,7 +300,8 @@
         let nickname = this.nickname;
         let formData = new FormData();
         formData.append("avatar",this.newAvatar);
-        this.axios.post(`${httpPath}/profile/${nickname}/avatar`,formData,{
+        let uuid = this.$cookies.get('uuid');
+        this.axios.post(`${httpPath}/profile/${uuid}/avatar`,formData,{
           headers: {
             'Content-Type': 'multipart/form-data'
           }
@@ -282,8 +312,9 @@
             this.avatarUrl  = url;
             this.newAvatar = undefined;
             this.imageUrl = undefined;
+          this.$store.state.notifySuccess("set avatar success")
         }).catch(err=>{
-          this.$store.state.notifyError(err.response.data.reason);
+          this.$store.state.notifyError(err.response.data.reason)
           console.log(err.response.data.reason);
         });
       },
@@ -307,26 +338,34 @@
         let httpPath = this.$store.state.config.httpPath;
         this.axios.get(`${httpPath}/profile/${uuid}/intro`).then(res=>{
           this.intro = res.data.intro;
-        }).catch(console.log);
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
       },
       getNickname: function(uuid) {
         let httpPath = this.$store.state.config.httpPath;
         this.axios.get(`${httpPath}/profile/${uuid}/nickname`).then(res=>{
           this.nickname = res.data.nickname;
-        }).catch(console.log);
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
       },
       getWallet: function(uuid) {
         let httpPath = this.$store.state.config.httpPath;
         this.axios.get(`${httpPath}/profile/${uuid}/wallet`).then(res=>{
-          this.address = res.data.address;
-        }).catch(console.log);
+          this.address = res.data.wallet;
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        });
       },
       getAvatarUrl: function(uuid) {
         let httpPath = this.$store.state.config.httpPath;
         this.axios.get(`${httpPath}/profile/${uuid}/avatar`).then(res=>{
-          this.address = res.data.avatarUrl;
-        }).catch(console.log);
-      }
+          this.avatarUrl = res.data.avatarUrl;
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
+      },
     },
     mounted: function () {
       // var el = document.getElementById('mainNav')

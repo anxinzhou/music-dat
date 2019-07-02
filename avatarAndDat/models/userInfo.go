@@ -9,24 +9,23 @@ type CreatorInfo struct {
 	Username string `orm:"unique"`
 	Password string
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
-	UserInfo *UserInfo `orm:"reverse(one)"`
+	UserInfo *UserInfo `orm:"rel(one);on_delete(cascade);"`
 }
 
 func (this *CreatorInfo) TableIndex() [][]string {
 	return [][]string {
 		[]string{"Username","Password"},
-		[]string{"Nickname"},
 	}
 }
 
 type UserInfo struct {
-	Uuid string `orm:"pk;"`
+	Uuid string `orm:"pk;unique"`
 	Nickname string `orm:"unique"`
 	AvatarFileName string
 	Intro string
 	UserMarketInfo *UserMarketInfo `orm:"reverse(one);"`
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
-	CreatorInfo *CreatorInfo `orm:"rel(one);on_delete(cascade);"`
+	CreatorInfo *CreatorInfo `orm:"reverse(one)"`
 }
 
 type UserMarketInfo struct {
@@ -92,8 +91,7 @@ func (this *NftPurchaseInfo) TableIndex() [][]string {
 		[]string {"Uuid"},
 		[]string {"NftLdefIndex"},
 		[]string {"TransactionAddress"},
-		[]string {"SellerNickname"},
-		[]string {"NftType"},
+		[]string {"SellerUuid"},
 	}
 }
 

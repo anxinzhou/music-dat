@@ -1,3 +1,4 @@
+<script src="../store.js"></script>
 <script src="../router.js"></script>
 <template>
   <div>
@@ -89,6 +90,7 @@
                 :action="uploadDatPath"
                 :data="uploadDatAdditionalData"
                 :on-success="uploadDatSuccessHook"
+                :on-error="uploadDatErrorHook"
                 :auto-upload="false">
                 <el-button slot="trigger" size="small" type="primary">select music file</el-button>
                 <el-button style="margin-left: 10px;" size="small" type="success" @click="submitDat">upload to server
@@ -161,6 +163,7 @@
             list-type="picture"
             :action="uploadAvatarPath"
             :on-success="uploadAvatarSuccessHook"
+            :on-error="uploadAvatarErrorHook"
             :data="uploadAvatarAdditionalData"
             :auto-upload="false">
             <el-button slot="trigger" size="small" type="primary">select image file</el-button>
@@ -196,6 +199,7 @@
             list-type="picture"
             :action="uploadOtherPath"
             :on-success="uploadOtherSuccessHook"
+            :on-error="uploadOtherErrorHook"
             :data="uploadOtherAdditionalData"
             :auto-upload="false">
             <el-button slot="trigger" size="small" type="primary">select data file</el-button>
@@ -261,11 +265,16 @@
           Market Place Active Listings
         </el-col>
       </el-row>
+      <el-row class="marketPlaceListTitle">
+        <el-col :offset="1">
+          Music List
+        </el-col>
+      </el-row>
       <el-row :gutter="20">
         <el-col :span=24 :offset="1">
           <div class="upload-file-container">
             <el-table
-              :data="tableData.slice((currentPage-1)*pagesize,currentPage*pagesize)"
+              :data="datTableData.slice((datCurrentPage-1)*datPagesize,datCurrentPage*datPagesize)"
               stripe
               style="width: 100%">
               <el-table-column :min-width="40"
@@ -276,33 +285,17 @@
                                class="buttonText"><a>{{scope.row.nftLdefIndex}}</a></router-link>
                 </template>
               </el-table-column>
-              <el-table-column :min-width="20"
-                               prop="nftType"
-                               label="Type">
-              </el-table-column>
               <el-table-column :min-width="25"
                                prop="nftName"
                                label="Name">
               </el-table-column>
-              <el-table-column
-                prop="activeTicker" :min-width="25"
-                label="Active Ticker">
-              </el-table-column>
               <el-table-column :min-width="20"
-                               prop="nftValue"
+                               prop="price"
                                label="Price">
               </el-table-column>
               <el-table-column :min-width="20"
                                prop="qty"
                                label="Qty">
-              </el-table-column>
-              <el-table-column :min-width="25"
-                               prop="nftPowerIndex"
-                               label="Power">
-              </el-table-column>
-              <el-table-column :min-width="20"
-                               prop="nftLifeIndex"
-                               label="Life">
               </el-table-column>
               <el-table-column :min-width="40"
                                prop="shortDesc"
@@ -336,17 +329,126 @@
             <div style="text-align: center;margin-top: 30px;">
               <el-pagination
                 background
-                :page-size=pagesize
+                :page-size=datPagesize
                 layout="prev, pager, next"
-                :total="total"
-                @current-change="current_change">
+                :total="datTotal"
+                @current-change="datCurrentChange">
               </el-pagination>
             </div>
 
           </div>
         </el-col>
       </el-row>
+<!--      avatar list-->
+      <el-row class="marketPlaceListTitle">
+        <el-col :offset="1">
+          Photo NFT List
+        </el-col>
+      </el-row>
+      <el-row :gutter="20">
+        <el-col :span=24 :offset="1">
+          <div class="upload-file-container">
+            <el-table
+              :data="avatarTableData.slice((avatarCurrentPage-1)*avatarPagesize,avatarCurrentPage*avatarPagesize)"
+              stripe
+              style="width: 100%">
+              <el-table-column :min-width="40"
+                               prop="nftLdefIndex"
+                               label="Def Index">
+                <template slot-scope="scope">
+                  <router-link :to="{name:'Child',params:{nftLdefIndex:scope.row.nftLdefIndex}}"
+                               class="buttonText"><a>{{scope.row.nftLdefIndex}}</a></router-link>
+                </template>
+              </el-table-column>
+              <el-table-column :min-width="25"
+                               prop="nftName"
+                               label="Name">
+              </el-table-column>
+              <el-table-column :min-width="20"
+                               prop="price"
+                               label="Price">
+              </el-table-column>
+              <el-table-column :min-width="25"
+                               prop="nftPowerIndex"
+                               label="Power">
+              </el-table-column>
+              <el-table-column :min-width="20"
+                               prop="nftLifeIndex"
+                               label="Life">
+              </el-table-column>
+              <el-table-column :min-width="40"
+                               prop="shortDesc"
+                               label="Short desc">
+              </el-table-column>
+              <el-table-column :min-width="40"
+                               prop="longDesc"
+                               label="Long desc">
+              </el-table-column>
+            </el-table>
+            <div style="text-align: center;margin-top: 30px;">
+              <el-pagination
+                background
+                :page-size=avatarPagesize
+                layout="prev, pager, next"
+                :total="avatarTotal"
+                @current-change="avatarCurrentChange">
+              </el-pagination>
+            </div>
 
+          </div>
+        </el-col>
+      </el-row>
+<!--      other list-->
+      <el-row class="marketPlaceListTitle">
+        <el-col :offset="1">
+          Other NFT List
+        </el-col>
+      </el-row>
+      <el-row :gutter="20">
+        <el-col :span=24 :offset="1">
+          <div class="upload-file-container">
+            <el-table
+              :data="otherTableData.slice((otherCurrentPage-1)*otherPagesize,otherCurrentPage*otherPagesize)"
+              stripe
+              style="width: 100%">
+              <el-table-column :min-width="40"
+                               prop="nftLdefIndex"
+                               label="Def Index">
+                <template slot-scope="scope">
+                  <router-link :to="{name:'Child',params:{nftLdefIndex:scope.row.nftLdefIndex}}"
+                               class="buttonText"><a>{{scope.row.nftLdefIndex}}</a></router-link>
+                </template>
+              </el-table-column>
+              <el-table-column :min-width="25"
+                               prop="nftName"
+                               label="Name">
+              </el-table-column>
+              <el-table-column :min-width="20"
+                               prop="price"
+                               label="Price">
+              </el-table-column>
+              <el-table-column :min-width="40"
+                               prop="shortDesc"
+                               label="Short desc">
+              </el-table-column>
+              <el-table-column :min-width="40"
+                               prop="longDesc"
+                               label="Long desc">
+              </el-table-column>
+            </el-table>
+            <div style="text-align: center;margin-top: 30px;">
+              <el-pagination
+                background
+                :page-size=otherPagesize
+                layout="prev, pager, next"
+                :total="otherTotal"
+                @current-change="otherCurrentChange">
+              </el-pagination>
+            </div>
+
+          </div>
+        </el-col>
+      </el-row>
       <!--    transaction history-->
       <el-row class="marketPlaceTitle">
         <el-col :offset="1">
@@ -375,15 +477,15 @@
                                label="Def Index">
               </el-table-column>
               <el-table-column :min-width="60"
-                               prop="buyer"
+                               prop="buyerNickname"
                                label="Buyer">
               </el-table-column>
               <el-table-column :min-width="60"
-                               prop="seller"
+                               prop="sellerNickname"
                                label="Seller">
               </el-table-column>
               <el-table-column :min-width="60"
-                               prop="time"
+                               prop="timestamp"
                                label="Date">
               </el-table-column>
             </el-table>
@@ -393,7 +495,7 @@
                 :page-size=mkTxHistoryPagesize
                 layout="prev, pager, next"
                 :total="mkTxHistoryTotal"
-                @current-change="current_change">
+                @current-change="mkTxCurrentChange">
               </el-pagination>
             </div>
 
@@ -430,10 +532,18 @@
         httpPath: undefined,
         address: undefined,
         totalNFT: undefined,
-        tableData: [],
-        total: 0,
-        pagesize: 10,
-        currentPage: 1,
+        datTableData: [],
+        datTotal: 0,
+        datPagesize: 10,
+        datCurrentPage: 1,
+        avatarTableData: [],
+        avatarTotal: 0,
+        avatarPagesize: 10,
+        avatarCurrentPage: 1,
+        otherTableData: [],
+        otherTotal: 0,
+        otherPagesize: 10,
+        otherCurrentPage: 1,
         mkTxHistoryTableData: [],
         mkTxHistoryPagesize: 10,
         mkTxHistoryCurrentPage: 1,
@@ -484,93 +594,50 @@
         this.$refs.uploadOther.submit();
       },
       uploadDatSuccessHook: function (res, file, fileList) {
-        this.totalNFT += 1;
-        let el = this.setNFTFromResponse(res);
-        this.tableData = [el].concat(this.tableData);
+        this.$store.state.notifySuccess("Upload music NFT success");
+        this.datTableData = [res].concat(this.datTableData);
         this.$refs.uploadDat.clearFiles();
+        this.totalNFT += 1;
+        this.datTotal +=1;
+      },
+      uploadDatErrorHook: function(err,file,fileList) {
+        this.$store.state.notifyError("Fail to Upload music NFT");
+        console.log(err)
       },
       uploadAvatarSuccessHook: function (res, file, fileList) {
+        this.$store.state.notifySuccess("Upload photo NFT success");
         this.totalNFT += 1;
-        let el = this.setNFTFromResponse(res);
-        this.tableData = [el].concat(this.tableData);
+        this.avatarTableData = [res].concat(this.avatarTableData);
         this.$refs.uploadAvatar.clearFiles();
+        this.avatarTotal+=1
+      },
+      uploadAvatarErrorHook: function(err,file,fileList) {
+        this.$store.state.notifyError("Fail to Upload photo NFT");
+        console.log(err)
       },
       uploadOtherSuccessHook: function (res, file, fileList) {
+        this.$store.state.notifySuccess("Upload other NFT success");
+        console.log(res);
         this.totalNFT += 1;
-        let el = this.setNFTFromResponse(res);
-        this.tableData = [el].concat(this.tableData);
+        this.otherTableData = [res].concat(this.otherTableData);
         this.$refs.uploadOther.clearFiles();
+        this.otherTotal+=1;
       },
-      setNFTFromResponse: function (nftData) {
-        let el = {};
-        el.nftLdefIndex = nftData.nftLdefIndex;
-        el.nftName = nftData.nftName;
-        el.nftCharacId = nftData.nftCharacId;
-        el.activeTicker = nftData.activeTicker;
-        el.nftValue = nftData.nftValue;
-        el.qty = nftData.qty;
-        el.shortDesc = nftData.shortDesc;
-        el.longDesc = nftData.longDesc;
-        if (nftData.supportedType === '721-04') {
-          el.nftType = "Dat"
-          el.nftPowerIndex = "/"
-          el.nftLifeIndex = "/"
-          el.creatorPercent = nftData.creatorPercent;
-          el.lyricsWriterPercent = nftData.lyricsWriterPercent;
-          el.songComposerPercent = nftData.songComposerPercent;
-          el.publisherPercent = nftData.publisherPercent;
-          el.userPercent = nftData.userPercent;
-        } else if (nftData.supportedType === '721-02') {
-          el.nftType = "Avatar"
-          el.nftPowerIndex = nftData.nftPowerIndex;
-          el.nftLifeIndex = nftData.nftLifeIndex;
-          el.creatorPercent = "/";
-          el.lyricsWriterPercent = "/";
-          el.songComposerPercent = "/";
-          el.publisherPercent = "/";
-          el.userPercent = "/";
-        } else if (nftData.supportedType === "721-05") {
-          el.nftType = "Other";
-          el.nftPowerIndex = "/";
-          el.nftLifeIndex = "/";
-          el.creatorPercent = "/";
-          el.lyricsWriterPercent = "/";
-          el.songComposerPercent = "/";
-          el.publisherPercent = "/";
-          el.userPercent = "/";
-        }
-        return el;
+      uploadOtherErrorHook: function(err,file,fileList) {
+        this.$store.state.notifyError("Fail to Upload other NFT");
+        console.log(err)
       },
-      getTotalNFT: function (nickname) {
-        // get total nft balance
-        this.axios.get(`${this.httpPath}/balance/${nickname}`).then(res => {
-          this.totalNFT = res.data.count;
-        }).catch(console.log);
+      datCurrentChange: function (currentPage) {
+        this.datCurrentPage = currentPage
       },
-      getNFTList: function (nickname) {
-        this.axios.get(`${this.httpPath}/nftList/${nickname}`).then(res => {
-          for (let i = res.data.nftTranData.length - 1; i >= 0; --i) {
-            let nftData = res.data.nftTranData[i];
-            let el = this.setNFTFromResponse(nftData);
-            this.tableData.push(el);
-          }
-          this.total = this.tableData.length;
-          console.log(res.data.nftTranData);
-        }).catch(console.log);
+      avatarCurrentChange: function (currentPage) {
+        this.avatarCurrentPage = currentPage
       },
-      getMarketHistoryList: function (nickname) {
-        this.axios.get(`${this.httpPath}/market/transactionHistory/${nickname}`).then(res => {
-          for (let i = res.data.nftPurchaseInfo.length - 1; i >= 0; --i) {
-            let purchaseInfo = res.data.nftPurchaseInfo[i];
-            // let el = this.setMarketTableFromResponse(purchaseInfo);
-            this.mkTxHistoryTableData.push(purchaseInfo);
-          }
-          this.mkTxHistoryTotal = this.mkTxHistoryTableData.length;
-          console.log(res.data.mkTxHistoryTableData);
-        }).catch(console.log);
+      otherCurrentChange: function(currentPage) {
+        this.otherCurrentPage = currentPage
       },
-      current_change: function (currentPage) {
-        this.currentPage = currentPage
+      mkTxCurrentChange: function (currentPage) {
+        this.mkTxHistoryCurrentPage = currentPage
       },
       avatarNameChange: function () {
         this.$set(this.uploadAvatarAdditionalData, 'nftName', this.avatarName);
@@ -643,53 +710,117 @@
         let httpPath = this.$store.state.config.httpPath;
         this.axios.get(`${httpPath}/profile/${uuid}/intro`).then(res=>{
           this.intro = res.data.intro;
-        }).catch(console.log);
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
       },
       getNickname: function(uuid) {
         let httpPath = this.$store.state.config.httpPath;
         this.axios.get(`${httpPath}/profile/${uuid}/nickname`).then(res=>{
           this.nickname = res.data.nickname;
-          this.totalNFT = res.data.balance;
-        }).catch(console.log);
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
       },
       getWallet: function(uuid) {
         let httpPath = this.$store.state.config.httpPath;
         this.axios.get(`${httpPath}/profile/${uuid}/wallet`).then(res=>{
-          this.address = res.data.address;
-        }).catch(console.log);
+          this.address = res.data.wallet;
+          this.totalNFT = res.data.count;
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        });
       },
       getAvatarUrl: function(uuid) {
         let httpPath = this.$store.state.config.httpPath;
         this.axios.get(`${httpPath}/profile/${uuid}/avatar`).then(res=>{
-          this.address = res.data.avatarUrl;
-        }).catch(console.log);
-      }
+          this.avatarUrl = res.data.avatarUrl;
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
+      },
+      getNFTList: function (uuid) {
+        this.getDatList(uuid);
+        this.getAvatarList(uuid);
+        this.getOtherList(uuid);
+      },
+      getDatList: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/nftList/dat/${uuid}`).then(res => {
+           this.datTableData = res.data.nftTranData
+           this.datTotal = this.datTableData.length;
+          if(this.datTotal===0) {
+             this.datCurrentPage = 1;
+          } else {
+              this.datCurrentPage = Math.floor((this.datTotal-1)/ this.datPagesize)+1;
+          }
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
+      },
+      getAvatarList: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/nftList/avatar/${uuid}`).then(res => {
+          this.avatarTableData = res.data.nftTranData
+          this.avatarTotal = this.avatarTableData.length;
+          if(this.datTotal===0) {
+            this.avatarCurrentPage = 1;
+          } else {
+            this.avatarCurrentPage = Math.floor((this.avatarTotal-1)/ this.avatarPagesize)+1;
+          }
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
+      },
+      getOtherList: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/nftList/other/${uuid}`).then(res => {
+          this.otherTableData = res.data.nftTranData
+          this.otherTotal = this.otherTableData.length;
+          if(this.otherTotal===0) {
+            this.otherCurrentPage = 1;
+          } else {
+            this.otherCurrentPage = Math.floor((this.otherTotal-1)/ this.otherPagesize)+1;
+          }
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
+      },
+      getMarketHistoryList: function (uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/market/transactionHistory/${uuid}`).then(res => {
+          console.log(res.data.nftTranData);
+          this.mkTxHistoryTableData = res.data.nftTranData
+          this.mkTxHistoryTotal = this.mkTxHistoryTableData.length;
+          if(this.mkTxHistoryTotal===0) {
+            this.mkTxHistoryCurrentPage = 1;
+          } else {
+            this.mkTxHistoryCurrentPage = Math.floor((this.mkTxHistoryTotal-1)/ this.mkTxHistoryPagesize)+1;
+          }
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
+      },
     },
     created: function () {
       // console.log(this.$store.state.account)
       // init variables
-
+      let httpPath = this.$store.state.config.httpPath;
       let uuid = this.$cookies.get('uuid');
-      this.uploadDatPath = this.httpPath + "/file/dat";
-      this.uploadAvatarPath = this.httpPath + "/file/avatar";
-      this.uploadOtherPath = this.httpPath + "/file/other";
-      this.total = this.tableData.length / this.pagesize * 10;
-      this.mkTxHistoryTotal = this.mkTxHistoryTableData.length / this.mkTxHistoryPagesize * 10;
-
+      this.uploadDatPath = httpPath + "/file/dat";
+      this.uploadAvatarPath = httpPath + "/file/avatar";
+      this.uploadOtherPath = httpPath + "/file/other";
       let uploadBaseObject = {
-        address: this.address,
-        nickname: this.nickname,
-        allowAirdrop: this.allowAirdrop,
+        uuid: uuid,
       };
 
       this.uploadDatAdditionalData = Object.assign({}, uploadBaseObject);
       this.uploadAvatarAdditionalData = Object.assign({}, uploadBaseObject);
       this.uploadOtherAdditionalData = Object.assign({}, uploadBaseObject);
-      // get total nft
-      this.getTotalNFT(nickname);
+      this.$set(this.uploadDatAdditionalData, 'allowAirdrop', true);
       // get nft list of user from market place
-      this.getNFTList(nickname);
-      this.getMarketHistoryList(nickname);
+      this.getNFTList(uuid);
+      this.getMarketHistoryList(uuid);
 
       // set default select item
       this.selectedType = this.uploadOptions[0].type;
@@ -741,7 +872,8 @@
     margin-bottom: 100px;
   }
 
-  .nftSelect {
-
+  .marketPlaceListTitle {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
   }
 </style>

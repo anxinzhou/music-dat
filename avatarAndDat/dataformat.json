@@ -1,0 +1,664 @@
+Error
+
+{
+	"status": 1,  // 0 for success 1 for fail 
+	"action": "mp_list", // string
+	"reason": "can not marshal data", // string 
+}
+
+
+这个不变
+1. mp_list // todo page and offset 
+// 获取 所有 音乐或者图片的market place 信息
+
+Request
+
+{
+	"action": "mp_list", //string
+	"supportedType": "721-04", // string, "721-05" for other "721-04" for music "721-02" for avatar 区分 音乐还是图片 
+}
+
+Response
+For avatar
+{	
+	"status": 0,   // int 0 for success 1 for fail
+	"action": "mp_list", // string
+	"nftTranData": [ //array
+		{		
+			"nftLdefIndex": "AM00132134", // string
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"nftLifeIndex": 7, // int     for avatar only 
+			"nftPowerIndex": 23, //int 
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int
+		}
+	]
+}
+For dat and other nft 	
+{
+	"action": "mp_list", // string
+	"nftTranData": [ //array
+		{		
+			"nftLdefIndex": "AM00132134", // string
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int
+		}
+	]
+}
+
+
+!!! nickname 改 uuid， 返回的nftTranData 改为 object of string（如果要用到的话,不用可以无视）
+2. NFT_purchase_confirm      
+// 购买NFT
+// 1. 调用transfer in smart contract。
+// 2. 删掉该NFT 在 market table 里面的信息。
+
+Request
+
+{
+	"action": "NFT_purchase_confirm", // string
+	"uuid": "", // string
+	"nftTranData": [ //array of string nftLdefIndex
+		 "A54514327798255", // string 
+	]
+}
+
+Response
+
+{	
+	"status": 0,   // int 0 for success 1 for fail
+	"action": "NFT_purchase_confirm", // string
+	"nftTranData": [ //array of string nftLdefIndex
+		 "A54514327798255", // string 
+	]
+}
+
+!!! nickname 改 uuid 
+3. token_purchase
+
+!!! fix: correct appTranId with transactionId in response data. 
+
+// comment: 购买 berry_point。.手机端在appstore 购买.
+
+// 1. 手机购买前，发送一个request，这时 action status 为2，把购买的信息放到 berry_purchase table. 分配一个TransactionId 给手机
+// 2. 手机购买后，请求附带TransactionId, 同时加上苹果商店的appTranId，action status 为1， 将之前购买信息 status 设为1，表示已完成。
+// 增加 mongdodb users 表的 coin 字段。
+
+Request
+
+{
+	"action": "tokenbuy_paid", //string
+	"actId": "APP01234776789", //string
+	"uuid": "", // string
+	"appTranId": "4fffc3b55bd8270df6fd85d1f17b8ec53adfa64d882", // string id from app store
+	"transactionId": "234234324234", //string allocate from server 
+	"appId": "XXX@appleid.com",
+	"amount": 2, //int    berry number
+	"actionStatus": 2, // 2 for pending 1 for finish
+}
+
+Response
+
+{	
+	"status": 0,  // int 0 for success 1 for fail
+	"action": "tokenbuy_paid", //string
+	"amount": 2,
+	"actionStatus": 2, // 2 for pending 1 for finish
+	"transactionId": "23432", // string  non-empty if actionstatus == pending     
+}
+
+
+4. nft_show
+
+// 把之前加密过的 音乐或图片 解密 放到 某文件夹下，将解密路径(decSource)返回。
+
+Request
+
+{
+	"action": "NFT_display", //string
+	"nftLdefIndex": "R74628638382", //string  // nft to show
+}
+
+Response
+
+{	
+	"status": 0,  // int 0 for success 1 for fail
+	"action": "NFT_display", //string
+	"nftLdefIndex": "R74628638382", //string
+	"decSource": "”:”//10.21.23.7/temp/00893.mp3", //string
+}
+
+!!  nftTranData 由 array of object 改成 array of string 
+5. item_details
+
+// 返回某一个NFT的详细信息。
+
+Request
+
+{
+	"action": "item_details", //string
+	"nftTranData": [ // array of string nftLdefIndex
+		"AM001I0095"
+	]
+}
+
+Response
+
+{
+	"status": 0,  // int 0 for success 1 for fail
+	"action": "item_details", //string
+	"nftTranData": [ // array of object
+		// if for avatar 
+		{
+			"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"nftLifeIndex": 7, // int
+			"nftPowerIndex": 23, //int 
+			"nftLdefIndex": "AM00132134", // string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int 
+		}
+		// if for dat and other nft
+		{
+			"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"nftLdefIndex": "AM00132134", // string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int 
+		}
+	]
+}
+
+6. user list
+
+!!! nickname 改 uuid 
+Request
+
+{
+	"action": "market_user_list", //string
+	"uuid": "",
+}
+
+Response {
+	"status": 0,  // int 0 for success 1 for fail
+	"action": "market_user_list", //string
+	"walletIdList": [ // array of object
+		{
+			"uuid": "uuid", // string
+			"nickname": "nickname", // string 
+			"count": 1, // int total nft
+			"thumbnail": "http://", // string
+			"followed": true, // bool
+		}
+	]
+}
+
+
+7. user market info
+
+!!! nickname 改 uuid 
+Request
+
+{
+	"action": "user_market_info", //string
+	"uuid": "", //string
+}
+
+Response
+
+{	
+	"status": 0,  // int 0 for success 1 for fail
+	"action": "user_market_info", //string
+	"totalNFT": 1, // int
+	"nftTranData": [ // array of object
+		// if for avatar 
+		{
+			"supportedType": "721-02", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"nftLifeIndex": 7, // int
+			"nftPowerIndex": 23, //int 
+			"nftLdefIndex": "AM00132134", // string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int 
+		}
+		// if for other nft
+		{
+			"supportedType": "721-05", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"nftLdefIndex": "AM00132134", // string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int 
+		}
+		// if for dat nft 
+		{
+			"supportedType": "721-05", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"nftLdefIndex": "AM00132134", // string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"decSource": "",     // path to music file
+			"qty": 100, // int 
+		}
+	]
+}
+
+
+API 8 user profile on website
+8.1. Get Wallet   GET /profile/:uuid/wallet         // TO TEST 
+
+Response {
+	"wallet": "",
+	"count": 2, //string
+}
+
+8.2 Change Wallet POST /profile/:uuid/wallet 		//TO TEST
+
+Request {
+	"wallet": "",
+}
+
+8.3 Get Intro GET /profile/:uuid/intro 			// TO TEST
+
+Response {
+	"intro": "",
+}
+
+8.4 Change Intro POST /profile/:uuid/intro      // TO TEST
+
+Request {
+	"intro": "",
+}
+
+8.5 Get Avatar Url  GET /profile/:uuid/avatar  // TO TEST
+
+Response {
+	"avatarUrl": "",
+}
+
+8.6 Change Avatar Url  POST /profile/:uuid/avatar // TO TEST
+
+Request {
+	"avatar": "" ,  // file object
+}
+
+Response {
+	"avatarUrl": "",
+}
+
+8.7 Get nickname GET /profile/:uuid/nickname   // TO TEST
+
+Response {
+	"nickname": "",
+}
+
+8.8 Change nickname POST /profile/:uuid/nickname  // TO TEST 
+
+Request {
+	"nickname": "",
+}
+
+8.9 login   POST /admin   // TO TEST
+Request {
+	"username":"",
+	"password":"",
+}
+
+API 9 NFT manage on website 
+
+9.1 Get nft market list   GET /nftList/:uuid:string  // TO TEST
+
+Response {
+	"nftTranData": [{
+			"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"activeTicker": "berry", //string
+			"nftLifeIndex": 7, // int
+			"nftPowerIndex": 23, //int 
+			"nftLdefIndex": "AM00132134", // string
+			"nftCharacId": "def", //string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int 
+	}]
+}
+
+9.2  child list  GET  /nfts/:parentIndex:string/children  // TO TEST
+Response {
+	"nftTranData": [{
+			"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"activeTicker": "berry", //string
+			"nftLifeIndex": 7, // int
+			"nftPowerIndex": 23, //int 
+			"nftLdefIndex": "AM00132134", // string
+			"nftCharacId": "def", //string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int 
+	}]
+}
+
+9.3 child balance GET /nfts/:parentIndex:string/balance // TO TEST
+
+Response {
+	"count": 1,
+}
+
+9.4 market transaction history  GET /market/transactionHistory/:uuid:string // TODO
+
+Response {
+	"txHistory": [{
+		"txAddress": "",
+		"nftLdefIndex": "",
+		"buyer": "",
+		"seller": "",
+		"date": "",
+	}]
+}
+
+9.5 upload avatar|dat|other POST /file/:kind(avatar|dat|other)  // TO TEST
+Request {
+	"uuid": "",
+	"file": "", // file object
+	"nftName": "",
+	"shortDesc": "",
+	"longDesc": "",
+	 // if for dat
+	"icon": "", // file object
+	"allowAirdrop": true,
+	"number": 1,
+	"price": 1,
+	"creatorPercent": 1,
+	"lyricsWriterPercent": 1,
+	"songComposerPercent": 1,
+	"publisherPercent": 10,
+	"userPercent": 2,
+	// if for other, only child have other
+	"parent": "",
+}
+
+Response {
+
+}
+
+API 10 rewardDAT  /rewardDat/:uuid:string   // TOTEST
+
+http://3.1.35.36:4000/rewardDat/ + <nickname>
+example: http://3.1.35.36:4000/rewardDat/AlphaBrain       
+
+Response {
+	"nftTranData": [ // array of nft info
+		{
+			"nftLdefIndex":"",
+			"supportedType": "",
+			"nftName": "heart", // string 
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+		},
+	]
+}
+
+Error
+
+{	
+	"reason": "can not marshal data", // string 
+}
+
+!!!! nickname 改 uuid 
+API 11 UserNFTPurchaseHistory
+
+// User nft purchase history
+
+Request {
+	"action": "nft_purchase_history", //string
+	"uuid": "", // 
+	"supportedType": "",
+}
+
+
+Response {
+	"status": 0,  
+	"action": "nft_purchase_history", //string
+	"purchaseList": [ // array of object purchase records
+		{	
+			"transactionAddress": "0x321312312323123423", // transaction address 
+			// if for avatar
+			"nftTranData": {
+				"supportedType": "721-02", // string "721-04" for music "721-02" for avatar
+				"nftName": "heart", // string 
+				"nftValue": 1, // int  
+				"nftLifeIndex": 7, // int
+				"nftPowerIndex": 23, //int 
+				"nftLdefIndex": "AM00132134", // string
+				"shortDesc": "Heart", //string
+				"longDesc": "Great Heart color logo from ", //string
+				"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+				"qty": 100, // int 
+			},
+			// if for dat 
+			"nftTranData": {
+				"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+				"nftName": "heart", // string 
+				"nftValue": 1, // int  
+				"nftLdefIndex": "AM00132134", // string
+				"shortDesc": "Heart", //string
+				"longDesc": "Great Heart color logo from ", //string
+				"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+				"decSource": "path to dec", // string decrpyted source
+				"qty": 100, // int 
+			},
+			// if for other
+			"nftTranData": {
+				"supportedType": "721-05", // string "721-04" for music "721-02" for avatar
+				"nftName": "heart", // string 
+				"nftValue": 1, // int  
+				"nftLdefIndex": "AM00132134", // string
+				"shortDesc": "Heart", //string
+				"longDesc": "Great Heart color logo from ", //string
+				"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+				"qty": 100, // int 
+			},
+			"timeStamp": "2004 07 21", // time to buy this nft
+			"status": "1", //   1 for confirmed 2 for pending.   Pending is TODO
+		},
+	]
+}
+
+!!! nickname 改 uuid 
+API 12 NFTShoppingCartChange
+// nft shopping cart change
+
+Request {
+	"action": "nft_shopping_cart_change",
+	"operation": 0, // int 0 for add 1 for delete
+	"uuid": "fdsf", // user account
+	"nftList": [ // array of string
+		"nftLdefIndex", //  index of nft
+	]
+}
+
+Response {
+	"status": 0,
+	"action": "nft_shopping_cart",
+	"operation": 0, 
+	"nftList": [ // array of string
+		"nftLdefIndex", //  index of nft
+	]
+}
+
+!!! nickname 改 uuid 
+API 13 NFTShoppingCartList
+//  nft shopping cart list
+Request {
+	"action": "nft_shopping_cart_list",
+	"uuid": "",
+}
+
+Response {
+	"status": 0,
+	"action": "nft_shopping_cart_list",
+	"nftList": [ // array of object
+		{	
+			// if for dat and other
+			"nftTranData": {
+				"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+				"nftName": "heart", // string 
+				"nftValue": 1, // int  
+				"activeTicker": "berry", //string
+				"nftLifeIndex": 7, // int
+				"nftPowerIndex": 23, //int 
+				"nftLdefIndex": "AM00132134", // string
+				"nftCharacId": "def", //string
+				"shortDesc": "Heart", //string
+				"longDesc": "Great Heart color logo from ", //string
+				"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+				"qty": 100, // int 
+			},
+			// if for avatar 
+			"nftTranData": {
+				"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+				"nftName": "heart", // string 
+				"nftValue": 1, // int  
+				"nftLdefIndex": "AM00132134", // string
+				"nftCharacId": "def", //string
+				"shortDesc": "Heart", //string
+				"longDesc": "Great Heart color logo from ", //string
+				"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+				"qty": 100, // int 
+			},
+			"timestamp": "time string", //string add time
+		}
+	]
+}
+
+
+!!! nickname 改 uuid 
+API 14 NFTTransfer
+
+Request {
+	"action": "nft_transfer", // string
+	"senderUuid": "", // string
+	"receiverUuid": "", // string
+	"nftLdefIndex": "AM00132134", // string
+}
+
+Response {
+	"status": 0, // 0 for success 1 for fail
+	"action": "nft_transfer", // string
+	"nftLdefIndex": "AM00132134", // string
+}
+
+API 15 BindWallet
+
+!!! nickname 改 uuid 
+Request {
+	"action": "bind_wallet", // string
+	"uuid": "", //string
+	"walletId": "", // string
+}
+
+Response {
+	"status": 0, // 0 for success 1 for fail
+	"action": "bind_wallet", // string
+	"walletId": "", // string
+}
+
+API 16 SetNickname
+
+Request {
+	"action": "set_nickname", // string
+	"uuid": "", //string
+	"nickname": "", //string
+}
+
+Response {
+	"status": 0, // 0 for success 1 for fail
+	"action": "set_nickname", // string
+	"nickname": "", //string
+}
+
+API 17 IsNicknameDuplicated
+
+Request {
+	"action": "is_nickname_duplicated", // string
+	"nickname": "",  //string 
+}
+
+Response {
+	"status": 0, // 0 for success 1 for fail
+	"action": "is_nickname_duplicated",
+	"duplicated": true,//  true or flase
+	"nickname": "",  //string 
+}
+
+!!! nickname 改 uuid 
+API 18 Follow List
+
+Request {
+	"action": "follow_list", // string
+	"uuid": "",  // string nick name of user
+}
+
+Response  {
+	"status": 0, // 0 for success 1 for fail
+	"action": "follow_list", // string
+	"followList": [     // array of object
+		{	
+			"uuid": "",
+			"nickname": "", // string
+			"thumbnail": "",  // string   link of icon 
+			"intro": "", // string 
+		}
+	]
+}
+
+!!! nickname 改 uuid 
+API 19 Follow list add/delete 
+
+Request {
+	"action": "follow_list_operation", // string
+	"uuid": "",  // string nick name of user
+	"followUuid": "", // string nickname to follow or unfollow
+	"operation": 0,  // int 0 for add 1 for delete
+}
+
+
+Response {
+	"status": 0, // 0 for success 1 for fail
+	"action": "follow_list_operation", // string
+	"followUuid": "", // string nickname to follow or unfollow
+	"operation": 0,  // int 0 for add 1 for delete 
+}
+
+!!! nickname 改 uuid 
+API 20 Has User Set Nick name?
+
+Request {
+	"action": "is_nickname_set", // string
+	"uuid": "", //string
+}
+
+Response {
+	"action": "is_nickname_set", // string
+	"set": true, // bool    true or false
+}

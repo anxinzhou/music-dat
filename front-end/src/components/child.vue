@@ -72,6 +72,7 @@
                 :action="uploadOtherPath"
                 :data="uploadOtherAdditionalData"
                 :on-success="uploadOtherSuccessHook"
+                :on-error="uploadOtherErrorHook"
                 :auto-upload="false">
                 <el-button slot="trigger" size="small" type="primary">select data file</el-button>
                 <el-button style="margin-left: 10px;" size="small" type="success" @click="submitOther">upload to server
@@ -137,10 +138,6 @@
               stripe
               style="width: 100%"
             >
-              <el-table-column :min-width="40"
-                               prop="nftType"
-                               label="Type">
-              </el-table-column>
               <el-table-column :min-width="60"
                                prop="nftLdefIndex"
                                label="Def Index">
@@ -149,17 +146,9 @@
                                prop="nftName"
                                label="Name">
               </el-table-column>
-              <el-table-column
-                prop="activeTicker" :min-width="40"
-                label="Active Ticker">
-              </el-table-column>
               <el-table-column :min-width="25"
-                               prop="nftValue"
+                               prop="price"
                                label="Price">
-              </el-table-column>
-              <el-table-column :min-width="20"
-                               prop="qty"
-                               label="Qty">
               </el-table-column>
               <el-table-column :min-width="50"
                                prop="shortDesc"
@@ -216,22 +205,13 @@
       },
       uploadOtherSuccessHook: function (res, file, fileList) {
         this.totalNFT += 1;
-        let el = this.setChildNFTFromResponse(res);
-        this.tableData = [el].concat(this.tableData);
-        this.$refs.uploadDat.clearFiles();
+        this.tableData = [res].concat(this.tableData);
+        this.$refs.uploadOther.clearFiles();
+        this.total +=1;
       },
-      setChildNFTFromResponse: function (nftData) {
-        let el = {};
-        el.nftLdefIndex = nftData.nftLdefIndex;
-        el.nftName = nftData.nftName;
-        el.nftCharacId = nftData.nftCharacId;
-        el.activeTicker = nftData.activeTicker;
-        el.nftValue = nftData.nftValue;
-        el.qty = nftData.qty;
-        el.shortDesc = nftData.shortDesc;
-        el.longDesc = nftData.longDesc;
-        el.nftType = "Other";
-        return el;
+      uploadOtherErrorHook: function(err, file, fileList) {
+        this.$store.state.notifyError("Fail to Upload photo NFT");
+        console.log(err)
       },
       getTotalChildNFT: function (parent) {
         this.axios.get(`${this.httpPath}/nfts/${parent}/balance`).then(res => {
@@ -240,13 +220,14 @@
       },
       getChildNFTList: function (parent) {
         this.axios.get(`${this.httpPath}/nfts/${parent}/children`).then(res => {
-          for (let i = res.data.nftTranData.length - 1; i >= 0; --i) {
-            let nftData = res.data.nftTranData[i];
-            let el = this.setChildNFTFromResponse(nftData);
-            this.tableData.push(el);
-          }
+          this.tableData = res.data.nftTranData;
+          console.log(res.data);
           this.total = this.tableData.length;
-          console.log(res.data.nftTranData);
+          if (this.total===0) {
+            this.currentPage = 1;
+          } else {
+            this.currentPage = Math.floor((this.total-1)/this.pagesize) +1;
+          }
         }).catch(console.log);
       },
       current_change: function (currentPage) {
@@ -261,31 +242,43 @@
       otherLongDescChange: function () {
         this.$set(this.uploadOtherAdditionalData, 'longDesc', this.otherLongDesc);
       },
+      getNickname: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/nickname`).then(res=>{
+          this.nickname = res.data.nickname;
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
+      },
+      getAvatarUrl: function(uuid) {
+        let httpPath = this.$store.state.config.httpPath;
+        this.axios.get(`${httpPath}/profile/${uuid}/avatar`).then(res=>{
+          this.avatarUrl = res.data.avatarUrl;
+        }).catch(err=>{
+          console.log(err.response.data.reason)
+        })
+      },
       logout: function () {
         console.log("logout")
-        this.$cookies.remove("avatarUrl");
-        this.$cookies.remove("nickname");
-        this.$cookies.remove("address");
         this.$cookies.remove("access-token");
-        this.$cookies.remove("account");
+        this.$cookies.remove("uuid");
         this.$router.replace('/login');
       },
     },
     created: function () {
-      this.username = this.$cookies.get('username');
-      this.nickName = this.$cookies.get('nickName');
-      this.avatarUrl = this.$cookies.get('avatarUrl');
-      let address = this.$cookies.get('address');
-      console.log("address:", address);
-      this.parent = this.$route.params.nftLdefIndex;
+      let uuid = this.$cookies.get('uuid');
       this.httpPath = this.$store.state.config.httpPath;
       this.uploadOtherPath = this.httpPath + "/file/other";
+      this.parent = this.$route.params.nftLdefIndex;
+      console.log("this nft index",this.parent);
       this.uploadOtherAdditionalData = {
-        address: address,
+        uuid: uuid,
         parent: this.parent,
       }
       this.getTotalChildNFT(this.parent);
       this.getChildNFTList(this.parent);
+      this.getNickname(uuid);
+      this.getAvatarUrl(uuid);
     },
     mounted: function () {
       // var el = document.getElementById('mainNav')

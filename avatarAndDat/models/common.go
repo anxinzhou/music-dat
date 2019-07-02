@@ -1,7 +1,6 @@
 package models
 
 import (
-	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"strconv"
 )
@@ -24,60 +23,80 @@ func GetNftFullInfo(nftLdefIndex string, nftInfo interface{}) error {
 }
 
 func GenerateTestCreator(num int)  {
-	uuid:= "429834923849023895sdfsdf08430594"
+	uuid:= "4298349238490234456sa"
 	nickname:= "AlphaBrain"
 	password:= "123456"
 	username:="alphaslottest"
+	intro:= "this is alphabrain "
 	o:=orm.NewOrm()
+	o.Begin()
 	for i:=0;i<num;i++ {
 		postPrefix:=""
 		if i!=0 {
-			postPrefix= uuid + strconv.FormatInt(int64(i), 10)
+			postPrefix= strconv.FormatInt(int64(i), 10)
 		}
-		uuid+=postPrefix
-		nickname+=postPrefix
-		username+=postPrefix
-		userInfo:= CreatorInfo{
+		uuid:=uuid+postPrefix
+		nickname:=nickname+postPrefix
+		username:=username+postPrefix
+		intro:=intro+postPrefix
+		userInfo:= UserInfo{
+			Uuid:uuid,
+			Nickname:nickname,
+			AvatarFileName:"",
+			Intro: intro,
+		}
+		err:=o.Read(&userInfo,"uuid")
+		if err!=nil && err!=orm.ErrNoRows {
+			o.Rollback()
+			panic(err)
+		}
+		if err == orm.ErrNoRows {
+			_,err:=o.Insert(&userInfo)
+			if err!=nil {
+				o.Rollback()
+				panic(err)
+			}
+		}
+		creatorInfo:= CreatorInfo{
 			Uuid: uuid,
 			Username: username,
 			Password: password,
-			Nickname: nickname,
 		}
-		err:= o.Read(&userInfo,"username")
+		err=o.Read(&creatorInfo,"uuid")
 		if err!=nil && err!=orm.ErrNoRows {
+			o.Rollback()
 			panic(err)
 		}
 		if err == orm.ErrNoRows {
-			_,err:=o.Insert(&userInfo)
+			creatorInfo.UserInfo = &UserInfo {
+				Uuid:uuid,
+			}
+			_,err:=o.Insert(&creatorInfo)
 			if err!=nil {
+				o.Rollback()
 				panic(err)
 			}
-			logs.Info("uuid",uuid,"insert into creator info table")
-		} else {
-			logs.Info("uuid",uuid,"already created in creator info table")
 		}
-
-		mkInfo:= MarketUserTable{
+		mkInfo:= UserMarketInfo{
 			Uuid: uuid,
-			WalletId: "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9",
+			Wallet: "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9",
 			Count: 0,
-			Nickname: nickname,
-			UserIconUrl: "",
 		}
-
-		err = o.Read(&mkInfo,"uuid")
+		err=o.Read(&mkInfo,"uuid")
 		if err!=nil && err!=orm.ErrNoRows {
+			o.Rollback()
 			panic(err)
 		}
-		logs.Info("uuid",uuid,"already created")
 		if err == orm.ErrNoRows {
-			_,err:=o.Insert(&userInfo)
+			mkInfo.UserInfo = &UserInfo {
+				Uuid:uuid,
+			}
+			_,err:=o.Insert(&mkInfo)
 			if err!=nil {
+				o.Rollback()
 				panic(err)
 			}
-			logs.Info("uuid",uuid,"insert into market user table")
-		} else {
-			logs.Info("uuid",uuid,"already created in market user table")
 		}
 	}
+	o.Commit()
 }

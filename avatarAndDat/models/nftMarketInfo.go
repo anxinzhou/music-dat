@@ -9,7 +9,7 @@ type NftMarketInfo struct {
 	Price int
 	Qty int
 	NumSold int
-	NftInfoTable *NftInfo `orm:"rel(one);on_delete(cascade);"`
+	NftInfo *NftInfo `orm:"rel(one);on_delete(cascade);"`
 	AvatarNftMarketInfo *AvatarNftMarketInfo `orm:"reverse(one)"`
 	DatNftMarketInfo *DatNftMarketInfo `orm:"reverse(one)"`
 	OtherNftMarketInfo *OtherNftMarketInfo `orm:"reverse(one)"`
@@ -53,12 +53,6 @@ type NftMarketPlace struct {
 	NftMarketInfo *NftMarketInfo `orm:"rel(one);on_delete(cascade);"`
 }
 
-func (NftMarketPlace *NftMarketPlace) TableIndex() [][]string {
-	return [][]string {
-		[]string {"NftType"},
-	}
-}
-
 type NftShoppingCart struct {
 	Id    int    `orm:"auto;pk;"`
 	NftLdefIndex string
@@ -78,6 +72,6 @@ func (this *NftShoppingCart) TableIndex() [][]string {
 
 func (this *NftShoppingCart) TableUnique() [][] string {
 	return [][]string {
-		[]string{"Nickname","NftLdefIndex"},
+		[]string{"Uuid","NftLdefIndex"},
 	}
 }
