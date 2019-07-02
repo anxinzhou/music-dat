@@ -61,6 +61,18 @@ const (
 	MARKETPLACE_ID = "musicHotpot"
 )
 
+// const response status
+const (
+	RESPONSE_STATUS_SUCCESS = 0
+	RESPONSE_STATUS_FAIL = 1
+)
+
+// berry purchase action status
+const (
+	BERRY_PURCHASE_PENDING = 2
+	BERRY_PURCHASE_FINISH = 1
+)
+
 type NftInfo struct {
 	NftLdefIndex string `json:"nftLdefIndex"`
 	NftType string	`json:"nftType"`

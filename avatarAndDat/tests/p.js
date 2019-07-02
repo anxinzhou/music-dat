@@ -111,7 +111,7 @@ var shoppingCartList = {
     "event": "nft_market", //string
     "action": "nft_shopping_cart_list",
     "actId": "APP01234776789", //string
-    "nickname": nickname,
+    "nickname": "alphaslot2020",
 };
 
 var shoppingCartChangeDelete = {
@@ -208,13 +208,13 @@ ws.on('open', async function open() {
     // ws.send(JSON.stringify(marketUserList));
     // ws.send(JSON.stringify(userMarketInfo));
     // ws.send(JSON.stringify(shoppingCartChangeAdd));
-    // ws.send(JSON.stringify(shoppingCartList));
+    ws.send(JSON.stringify(shoppingCartList));
     // ws.send(JSON.stringify(shoppingCartChangeDelete));
     // ws.send(JSON.stringify(nftTransfer));
     // ws.send(JSON.stringify(BindWallet));
     // ws.send(JSON.stringify(setNickname));
     // ws.send(JSON.stringify(isNicknameDuplicated));
-    ws.send(JSON.stringify(followList));
+    // ws.send(JSON.stringify(followList));
     // ws.send(JSON.stringify(followOperationAdd));
     // ws.send(JSON.stringify(followOperationDelete));
     // ws.send(JSON.stringify(isNickNameSet));
