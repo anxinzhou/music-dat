@@ -44,7 +44,7 @@ func NewChainHandler(config *ChainConfig) (*ChainHandler, error) {
 	}
 	address := common.HexToAddress(config.Account.Address)
 	managerAccount := sender.NewUser(address, pk)
-	managerAccount.BindEthClient(client,sender.CHAIN_KIND_PUBLIC)
+	managerAccount.BindEthClient(client,sender.CHAIN_KIND_PRIVATE)
 
 	// eth contract
 	smartContract := nft.NewNFT(common.HexToAddress(config.ContractAddress)) //TODO use interface to general init contract

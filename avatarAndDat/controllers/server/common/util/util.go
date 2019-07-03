@@ -96,6 +96,22 @@ func ValidNftLdefIndex(nftLdefIndex string) error {
 	return nil
 }
 
+func ValidShoppingCartOperation(operation int) error {
+	if operation!=common.SHOPPING_CART_ADD && operation!=common.SHOPPING_CART_DELETE {
+		err:=errors.New("invalid operation of shopping cart")
+		return err
+	}
+	return nil
+}
+
+func ValidFollowListOperation(operation int) error {
+	if operation!=common.FOLLOW_LIST_ADD&& operation!=common.FOLLOW_LIST_DELETE {
+		err:=errors.New("invalid operation of follow list")
+		return err
+	}
+	return nil
+}
+
 func TokenIdFromNftLdefIndex(nftLdefIndex string) (*big.Int,error) {
 	if err:=ValidNftLdefIndex(nftLdefIndex); err!=nil {
 		return nil,err

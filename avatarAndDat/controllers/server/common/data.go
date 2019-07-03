@@ -52,11 +52,6 @@ const (
 	NFT_TRANSFER_PENDING = 1
 )
 
-// login type
-const (
-	LOGIN_TYPE_USERNAME = 3
-)
-
 const (
 	MARKETPLACE_ID = "musicHotpot"
 )
@@ -71,6 +66,23 @@ const (
 const (
 	BERRY_PURCHASE_PENDING = 2
 	BERRY_PURCHASE_FINISH = 1
+)
+
+// shopping cart change
+const (
+	SHOPPING_CART_ADD = 0
+	SHOPPING_CART_DELETE = 1
+)
+
+// follow list operation
+const (
+	FOLLOW_LIST_ADD = 0
+	FOLLOW_LIST_DELETE = 1
+)
+
+// mysql extension error
+const (
+	DUPLICATE_ENTRY = "Error 1062"
 )
 
 type NftInfo struct {
@@ -91,7 +103,7 @@ type AvatarNftInfo struct {
 
 type DatNftInfo struct {
 	NftInfo
-	IconFileName string `json:"iconFileName"`
+	MusicFileName string `json:"musicFileName"`
 }
 
 type OtherNftInfo struct {

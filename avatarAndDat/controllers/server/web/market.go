@@ -242,7 +242,7 @@ func (this *RewardController) RewardDat() {
 		NftLdefIndex string `json:"nftLdefIndex"`
 		SupportedType string `json:"supportedType";orm:"nft_type"`
 		NftName string `json:"nftName"`
-		Thumbnail string `json:"thumbnail";orm:"icon_file_name"`
+		Thumbnail string `json:"thumbnail";orm:"music_file_name"`
 	}
 	type response struct {
 		NftTranData []nftRewardInfo `json:"nftTranData"`
@@ -263,7 +263,7 @@ func (this *RewardController) RewardDat() {
 	qb.Select("nft_info.nft_ldef_index",
 		"nft_info.nft_type",
 		"nft_info.nft_name",
-		"dat_nft_info.icon_file_name",
+		"dat_nft_info.music_file_name",
 		"nft_market_info.seller_uuid",
 		"nft_market_info.seller_wallet",
 		"nft_market_info.price",

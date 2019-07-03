@@ -402,8 +402,8 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err,400)
 		return
 	}
-	fileNamePrefix := util.RandomPathFromFileName("file")
-	fileName:= fileNamePrefix+".mp3"
+	musicFileNamePrefix := util.RandomPathFromFileName("file")
+	musicFileName:= musicFileNamePrefix+".mp3"
 
 	typeOfNft:= common.TYPE_NFT_MUSIC
 	nameOfNftType:= common.NAME_NFT_MUSIC
@@ -428,14 +428,14 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 
 	// saving ciphertext
 	logs.Debug("saving ciphertext")
-	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, nameOfNftType, fileName)
+	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, nameOfNftType, musicFileName)
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller,err, 500)
 		return
 	}
-	logs.Debug("saving file", fileName, "to", cipherSavingPath)
+	logs.Debug("saving file", musicFileName, "to", cipherSavingPath)
 
 	// ---------------------------------------
 	// resize image and save to folder market
@@ -490,7 +490,7 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		NftName: reqBaseInfo.NftName,
 		ShortDescription: reqBaseInfo.ShortDesc,
 		LongDescription: reqBaseInfo.LongDesc,
-		FileName: fileName,
+		FileName: iconFileName,
 		NftParentLdef: "",
 	}
 	_,err=o.Insert(&nftInfo)
@@ -504,7 +504,7 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 	// set dat info
 	DatInfo:= models.DatNftInfo{
 		NftLdefIndex: nftLdefIndex,
-		IconFileName:iconFileName,
+		MusicFileName:musicFileName,
 		NftInfo: &models.NftInfo{
 			NftLdefIndex:nftLdefIndex,
 		},
@@ -613,7 +613,7 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 				NftName: reqBaseInfo.NftName,
 				ShortDescription: reqBaseInfo.ShortDesc,
 				LongDescription: reqBaseInfo.LongDesc,
-				FileName: fileName,
+				FileName: iconFileName,
 				NftParentLdef: "",
 			},
 		},

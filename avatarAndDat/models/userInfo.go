@@ -28,6 +28,12 @@ type UserInfo struct {
 	CreatorInfo *CreatorInfo `orm:"reverse(one)"`
 }
 
+func (*UserInfo) TableIndex() [][]string {
+	return [][]string {
+		[]string{"nickname"},
+	}
+}
+
 type UserMarketInfo struct {
 	Uuid string `orm:"pk;"`
 	Wallet string
@@ -36,9 +42,9 @@ type UserMarketInfo struct {
 }
 
 type FollowTable struct {
-	Id int `orm:"auto"`
-	FolloweeUuid string
+	Id int `orm:"pk;auto"`
 	FollowerUuid string
+	FolloweeUuid string
 	Timestamp time.Time
 }
 
@@ -95,3 +101,24 @@ func (this *NftPurchaseInfo) TableIndex() [][]string {
 	}
 }
 
+type NftShoppingCart struct {
+	Id    int    `orm:"auto;pk;"`
+	NftLdefIndex string
+	Uuid string
+	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
+	NftMarketPlace *NftMarketPlace `orm:"rel(fk);on_delete(cascade);"`
+	UserInfo *UserInfo `orm:"rel(fk);on_delete(cascade);"`
+}
+
+func (this *NftShoppingCart) TableIndex() [][]string {
+	return [][]string {
+		[]string{"Uuid"},
+		[]string{"Uuid","NftLdefIndex"},
+	}
+}
+
+func (this *NftShoppingCart) TableUnique() [][] string {
+	return [][]string {
+		[]string{"Uuid","NftLdefIndex"},
+	}
+}

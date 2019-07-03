@@ -43,9 +43,9 @@ func NewChainHelper() *ChainHelper {
 
 	runmode:= beego.AppConfig.String("runmode")
 	chainKind:= sender.CHAIN_KIND_PUBLIC
-	if runmode == "master" || runmode == "prod" {
+	if runmode == "prod" {
 		chainKind = sender.CHAIN_KIND_PUBLIC
-	} else if runmode == "dev" {
+	} else if runmode == "dev" || runmode == "master" {
 		chainKind = sender.CHAIN_KIND_PRIVATE
 	} else {
 		panic("unknown chain kind")
