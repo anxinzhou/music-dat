@@ -2,7 +2,6 @@ package mobile
 
 import (
 	"context"
-	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"github.com/astaxie/beego"
@@ -14,13 +13,12 @@ import (
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"io"
-	"math/big"
 	"strconv"
 	"strings"
 )
 
 func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data []byte) {
+	// TODO this api need to design carefully
 	type request struct {
 		Uuid        string   `json:"uuid"`
 		NftTranData []string `json:"nftTranData"`
@@ -59,12 +57,14 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 	// currentBalance must be larger than total price of nft
 	needToPay := 0
 	nftRequestData := req.NftTranData
+	o.Begin() // begin transaction
 	for _, nftLdefIndex := range nftRequestData {
-		var nftMKInfo models.NftMarketInfo
-		err := o.QueryTable("nft_market_info").
-			Filter("nft_ldef_index", nftLdefIndex).
-			One(&nftMKInfo, "price")
+		var nftMarketPlaceInfo models.NftMarketPlace
+		err:=o.QueryTable("nft_market_place").
+			RelatedSel("nft_market_info").
+			One(&nftMarketPlaceInfo)
 		if err != nil {
+			o.Rollback()
 			if err == orm.ErrNoRows {
 				err := errors.New("nft " + nftLdefIndex + " not exist in marketplace")
 				logs.Error(err.Error())
@@ -78,11 +78,68 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 				return
 			}
 		}
-		needToPay += nftMKInfo.Price
+		needToPay += nftMarketPlaceInfo.NftMarketInfo.Price
+
+		// insert into purchase info
+		nftPuchaseInfo:= models.NftPurchaseInfo{
+			PurchaseId: util.RandomPurchaseId(),
+			Uuid: req.Uuid,
+			SellerUuid: nftMarketPlaceInfo.NftMarketInfo.SellerUuid,
+			TransactionAddress: "", // determined after send transaction
+			ActiveTicker: nftMarketPlaceInfo.ActiveTicker,
+			NftLdefIndex: nftMarketPlaceInfo.NftLdefIndex,
+			Status: common.PURCHASE_PENDING, // change to finish after send transaction
+			UserInfo: &models.UserInfo{
+				Uuid: req.Uuid,
+			},
+		}
+		_,err=o.Insert(&nftPuchaseInfo)
+		if err!=nil {
+			o.Rollback()
+			logs.Error(err.Error())
+			err:= errors.New("unexpected error when query databas")
+			m.errorHandler(c, action, err)
+			return
+		}
+		// reduce count for seller
+		_,err = o.QueryTable("user_market_info").Filter("uuid",nftMarketPlaceInfo.NftMarketInfo.SellerUuid).Update(orm.Params{
+			"count": orm.ColValue(orm.ColMinus,1),
+		})
+		if err!=nil {
+			o.Rollback()
+			if err== orm.ErrNoRows {
+				err:=errors.New("no such user "+req.Uuid)
+				logs.Error(err.Error())
+				m.errorHandler(c, action, err)
+				return
+			} else {
+				logs.Error(err.Error())
+				err:=errors.New("unexpected error when query db")
+				m.errorHandler(c, action, err)
+				return
+			}
+		}
+	}
+	count:= len(nftRequestData)
+	// add count for buyer
+	_,err = o.QueryTable("user_market_info").Filter("uuid",req.Uuid).Update(orm.Params{
+		"count": orm.ColValue(orm.ColAdd,count),
+	})
+	if err!=nil {
+		o.Rollback()
+		if err== orm.ErrNoRows {
+			err:=errors.New("no such user "+req.Uuid)
+			logs.Error(err.Error())
+			m.errorHandler(c, action, err)
+			return
+		} else {
+			logs.Error(err.Error())
+			err:=errors.New("unexpected error when query db")
+			m.errorHandler(c, action, err)
+			return
+		}
 	}
 	logs.Debug("need to pay", needToPay)
-	//session,_:=models.MongoClient.StartSession()
-	//session.StartTransaction()
 	ctx := context.Background()
 	col := models.MongoDB.Collection("users")
 
@@ -101,20 +158,21 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 		"coin": true,
 	})).Decode(&queryResult)
 	if err != nil {
+		o.Rollback()
 		logs.Error(err.Error())
+		err:=errors.New("no such user")
 		m.errorHandler(c, action, err)
 		return
 	}
 	currentBalance, err := strconv.Atoi(queryResult.Coin)
 	if err != nil {
-		logs.Error(err.Error())
-		m.errorHandler(c, action, err)
-		return
+		panic("wrong coin type")
 	}
 	logs.Debug("uuid", uuid, "current balance:", currentBalance)
 
 	finalBalance := currentBalance - needToPay
 	if finalBalance < 0 {
+		o.Rollback()
 		err := errors.New("Insufficient balance")
 		logs.Error(err.Error())
 		m.errorHandler(c, action, err)
@@ -125,82 +183,28 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 	}
 	_, err = col.UpdateOne(ctx, filter, update)
 	if err != nil {
+		o.Rollback()
 		logs.Error(err.Error())
+		err:=errors.New("update balance of user fail")
 		m.errorHandler(c, action, err)
 		return
 	}
 
 	logs.Warn("update balance of user", uuid, " to", finalBalance)
 
-	o.Begin() // begin transaction
-	for i, nftLdefIndex := range nftRequestData {
-		marketPlaceInfo:= models.NftMarketPlace{
-			NftLdefIndex:nftLdefIndex,
-			MpId: "123",
-			Active: true,
-			ActiveTicker: common.ACTIVE_TICKER,
-			NftMarketInfo: &models.NftMarketInfo{
-				NftLdefIndex:nftLdefIndex,
-			},
-		}
-		_,err=o.Insert(&marketPlaceInfo)
-		if err!=nil {
-			o.Rollback()
-			if strings.Contains(err.Error(),common.DUPLICATE_ENTRY) {
-				logs.Error(err.Error())
-				err:=errors.New(nftLdefIndex+" already be purchased")
-				m.errorHandler(c, action, err)
-				return
-			} else {
-				logs.Error(err.Error())
-				err:=errors.New("unexpected error when query db")
-				m.errorHandler(c, action, err)
-				return
-			}
-		}
-
-		// change count of buyer and seller
-		// add count for buyer
-		_,err = o.QueryTable("user_market_info").Filter("uuid",req.ReceiverUuid).Update(orm.Params{
-			"count": orm.ColValue(orm.ColAdd,1),
-		})
-		if err!=nil {
-			o.Rollback()
-			if err== orm.ErrNoRows {
-				err:=errors.New("no such user "+req.ReceiverUuid)
-				logs.Error(err.Error())
-				m.errorHandler(c, action, err)
-				return
-			} else {
-				logs.Error(err.Error())
-				err:=errors.New("unexpected error when query db")
-				m.errorHandler(c, action, err)
-				return
-			}
-		}
-		// reduce count for seller
-		_,err = o.QueryTable("user_market_info").Filter("uuid",req.SellerUuid).Update(orm.Params{
-			"count": orm.ColValue(orm.ColMinus,1),
-		})
-		if err!=nil {
-			o.Rollback()
-			if err== orm.ErrNoRows {
-				err:=errors.New("no such user "+req.SellerUuid)
-				logs.Error(err.Error())
-				m.errorHandler(c, action, err)
-				return
-			} else {
-				logs.Error(err.Error())
-				err:=errors.New("unexpected error when query db")
-				m.errorHandler(c, action, err)
-				return
-			}
-		}
-
-	}
+	// do transaction
 	o.Commit()
-
 	// TODO send transfer transaction
+	type response struct {
+		Status int `json:"status"`
+		Action string `json:"action"`
+		NftTranData []string `json:"nftTranData"`
+	}
+	m.wrapperAndSend(c,action,&response{
+		Status: common.RESPONSE_STATUS_SUCCESS,
+		Action: action,
+		NftTranData: req.NftTranData,
+	})
 }
 
 func (m *Manager) ShoppingCartListHandler(c *client.Client, action string, data []byte) {

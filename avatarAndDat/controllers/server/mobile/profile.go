@@ -12,8 +12,6 @@ import (
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"strings"
 )
 
@@ -60,29 +58,8 @@ func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte
 	})
 }
 
-func isNicknameExist(nickname string) (bool, error) {
-	type fields struct {
-		Nickname string `bson:"nickname"`
-	}
-	filter := bson.M{
-		"nickname": nickname,
-	}
-	var queryResult fields
-	col := models.MongoDB.Collection("users")
-	err := col.FindOne(context.Background(), filter, options.FindOne().SetProjection(bson.M{
-		"nickname": true,
-	})).Decode(&queryResult)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return false, nil
-		} else {
-			return false, err
-		}
-	}
-	return true, nil
-}
-
 func (m *Manager) SetNicknameHandler(c *client.Client, action string, data []byte) {
+	// TODO set nickname in mongodb
 	type request struct {
 		Uuid     string `json:"uuid"`
 		Nickname string `json:"nickname"`
@@ -101,8 +78,10 @@ func (m *Manager) SetNicknameHandler(c *client.Client, action string, data []byt
 		Nickname: req.Nickname,
 	}
 	o := orm.NewOrm()
+	o.Begin()
 	_, err = o.InsertOrUpdate(&userInfo, "nickname")
 	if err != nil {
+		o.Rollback()
 		if strings.Contains(err.Error(), common.DUPLICATE_ENTRY) {
 			logs.Error(err.Error())
 			err := errors.New("duplicate nickname")
@@ -115,6 +94,23 @@ func (m *Manager) SetNicknameHandler(c *client.Client, action string, data []byt
 			return
 		}
 	}
+	// update mongodb
+	col := models.MongoDB.Collection("users")
+	filter:= bson.M {
+		"uuid": req.Uuid,
+	}
+	update:= bson.M {
+		"$set": bson.M {"nickname":req.Nickname},
+	}
+	_,err=col.UpdateOne(context.Background(),filter,update)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("can not set nickname in mongodb")
+		m.errorHandler(c, action, err)
+		return
+	}
+	o.Commit()
 	type response struct {
 		Status   int    `json:"status"`
 		Action   string `json:"action"`

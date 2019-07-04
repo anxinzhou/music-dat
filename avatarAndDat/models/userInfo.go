@@ -96,7 +96,6 @@ func (this *NftPurchaseInfo) TableIndex() [][]string {
 	return [][]string {
 		[]string {"Uuid"},
 		[]string {"NftLdefIndex"},
-		[]string {"TransactionAddress"},
 		[]string {"SellerUuid"},
 	}
 }
