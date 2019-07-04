@@ -9,12 +9,14 @@ import (
 	"github.com/astaxie/beego/orm"
 	"github.com/nfnt/resize"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/transactionQueue"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"image"
 	"image/jpeg"
 	"io"
 	"io/ioutil"
+	"math/big"
 	"mime/multipart"
 	"os"
 	"path"
@@ -113,6 +115,7 @@ func (this *ChildrenOfNFTController) Get() {
 
 type UploadController struct {
 	ContractController
+	TransactionQueue *transactionQueue.TransactionQueue
 }
 
 type uplodBaseInfo struct {
@@ -260,6 +263,7 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		SellerUuid: reqBaseInfo.Uuid,
 		Price: price,
 		Qty: qty,
+		Active: false,
 		NumSold: 0,
 		NftInfo: &models.NftInfo{
 			NftLdefIndex:nftLdefIndex,
@@ -295,7 +299,6 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 	mkPlace:= models.NftMarketPlace{
 		NftLdefIndex: nftLdefIndex,
 		MpId: common.MARKETPLACE_ID,
-		Active: true,
 		ActiveTicker: common.ACTIVE_TICKER,
 		NftMarketInfo: &models.NftMarketInfo{
 			NftLdefIndex:nftLdefIndex,
@@ -335,7 +338,17 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 	// ---------------------------------------
 	// call smart contract to create nft
 	// ---------------------------------------
-	// TODO use message queue to deal with transaction.
+	// TODO use message queue to instead of go channel deal with transaction.
+	this.TransactionQueue.Append(&transactionQueue.UploadNftTransaction{
+		Uuid: reqBaseInfo.Uuid,
+		NftLdefIndex: nftLdefIndex,
+		NftType: typeOfNft,
+		NftName: reqBaseInfo.NftName,
+		DistIndex: "1",
+		NftLifeIndex: big.NewInt(int64(nftLifeIndex)),
+		NftPowerIndex: big.NewInt(int64(nftPowerIndex)),
+		PublicKey: "345435",
+	})
 }
 
 func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
@@ -550,6 +563,7 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		Price: price,
 		Qty: number,
 		NumSold: 0,
+		Active: false,
 		NftInfo: &models.NftInfo{
 			NftLdefIndex: nftLdefIndex,
 		},
@@ -589,7 +603,6 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 	mkPlace:= models.NftMarketPlace{
 		NftLdefIndex: nftLdefIndex,
 		MpId: common.MARKETPLACE_ID,
-		Active: true,
 		ActiveTicker: common.ACTIVE_TICKER,
 		NftMarketInfo: &models.NftMarketInfo{
 			NftLdefIndex:nftLdefIndex,
@@ -630,7 +643,17 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 	// ---------------------------------------
 	// call smart contract to create nft
 	// ---------------------------------------
-	// TODO use message queue to deal with transaction.
+	// TODO use message queue to instead of go channel deal with transaction.
+	this.TransactionQueue.Append(&transactionQueue.UploadNftTransaction{
+		Uuid: reqBaseInfo.Uuid,
+		NftLdefIndex: nftLdefIndex,
+		NftType: typeOfNft,
+		NftName: reqBaseInfo.NftName,
+		DistIndex: "1",
+		NftLifeIndex: big.NewInt(1),
+		NftPowerIndex: big.NewInt(1),
+		PublicKey: "345435",
+	})
 }
 
 func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
@@ -768,6 +791,7 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		Price: price,
 		Qty: qty,
 		NumSold: 0,
+		Active: false,
 		NftInfo: & models.NftInfo{
 			NftLdefIndex:nftLdefIndex,
 		},
@@ -801,7 +825,6 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 	mkPlace:= models.NftMarketPlace{
 		NftLdefIndex: nftLdefIndex,
 		MpId: common.MARKETPLACE_ID,
-		Active: true,
 		ActiveTicker: common.ACTIVE_TICKER,
 		NftMarketInfo: &models.NftMarketInfo{
 			NftLdefIndex:nftLdefIndex,
@@ -842,7 +865,17 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 	// ---------------------------------------
 	// call smart contract to create nft
 	// ---------------------------------------
-	// TODO use message queue to deal with transaction.
+	// TODO use message queue to instead of go channel deal with transaction.
+	this.TransactionQueue.Append(&transactionQueue.UploadNftTransaction{
+		Uuid: reqBaseInfo.Uuid,
+		NftLdefIndex: nftLdefIndex,
+		NftType: typeOfNft,
+		NftName: reqBaseInfo.NftName,
+		DistIndex: "1",
+		NftLifeIndex: big.NewInt(1),
+		NftPowerIndex: big.NewInt(1),
+		PublicKey: "345435",
+	})
 }
 
 func (this *UploadController) Upload() {

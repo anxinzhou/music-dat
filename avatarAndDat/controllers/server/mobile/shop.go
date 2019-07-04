@@ -9,6 +9,7 @@ import (
 	"github.com/astaxie/beego/orm"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/client"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/transactionQueue"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -50,15 +51,13 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 			return
 		}
 	}
-	//buyerWallet := userMarketInfo.Wallet
-
-	// get user wallet, user must bind wallet before purchase nft
 
 	// currentBalance must be larger than total price of nft
 	needToPay := 0
 	nftRequestData := req.NftTranData
+	transactionList:= make([]*transactionQueue.NftPurchaseTransaction, len(nftRequestData))
 	o.Begin() // begin transaction
-	for _, nftLdefIndex := range nftRequestData {
+	for i, nftLdefIndex := range nftRequestData {
 		var nftMarketPlaceInfo models.NftMarketPlace
 		err:=o.QueryTable("nft_market_place").
 			RelatedSel("nft_market_info").
@@ -81,8 +80,9 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 		needToPay += nftMarketPlaceInfo.NftMarketInfo.Price
 
 		// insert into purchase info
+		purchaseId:= util.RandomPurchaseId()
 		nftPuchaseInfo:= models.NftPurchaseInfo{
-			PurchaseId: util.RandomPurchaseId(),
+			PurchaseId: purchaseId,
 			Uuid: req.Uuid,
 			SellerUuid: nftMarketPlaceInfo.NftMarketInfo.SellerUuid,
 			TransactionAddress: "", // determined after send transaction
@@ -118,6 +118,12 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 				m.errorHandler(c, action, err)
 				return
 			}
+		}
+		transactionList[i] = &transactionQueue.NftPurchaseTransaction{
+			Uuid: req.Uuid,
+			SellerUuid: nftMarketPlaceInfo.NftMarketInfo.SellerUuid,
+			NftLdefIndex:nftLdefIndex,
+			PurchaseId: purchaseId,
 		}
 	}
 	count:= len(nftRequestData)
@@ -191,10 +197,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 	}
 
 	logs.Warn("update balance of user", uuid, " to", finalBalance)
-
-	// do transaction
 	o.Commit()
-	// TODO send transfer transaction
 	type response struct {
 		Status int `json:"status"`
 		Action string `json:"action"`
@@ -205,6 +208,11 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 		Action: action,
 		NftTranData: req.NftTranData,
 	})
+
+	// TODO send transfer transaction
+	for _,transaction:=range transactionList {
+		m.TransactionQueue.Append(transaction)
+	}
 }
 
 func (m *Manager) ShoppingCartListHandler(c *client.Client, action string, data []byte) {

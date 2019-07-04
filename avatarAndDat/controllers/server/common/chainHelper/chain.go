@@ -1,4 +1,4 @@
-package common
+package chainHelper
 
 import (
 	"github.com/ethereum/go-ethereum/common"

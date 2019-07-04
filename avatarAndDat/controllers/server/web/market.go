@@ -6,6 +6,7 @@ import (
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/transactionQueue"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"time"
@@ -227,6 +228,7 @@ func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
 
 type RewardController struct {
 	ContractController
+	TransactionQueue *transactionQueue.TransactionQueue
 }
 
 func (this *RewardController) RewardDat() {
@@ -374,8 +376,9 @@ func (this *RewardController) RewardDat() {
 	//
 	// insert into purchase history
 	//
+	purchaseId:= util.RandomPurchaseId()
 	nftPuchaseInfo:= models.NftPurchaseInfo{
-		PurchaseId: util.RandomPurchaseId(),
+		PurchaseId: purchaseId,
 		Uuid: uuid,
 		SellerUuid: nftMarketInfo.SellerUuid,
 		TransactionAddress: "", // determined after send transaction
@@ -394,9 +397,6 @@ func (this *RewardController) RewardDat() {
 		sendError(&this.Controller, err, 500)
 		return
 	}
-	//
-	//	TODO send transaction
-	//
 	rewardNftInfos:= make([]nftRewardInfo,1)
 	rewardNftInfos[0]= nftRewardInfo{
 		NftLdefIndex: nftMarketInfo.NftLdefIndex,
@@ -411,4 +411,12 @@ func (this *RewardController) RewardDat() {
 	o.Commit()
 	this.Data["json"] = res
 	this.ServeJSON()
+
+	// todo use message queue instead go channel
+	this.TransactionQueue.Append(&transactionQueue.RewardNftTransaction{
+		Uuid:uuid,
+		SellerUuid: nftMarketInfo.SellerUuid,
+		NftLdefIndex: nftMarketInfo.NftLdefIndex,
+		PurchaseId: purchaseId,
+	})
 }

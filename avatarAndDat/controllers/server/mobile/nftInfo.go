@@ -8,6 +8,7 @@ import (
 	"github.com/astaxie/beego/orm"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/client"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/transactionQueue"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 )
@@ -68,13 +69,15 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, action string,data []byte
 			On("avatar_nft_info.nft_ldef_index = nft_info.nft_ldef_index").
 			InnerJoin("nft_market_info").
 			On("avatar_nft_market_info.nft_ldef_index = nft_market_info.nft_ldef_index").
+			InnerJoin("nft_market_place").
+			On("avatar_nft_info.nft_ldef_index = nft_market_place.nft_ldef_index").
 			Where("avatar_nft_info.nft_ldef_index = ?").OrderBy("timestamp").Desc()
 		sql := qb.String()
 		err:=o.Raw(sql,req.NftLdefIndex).QueryRow(&avatarInfo)
 		if err!=nil {
 			if err== orm.ErrNoRows {
 				logs.Error(err.Error())
-				err:= errors.New("no such item:"+req.NftLdefIndex+" plase check nft ldef index and nft type")
+				err:= errors.New("no such item:"+req.NftLdefIndex+" in marketplace, plase check nft ldef index and nft type")
 				m.errorHandler(c,action,err)
 				return
 			} else {
@@ -129,6 +132,8 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, action string,data []byte
 			On("other_nft_info.nft_ldef_index = nft_info.nft_ldef_index").
 			InnerJoin("nft_market_info").
 			On("other_nft_info.nft_ldef_index = nft_market_info.nft_ldef_index").
+			InnerJoin("nft_market_place").
+			On("other_nft_info.nft_ldef_index = nft_market_place.nft_ldef_index").
 			Where("other_nft_info.nft_ldef_index = ?").OrderBy("timestamp").Desc()
 		sql := qb.String()
 		err:=o.Raw(sql,req.NftLdefIndex).QueryRow(&otherInfo)
@@ -191,6 +196,8 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, action string,data []byte
 			On("dat_nft_info.nft_ldef_index = nft_info.nft_ldef_index").
 			InnerJoin("nft_market_info").
 			On("dat_nft_info.nft_ldef_index = nft_market_info.nft_ldef_index").
+			InnerJoin("nft_market_place").
+			On("dat_nft_info.nft_ldef_index = nft_market_place.nft_ldef_index").
 			Where("dat_nft_info.nft_ldef_index = ?").OrderBy("timestamp").Desc()
 		sql := qb.String()
 		err:=o.Raw(sql,req.NftLdefIndex).QueryRow(&datInfo)
@@ -574,5 +581,10 @@ func (m *Manager) NFTTransferHandler(c *client.Client, action string, data []byt
 		ReceiverUuid: req.ReceiverUuid,
 		NftLdefIndex: req.NftLdefIndex,
 	})
-	// TODO transfer
+	// TODO use message queue instead of go channel
+	m.TransactionQueue.Append(&transactionQueue.TransferNftTransaction{
+		Uuid: req.ReceiverUuid,
+		SellerUuid: req.SellerUuid,
+		NftLdefIndex: req.NftLdefIndex,
+	})
 }

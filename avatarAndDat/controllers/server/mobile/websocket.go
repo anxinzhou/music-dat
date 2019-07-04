@@ -8,6 +8,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/client"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/chainHelper"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/transactionQueue"
 	"log"
 	"net/http"
 )
@@ -23,7 +25,8 @@ type Manager struct {
 	register     chan *client.Client
 	unregister   chan *client.Client
 	handlers     map[string]handler
-	chainHandler *common.ChainHandler
+	chainHandler *chainHelper.ChainHandler
+	TransactionQueue *transactionQueue.TransactionQueue
 }
 
 func NewManager() *Manager {
@@ -38,6 +41,10 @@ func NewManager() *Manager {
 	return m
 }
 
+func (m* Manager) SetTransactionQueue(transactionQueue *transactionQueue.TransactionQueue) {
+	m.TransactionQueue = transactionQueue
+}
+
 func (m *Manager) RegisterHandler(action string, h handler) {
 	m.handlers[action] = h
 }
@@ -46,11 +53,11 @@ func (m *Manager) UnregisterHandler(action string, h handler) {
 	delete(m.handlers, action)
 }
 
-func (m *Manager) SetChainHandler(chainHandler *common.ChainHandler) {
+func (m *Manager) SetChainHandler(chainHandler *chainHelper.ChainHandler) {
 	m.chainHandler = chainHandler
 }
 
-func (m* Manager) ChainHandler() *common.ChainHandler{
+func (m* Manager) ChainHandler() *chainHelper.ChainHandler{
 	return m.chainHandler
 }
 

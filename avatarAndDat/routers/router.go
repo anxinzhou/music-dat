@@ -3,7 +3,8 @@ package routers
 import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
-	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/chainHelper"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/transactionQueue"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/mobile"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/web"
 )
@@ -11,13 +12,11 @@ import (
 func init() {
 	logs.Info("initial router")
 
-	m:= mobile.NewManager()
-	m.Init()
 	// set chain handler
-	chainHandler,err:= common.NewChainHandler(&common.ChainConfig{
+	chainHandler,err:= chainHelper.NewChainHandler(&chainHelper.ChainConfig{
 		ContractAddress: beego.AppConfig.String("contractAddress"),
 		Port: beego.AppConfig.String("chainWS"),
-		Account: common.AccountConfig{
+		Account: chainHelper.AccountConfig{
 			Address: beego.AppConfig.String("masterAddress"),
 			PrivateKey:beego.AppConfig.String("masterPrivateKey"),
 		},
@@ -26,17 +25,35 @@ func init() {
 		logs.Error(err.Error())
 		panic(err)
 	}
+
+	// start transaction sending queue
+	// TODO use message queue instead of go channel to ensure fault tolerance
+	transactionQueueSzie,err:=beego.AppConfig.Int("transactionQueueSize")
+	if err!=nil {
+		panic("transaction queue size should be int")
+	}
+	transactionPool:= make(chan interface{},transactionQueueSzie)
+	transactionQueue:= transactionQueue.NewTransactionQueue(transactionPool,chainHandler)
+	logs.Info("start transaction queue")
+	go transactionQueue.Start()
+
+	// set router
+	m:= mobile.NewManager()
+	m.Init()
 	m.SetChainHandler(chainHandler)
+	m.SetTransactionQueue(transactionQueue)
 	wsHandler:= &mobile.WebSocketHandler{
 		M: m,
 	}
 	chainHelper:= web.NewChainHelper()
 	upLoadController:= &web.UploadController{}
 	upLoadController.C = chainHelper
+	upLoadController.TransactionQueue = transactionQueue
 	nftListController:= &web.NftListController{}
 	nftListController.C = chainHelper
 	rewardController:= &web.RewardController{}
 	rewardController.C = chainHelper
+	rewardController.TransactionQueue = transactionQueue
 	childrenOfNFTController := &web.ChildrenOfNFTController{}
 	childrenOfNFTController.C = chainHelper
 	numOfChildrenController:= &web.NumOfChildrenController{}

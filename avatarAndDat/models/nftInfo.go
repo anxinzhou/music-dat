@@ -41,6 +41,7 @@ type NftMarketInfo struct {
 	Price int
 	Qty int
 	NumSold int
+	Active bool
 	NftInfo *NftInfo `orm:"rel(one);on_delete(cascade);"`
 	AvatarNftMarketInfo *AvatarNftMarketInfo `orm:"reverse(one)"`
 	DatNftMarketInfo *DatNftMarketInfo `orm:"reverse(one)"`
@@ -79,7 +80,6 @@ type OtherNftMarketInfo struct {
 type NftMarketPlace struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	MpId string
-	Active bool
 	ActiveTicker string
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
 	NftMarketInfo *NftMarketInfo `orm:"rel(one);on_delete(cascade);"`
