@@ -2,18 +2,20 @@ package models
 
 import (
 	"context"
+	"database/sql"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	_ "github.com/go-sql-driver/mysql"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 var MongoDB *mongo.Database   //TODO add logic to guranttee concurrency of mongodb
 var MongoClient *mongo.Client
 
-func init() {
+func InitilizeModel() {
 	// initialize mysql handler
 	logs.Warn("initialize database")
 	dbUser:= beego.AppConfig.String("dbUser")
@@ -22,11 +24,26 @@ func init() {
 	dbPort:=beego.AppConfig.String("dbPort")
 	dbName:=beego.AppConfig.String("dbName")
 	dbEngine:= beego.AppConfig.String("dbEngine")
+	dbPath:= dbUser+":"+dbPassword+"@"+"tcp("+dbUrls+":"+dbPort+")"+"/"
+	dataSource:=dbPath+dbName
 
-	dataSource:=dbUser+":"+dbPassword+"@"+"tcp("+dbUrls+":"+dbPort+")"+"/"+dbName
+	// create db if not exist
+	db,err:=sql.Open(dbEngine,dbPath)
+	if err!=nil {
+		panic(err)
+	}
+	_,err =db.Exec("create database if not exists "+dbName)
+	if err!=nil {
+		panic(err)
+	}
 
 	orm.RegisterDriver("mysql",orm.DRMySQL)
-	err:=orm.RegisterDataBase("default",dbEngine,dataSource)
+	err=orm.RegisterDataBase("default",dbEngine,dataSource)
+	tz,err:= time.LoadLocation("Asia/Chongqing")
+	if err!=nil {
+		panic(err)
+	}
+	orm.SetDataBaseTZ("default",tz)
 	if err!=nil {
 		panic(err)
 	}
@@ -50,9 +67,7 @@ func init() {
 	)
 
 	// auto generate table
-	verbose:=true
-	force:=false
-	err= orm.RunSyncdb("default",force,verbose)
+	err= orm.RunSyncdb("default",false,true)
 	if err!=nil {
 		panic(err)
 	}

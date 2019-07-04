@@ -85,6 +85,26 @@ const (
 	DUPLICATE_ENTRY = "Error 1062"
 )
 
+// action list
+const (
+	ACTION_MP_LIST = "mp_list"
+	ACTION_ITEM_DETAILS= "item_details"
+	ACTION_NFT_PUCHASE_CONFIRM = "NFT_purchase_confirm"
+	ACTION_TOKENBUY_PAID = "tokenbuy_paid"
+	ACTION_NFT_DISPLAY = "NFT_display"
+	ACTION_MARKET_USER_LIST = "market_user_list"
+	ACTION_NFT_PURCHASE_HISTORY = "nft_purchase_history"
+	ACTION_NFT_SHOPPING_CART_CHANGE = "nft_shopping_cart_change"
+	ACTION_NFT_SHOPPING_CART_LIST = "nft_shopping_cart_list"
+	ACTION_NFT_TRANSFER = "nft_transfer"
+	ACTION_NFT_BIND_WALLET = "bind_wallet"
+	ACTION_NFT_SET_NICKNAME = "set_nickname"
+	ACTION_IS_NICKNAME_DUPLICATED = "is_nickname_duplicated"
+	ACTION_FOLLOW_LIST = "follow_list"
+	ACTION_FOLLOW_LIST_OPERATION = "follow_list_operation"
+	ACTION_IS_NICKNAME_SET = "is_nickname_set"
+)
+
 type NftInfo struct {
 	NftLdefIndex string `json:"nftLdefIndex"`
 	NftType string	`json:"nftType"`

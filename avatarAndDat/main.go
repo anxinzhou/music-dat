@@ -5,6 +5,8 @@ import (
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/plugins/cors"
 	"github.com/astaxie/beego/session"
+	"github.com/xxRanger/music-dat/avatarAndDat/models"
+	"github.com/xxRanger/music-dat/avatarAndDat/routers"
 	_ "github.com/xxRanger/music-dat/avatarAndDat/routers"
 	"os"
 	"path"
@@ -21,8 +23,7 @@ func makeDir(dirname string) error {
 	return nil
 }
 
-func init() {
-	logs.SetLogFuncCallDepth(3)
+func createDir() {
 	var nftKind []string = []string{"avatar","dat","other"}
 	var dirKind []string = []string{"market","public","encryption"}
 	var pathPrefix = "resource"
@@ -46,6 +47,7 @@ func init() {
 }
 
 func main() {
+	logs.SetLogFuncCallDepth(3)
 	beego.InsertFilter("*", beego.BeforeRouter, cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"PUT", "PATCH", "POST", "GET"},
@@ -59,6 +61,9 @@ func main() {
 	}
 	beego.GlobalSessions, _ = session.NewManager("memory", sessionconf)
 	go beego.GlobalSessions.GC()
+	createDir()
+	models.InitilizeModel()
+	routers.InitRouter()
 	beego.SetStaticPath("/resource","resource")
 	beego.Run()
 }

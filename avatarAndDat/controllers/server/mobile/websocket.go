@@ -62,22 +62,22 @@ func (m* Manager) ChainHandler() *chainHelper.ChainHandler{
 }
 
 func (m *Manager) Init() {
-	m.RegisterHandler("mp_list",m.GetMPListHandler)
-	m.RegisterHandler("item_details",m.ItemDetailsHandler)
-	m.RegisterHandler("NFT_purchase_confirm",m.PurchaseConfirmHandler)
-	m.RegisterHandler("tokenbuy_paid",m.TokenBuyPaidHandler)
-	m.RegisterHandler("NFT_display",m.NFTDisplayHandler)
-	m.RegisterHandler("market_user_list",m.MarketUserListHandler)
-	m.RegisterHandler("nft_purchase_history",m.NFTPurchaseHistoryHandler)
-	m.RegisterHandler("nft_shopping_cart_change", m.ShoppingCartChangeHandler)
-	m.RegisterHandler("nft_shopping_cart_list",m.ShoppingCartListHandler)
-	m.RegisterHandler("nft_transfer",m.NFTTransferHandler)
-	m.RegisterHandler("bind_wallet",m.BindWalletHandler)
-	m.RegisterHandler("set_nickname",m.SetNicknameHandler)
-	m.RegisterHandler("is_nickname_duplicated",m.IsNicknameDuplicatedHandler)
-	m.RegisterHandler("follow_list",m.FollowListHandler)
-	m.RegisterHandler("follow_list_operation",m.FollowListOperationHandler)
-	m.RegisterHandler("is_nickname_set",m.IsNicknameSetHandler)
+	m.RegisterHandler(common.ACTION_MP_LIST,m.GetMPListHandler)
+	m.RegisterHandler(common.ACTION_ITEM_DETAILS,m.ItemDetailsHandler)
+	m.RegisterHandler(common.ACTION_NFT_PUCHASE_CONFIRM,m.PurchaseConfirmHandler)
+	m.RegisterHandler(common.ACTION_TOKENBUY_PAID,m.TokenBuyPaidHandler)
+	m.RegisterHandler(common.ACTION_NFT_DISPLAY,m.NFTDisplayHandler)
+	m.RegisterHandler(common.ACTION_MARKET_USER_LIST,m.MarketUserListHandler)
+	m.RegisterHandler(common.ACTION_NFT_PURCHASE_HISTORY,m.NFTPurchaseHistoryHandler)
+	m.RegisterHandler(common.ACTION_NFT_SHOPPING_CART_CHANGE, m.ShoppingCartChangeHandler)
+	m.RegisterHandler(common.ACTION_NFT_SHOPPING_CART_LIST,m.ShoppingCartListHandler)
+	m.RegisterHandler(common.ACTION_NFT_TRANSFER,m.NFTTransferHandler)
+	m.RegisterHandler(common.ACTION_NFT_BIND_WALLET,m.BindWalletHandler)
+	m.RegisterHandler(common.ACTION_NFT_SET_NICKNAME,m.SetNicknameHandler)
+	m.RegisterHandler(common.ACTION_IS_NICKNAME_DUPLICATED,m.IsNicknameDuplicatedHandler)
+	m.RegisterHandler(common.ACTION_FOLLOW_LIST,m.FollowListHandler)
+	m.RegisterHandler(common.ACTION_FOLLOW_LIST_OPERATION,m.FollowListOperationHandler)
+	m.RegisterHandler(common.ACTION_IS_NICKNAME_SET,m.IsNicknameSetHandler)
 }
 
 func (m *Manager) errorHandler(c *client.Client, action string, err error) {

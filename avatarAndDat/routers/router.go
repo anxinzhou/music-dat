@@ -9,7 +9,7 @@ import (
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/web"
 )
 
-func init() {
+func InitRouter() {
 	logs.Info("initial router")
 
 	// set chain handler
@@ -78,5 +78,3 @@ func init() {
 	beego.Router("/profile/:uuid/intro",introController,"get:GetIntro;post:SetIntro")
 	beego.Router("/profile/:uuid/wallet",walletController,"get:GetWallet;post:SetWallet")
 }
-
-
