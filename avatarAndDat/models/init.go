@@ -15,7 +15,7 @@ import (
 var MongoDB *mongo.Database   //TODO add logic to guranttee concurrency of mongodb
 var MongoClient *mongo.Client
 
-func InitilizeModel() {
+func InitilizeModel(force bool, verbose bool) {
 	// initialize mysql handler
 	logs.Warn("initialize database")
 	dbUser:= beego.AppConfig.String("dbUser")
@@ -67,7 +67,7 @@ func InitilizeModel() {
 	)
 
 	// auto generate table
-	err= orm.RunSyncdb("default",false,true)
+	err= orm.RunSyncdb("default",force,verbose)
 	if err!=nil {
 		panic(err)
 	}

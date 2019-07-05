@@ -18,7 +18,7 @@ import (
 func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte) {
 	type request struct {
 		Uuid     string `json:"uuid"`
-		WalletId string `json:"wallet_id"`
+		WalletId string `json:"walletId"`
 	}
 	var req request
 	err := json.Unmarshal(data, &req)
@@ -29,7 +29,7 @@ func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte
 		return
 	}
 
-	userMarketInfo := &models.UserMarketInfo{
+	userMarketInfo := models.UserMarketInfo{
 		Uuid:   req.Uuid,
 		Wallet: req.WalletId,
 		Count:  0,
@@ -73,25 +73,51 @@ func (m *Manager) SetNicknameHandler(c *client.Client, action string, data []byt
 		return
 	}
 
-	userInfo := &models.UserInfo{
+	userInfo := models.UserInfo{
 		Uuid:     req.Uuid,
 		Nickname: req.Nickname,
 	}
 	o := orm.NewOrm()
 	o.Begin()
-	_, err = o.InsertOrUpdate(&userInfo, "nickname")
-	if err != nil {
-		o.Rollback()
-		if strings.Contains(err.Error(), common.DUPLICATE_ENTRY) {
-			logs.Error(err.Error())
-			err := errors.New("duplicate nickname")
-			m.errorHandler(c, action, err)
-			return
+	err=o.Read(&userInfo)
+	if err!=nil {
+		if err == orm.ErrNoRows {
+			// not exist insert one
+			_,err :=o.Insert(&userInfo)
+			if err!=nil {
+				if strings.Contains(err.Error(), common.DUPLICATE_ENTRY) {
+					logs.Error(err.Error())
+					err:=errors.New("nickname has been registered")
+					m.errorHandler(c,action,err)
+					return
+				} else {
+					logs.Error(err.Error())
+					err := errors.New("unexpected error when query db")
+					m.errorHandler(c, action, err)
+					return
+				}
+			}
 		} else {
 			logs.Error(err.Error())
 			err := errors.New("unexpected error when query db")
 			m.errorHandler(c, action, err)
 			return
+		}
+	} else {
+		// exist update
+		_,err:=o.Update(&userInfo,"nickname")
+		if err!=nil {
+			if strings.Contains(err.Error(), common.DUPLICATE_ENTRY) {
+				logs.Error(err.Error())
+				err:=errors.New("nickname has been registered")
+				m.errorHandler(c,action,err)
+				return
+			} else {
+				logs.Error(err.Error())
+				err := errors.New("unexpected error when query db")
+				m.errorHandler(c, action, err)
+				return
+			}
 		}
 	}
 	// update mongodb
@@ -136,7 +162,7 @@ func (m *Manager) IsNicknameDuplicatedHandler(c *client.Client, action string, d
 		return
 	}
 
-	userInfo := &models.UserInfo{
+	userInfo := models.UserInfo{
 		Nickname: req.Nickname,
 	}
 	o := orm.NewOrm()
@@ -190,15 +216,10 @@ func (m *Manager) FollowListHandler(c *client.Client, action string, data []byte
 
 	var followInfo []followeeInfo
 	qb.Select(
-		"nft_info.nft_ldef_index",
-		"nft_info.nft_name",
-		"nft_info.short_desc",
-		"nft_info.long_desc",
-		"avatar_nft_info.nft_life_index",
-		"avatar_nft_info.nft_power_index",
-		"nft_market_info.price",
-		"nft_market_info.qty",
-		"nft_info.file_name",
+		"follow_table.followee_uuid",
+		"user_info.nickname",
+		"user_info.avatar_file_name",
+		"user_info.intro",
 	).
 		From("follow_table").
 		InnerJoin("user_info").
@@ -235,7 +256,7 @@ func (m *Manager) FollowListHandler(c *client.Client, action string, data []byte
 func (m *Manager) FollowListOperationHandler(c *client.Client, action string, data []byte) {
 	type request struct {
 		Uuid         string `json:"uuid"`
-		FolloweeUuid string `json:"followee_uuid"`
+		FolloweeUuid string `json:"followeeUuid"`
 		Operation    int    `json:"operation"`
 	}
 	var req request
@@ -260,8 +281,8 @@ func (m *Manager) FollowListOperationHandler(c *client.Client, action string, da
 		o:=orm.NewOrm()
 		_,err:=o.Insert(&followInfo)
 		if err!=nil {
+			logs.Error(err.Error())
 			if !strings.Contains(err.Error(),common.DUPLICATE_ENTRY) {
-				logs.Error(err.Error())
 				err:= errors.New("unexpected error when query database")
 				m.errorHandler(c, action, err)
 				return
@@ -269,7 +290,7 @@ func (m *Manager) FollowListOperationHandler(c *client.Client, action string, da
 		}
 	case common.FOLLOW_LIST_DELETE:
 		o:=orm.NewOrm()
-		_,err:=o.Delete(&followInfo,req.Uuid,req.FolloweeUuid)
+		_,err:=o.Delete(&followInfo,"followee_uuid","follower_uuid")
 		if err!=nil {
 			logs.Error(err.Error())
 			err:= errors.New("unexpected error when query database")
@@ -344,7 +365,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, action string, data []
 		Uuid      string `json:"uuid"`
 		Nickname  string `json:"nickname"`
 		Count     int    `json:"count"`
-		Thumbnail string `json:"thumnail" orm:"column(avatar_file_name)"`
+		Thumbnail string `json:"thumbnail" orm:"column(avatar_file_name)"`
 		Followed  bool   `json:"followed" orm:"column(followed)"`
 	}
 	err := json.Unmarshal(data, &req)
@@ -357,7 +378,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, action string, data []
 	o := orm.NewOrm()
 	var ui []userInfo
 	num, err := o.Raw(`
-		select ui.uuid,ui.nickname,umi.count,ui.avatar_file_name,count(ft.followee_uuid) as followed from 
+		select ui.uuid,ui.nickname,umi.count,ui.avatar_file_name,!isnull(ft.followee_uuid) as followed from 
 		user_market_info as umi inner join user_info as ui on umi.uuid = ui.uuid
 		left join (
 			select followee_uuid, follower_uuid from follow_table
@@ -374,6 +395,9 @@ func (m *Manager) MarketUserListHandler(c *client.Client, action string, data []
 		ui = make([]userInfo, 0)
 	}
 	for i, _ := range ui {
+		if ui[i].Thumbnail == "" {
+			ui[i].Thumbnail = "default.jpg"
+		}
 		ui[i].Thumbnail = util.PathPrefixOfNFT("", common.PATH_KIND_USER_ICON) + ui[i].Thumbnail
 	}
 	type response struct {

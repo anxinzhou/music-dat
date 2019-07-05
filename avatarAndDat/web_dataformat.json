@@ -1,0 +1,165 @@
+
+
+API 8 user profile on website
+8.1. Get Wallet   GET /profile/:uuid/wallet         // TO TEST 
+
+Response {
+	"wallet": "",
+	"count": 2, //string
+}
+
+8.2 Change Wallet POST /profile/:uuid/wallet 		//TO TEST
+
+Request {
+	"wallet": "",
+}
+
+8.3 Get Intro GET /profile/:uuid/intro 			// TO TEST
+
+Response {
+	"intro": "",
+}
+
+8.4 Change Intro POST /profile/:uuid/intro      // TO TEST
+
+Request {
+	"intro": "",
+}
+
+8.5 Get Avatar Url  GET /profile/:uuid/avatar  // TO TEST
+
+Response {
+	"avatarUrl": "",
+}
+
+8.6 Change Avatar Url  POST /profile/:uuid/avatar // TO TEST
+
+Request {
+	"avatar": "" ,  // file object
+}
+
+Response {
+	"avatarUrl": "",
+}
+
+8.7 Get nickname GET /profile/:uuid/nickname   // TO TEST
+
+Response {
+	"nickname": "",
+}
+
+8.8 Change nickname POST /profile/:uuid/nickname  // TO TEST 
+
+Request {
+	"nickname": "",
+}
+
+8.9 login   POST /admin   // TO TEST
+Request {
+	"username":"",
+	"password":"",
+}
+
+API 9 NFT manage on website 
+
+9.1 Get nft market list   GET /nftList/:uuid:string  // TO TEST
+
+Response {
+	"nftTranData": [{
+			"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"activeTicker": "berry", //string
+			"nftLifeIndex": 7, // int
+			"nftPowerIndex": 23, //int 
+			"nftLdefIndex": "AM00132134", // string
+			"nftCharacId": "def", //string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int 
+	}]
+}
+
+9.2  child list  GET  /nfts/:parentIndex:string/children  // TO TEST
+Response {
+	"nftTranData": [{
+			"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string 
+			"nftValue": 1, // int  
+			"activeTicker": "berry", //string
+			"nftLifeIndex": 7, // int
+			"nftPowerIndex": 23, //int 
+			"nftLdefIndex": "AM00132134", // string
+			"nftCharacId": "def", //string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int 
+	}]
+}
+
+9.3 child balance GET /nfts/:parentIndex:string/balance // TO TEST
+
+Response {
+	"count": 1,
+}
+
+9.4 market transaction history  GET /market/transactionHistory/:uuid:string // TODO
+
+Response {
+	"txHistory": [{
+		"txAddress": "",
+		"nftLdefIndex": "",
+		"buyer": "",
+		"seller": "",
+		"date": "",
+	}]
+}
+
+9.5 upload avatar|dat|other POST /file/:kind(avatar|dat|other)  // TO TEST
+Request {
+	"uuid": "",
+	"file": "", // file object
+	"nftName": "",
+	"shortDesc": "",
+	"longDesc": "",
+	 // if for dat
+	"icon": "", // file object
+	"allowAirdrop": true,
+	"number": 1,
+	"price": 1,
+	"creatorPercent": 1,
+	"lyricsWriterPercent": 1,
+	"songComposerPercent": 1,
+	"publisherPercent": 10,
+	"userPercent": 2,
+	// if for other, only child have other
+	"parent": "",
+}
+
+Response {
+
+}
+
+API 10 rewardDAT  /rewardDat/:uuid:string   // TOTEST
+
+http://3.1.35.36:4000/rewardDat/ + <nickname>
+example: http://3.1.35.36:4000/rewardDat/AlphaBrain       
+
+Response {
+	"nftTranData": [ // array of nft info
+		{
+			"nftLdefIndex":"",
+			"supportedType": "",
+			"nftName": "heart", // string 
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+		},
+	]
+}
+
+Error
+
+{	
+	"reason": "can not marshal data", // string 
+}

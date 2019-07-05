@@ -201,8 +201,8 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		NftLdefIndex: nftLdefIndex,
 		NftType: typeOfNft,
 		NftName: reqBaseInfo.NftName,
-		ShortDescription: reqBaseInfo.ShortDesc,
-		LongDescription: reqBaseInfo.LongDesc,
+		ShortDesc: reqBaseInfo.ShortDesc,
+		LongDesc: reqBaseInfo.LongDesc,
 		FileName: fileName,
 		NftParentLdef: "",
 	}
@@ -249,7 +249,7 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		return
 	}
 	//  update user nft count
-	_,err=o.QueryTable("user_market_info").Update(orm.Params{
+	_,err=o.QueryTable("user_market_info").Filter("uuid",reqBaseInfo.Uuid).Update(orm.Params{
 		"count": orm.ColValue(orm.ColAdd,1),
 	})
 	if err!=nil {
@@ -292,7 +292,6 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err, 500)
 		return
 	}
-	o.Commit()
 	// ---------------------------------------
 	// record nft in market Place
 	// ---------------------------------------
@@ -312,6 +311,7 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err, 500)
 		return
 	}
+	o.Commit()
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
 	res:= &common.AvatarNftMarketInfo{
 		AvatarNftInfo: common.AvatarNftInfo{
@@ -440,7 +440,6 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 	cipherText := util.Aesgcm.Seal(nonce, nonce, data, nil)
 
 	// saving ciphertext
-	logs.Debug("saving ciphertext")
 	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, nameOfNftType, musicFileName)
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
@@ -448,12 +447,10 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err, 500)
 		return
 	}
-	logs.Debug("saving file", musicFileName, "to", cipherSavingPath)
-
 	// ---------------------------------------
 	// resize image and save to folder market
 	// ---------------------------------------
-	iconFileName:= util.RandomPathFromFileName(iconFileHeader.Filename)
+	iconFileName:= util.RandomPathFromFileName(iconFileHeader.Filename) +".jpg"
 
 	data,err= util.ReadFile(iconFile)
 	if err!=nil {
@@ -501,8 +498,8 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		NftLdefIndex: nftLdefIndex,
 		NftType: typeOfNft,
 		NftName: reqBaseInfo.NftName,
-		ShortDescription: reqBaseInfo.ShortDesc,
-		LongDescription: reqBaseInfo.LongDesc,
+		ShortDesc: reqBaseInfo.ShortDesc,
+		LongDesc: reqBaseInfo.LongDesc,
 		FileName: iconFileName,
 		NftParentLdef: "",
 	}
@@ -548,7 +545,7 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		return
 	}
 	//  update user nft count
-	_,err=o.QueryTable("user_market_info").Update(orm.Params{
+	_,err=o.QueryTable("user_market_info").Filter("uuid",reqBaseInfo.Uuid).Update(orm.Params{
 		"count": orm.ColValue(orm.ColAdd,1),
 	})
 	if err!=nil {
@@ -733,8 +730,8 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		NftLdefIndex: nftLdefIndex,
 		NftType: typeOfNft,
 		NftName: reqBaseInfo.NftName,
-		ShortDescription: reqBaseInfo.ShortDesc,
-		LongDescription: reqBaseInfo.LongDesc,
+		ShortDesc: reqBaseInfo.ShortDesc,
+		LongDesc: reqBaseInfo.LongDesc,
 		FileName: fileName,
 		NftParentLdef: parentNftLdefIndex,
 	}
@@ -776,7 +773,7 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		return
 	}
 	//  update user nft count
-	_,err=o.QueryTable("user_market_info").Update(orm.Params{
+	_,err=o.QueryTable("user_market_info").Filter("uuid",reqBaseInfo.Uuid).Update(orm.Params{
 		"count": orm.ColValue(orm.ColAdd,1),
 	})
 	if err!=nil {

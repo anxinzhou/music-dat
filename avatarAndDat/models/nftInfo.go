@@ -6,8 +6,8 @@ type NftInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	NftType string
 	NftName string
-	ShortDescription string
-	LongDescription string
+	ShortDesc string
+	LongDesc string
 	FileName string
 	NftParentLdef string
 	AvatarNftInfoNftLdefIndex *AvatarNftInfo`orm:"reverse(one)"`

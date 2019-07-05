@@ -45,7 +45,7 @@ type FollowTable struct {
 	Id int `orm:"pk;auto"`
 	FollowerUuid string
 	FolloweeUuid string
-	Timestamp time.Time
+	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
 }
 
 func (this *FollowTable) TableIndex() [][]string {

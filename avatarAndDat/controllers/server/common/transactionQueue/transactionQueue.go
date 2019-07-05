@@ -1,13 +1,14 @@
 package transactionQueue
 
 import (
+	"encoding/hex"
 	"errors"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"github.com/xxRanger/blockchainUtil/contract/nft"
 	"github.com/xxRanger/go-ethereum/common"
-	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/chainHelper"
 	common2 "github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
+	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/chainHelper"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"math/big"
@@ -61,14 +62,14 @@ func NewTransactionQueue(transactionPool chan interface{}, chainHandler *chainHe
 func (this *TransactionQueue) Start() {
 	for transaction:= range this.TransactionPool {
 		switch tx:=transaction.(type) {
-		case NftPurchaseTransaction:
-			go this.SendNftPurchaseTransaction(&tx)
-		case UploadNftTransaction:
-			go this.SendUploadNftTransaction(&tx)
-		case RewardNftTransaction:
-			go this.SendRewardNftTransaction(&tx)
-		case TransferNftTransaction:
-			go this.SendTransferNftTransaction(&tx)
+		case *NftPurchaseTransaction:
+			go this.SendNftPurchaseTransaction(tx)
+		case *UploadNftTransaction:
+			go this.SendUploadNftTransaction(tx)
+		case *RewardNftTransaction:
+			go this.SendRewardNftTransaction(tx)
+		case *TransferNftTransaction:
+			go this.SendTransferNftTransaction(tx)
 		default:
 			panic("no such kind of transaction")
 		}
@@ -152,7 +153,8 @@ func (this *TransactionQueue) SendNftPurchaseTransaction(nftPurchaseInfo *NftPur
 }
 
 func (this *TransactionQueue) SendUploadNftTransaction(uploadNftInfo *UploadNftTransaction) {
-	userMarkerInfo:= &models.UserMarketInfo{
+	//logs.Info("upload nft, nftLdefindex",uploadNftInfo.NftLdefIndex,"uuid",uploadNftInfo.Uuid)
+	userMarkerInfo:= models.UserMarketInfo{
 		Uuid: uploadNftInfo.Uuid,
 	}
 	o:=orm.NewOrm()
@@ -174,41 +176,43 @@ func (this *TransactionQueue) SendUploadNftTransaction(uploadNftInfo *UploadNftT
 	nftLdefIndex:= uploadNftInfo.NftLdefIndex
 	distIndex:= uploadNftInfo.DistIndex
 	nftCharacterId:= uploadNftInfo.NftCharacterId
-	publicKey:= uploadNftInfo.PublicKey
+	publicKey,err:= hex.DecodeString(uploadNftInfo.PublicKey)
+	if err!=nil {
+		panic(err)
+	}
 	// follow
 	var nftName string
-	var nftLifeIndex string  // only for avatar
-	var nftPowerIndex string  // only for avatar
+	nftLifeIndex:= uploadNftInfo.NftLifeIndex
+	nftPowerIndex:= uploadNftInfo.NftPowerIndex
 	switch nftType {
 	case common2.TYPE_NFT_AVATAR:
-		var avatarInfo common2.AvatarNftInfo
-		err:=o.QueryTable("avatar_nft_info").RelatedSel("nft_info").One(&avatarInfo)
+		var avatarInfo models.AvatarNftInfo
+		err:=o.QueryTable("avatar_nft_info").RelatedSel("NftInfo").One(&avatarInfo)
 		if err!=nil {
 			logs.Error(err.Error())
 			this.Retry(&uploadNftInfo)
 			return
 		}
 		nftName = avatarInfo.NftInfo.NftName
-		nftLdefIndex = avatarInfo.NftLdefIndex
 
 	case common2.TYPE_NFT_OTHER:
-		var otherInfo common2.OtherNftInfo
-		err:=o.QueryTable("other_nft_info").RelatedSel("nft_info").One(&otherInfo)
+		var otherInfo  models.OtherNftInfo
+		err:=o.QueryTable("other_nft_info").RelatedSel("NftInfo").One(&otherInfo)
 		if err!=nil {
 			logs.Error(err.Error())
 			this.Retry(&uploadNftInfo)
 			return
 		}
-		nftName = otherInfo.NftName
+		nftName = otherInfo.NftInfo.NftName
 	case common2.TYPE_NFT_MUSIC:
-		var datInfo common2.DatNftInfo
-		err:=o.QueryTable("dat_nft_info").RelatedSel("nft_info").One(&datInfo)
+		var datInfo models.DatNftInfo
+		err:=o.QueryTable("dat_nft_info").RelatedSel("NftInfo").One(&datInfo)
 		if err!=nil {
 			logs.Error(err.Error())
 			this.Retry(&uploadNftInfo)
 			return
 		}
-		nftName = datInfo.NftName
+		nftName = datInfo.NftInfo.NftName
 	}
 	txErr:=this.ChainHandler.ManagerAccount.SendFunction(
 		this.ChainHandler.Contract,

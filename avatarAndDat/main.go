@@ -62,7 +62,7 @@ func main() {
 	beego.GlobalSessions, _ = session.NewManager("memory", sessionconf)
 	go beego.GlobalSessions.GC()
 	createDir()
-	models.InitilizeModel()
+	models.InitilizeModel(false,false)
 	routers.InitRouter()
 	beego.SetStaticPath("/resource","resource")
 	beego.Run()

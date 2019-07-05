@@ -45,7 +45,7 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, action string,data []byte
 			NftPowerIndex int `json:"nftPowerIndex"`
 			NftValue int `json:"nftValue" orm:"column(price)"`
 			Qty int `json:"qty"`
-			Thumbnail string `json:"thumnail" orm:"column(file_name)"`
+			Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
 		}
 		o:=orm.NewOrm()
 		dbEngine := beego.AppConfig.String("dbEngine")
@@ -110,7 +110,8 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, action string,data []byte
 			LongDesc string `json:"longDesc"`
 			NftValue int `json:"nftValue" orm:"column(price)"`
 			Qty int `json:"qty"`
-			Thumbnail string `json:"thumnail" orm:"column(file_name)"`
+			Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
+			NftParentLdef string `json:"nftParentLdef"`
 		}
 		o:=orm.NewOrm()
 		dbEngine := beego.AppConfig.String("dbEngine")
@@ -124,6 +125,7 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, action string,data []byte
 			"nft_market_info.price",
 			"nft_market_info.qty",
 			"nft_info.file_name",
+			"nft_info.nft_parent_ldef",
 		).
 			From("other_nft_info").
 			InnerJoin("other_nft_market_info").
@@ -150,7 +152,7 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, action string,data []byte
 				return
 			}
 		}
-		otherInfo.Thumbnail = util.PathPrefixOfNFT(common.TYPE_NFT_AVATAR,common.PATH_KIND_MARKET) + otherInfo.Thumbnail
+		otherInfo.Thumbnail = util.PathPrefixOfNFT(common.TYPE_NFT_OTHER,common.PATH_KIND_MARKET) + otherInfo.Thumbnail
 
 		type response struct {
 			SupportedType string `json:"supportedType"`
@@ -174,7 +176,7 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, action string,data []byte
 			LongDesc string `json:"longDesc"`
 			NftValue int `json:"nftValue" orm:"column(price)"`
 			Qty int `json:"qty"`
-			Thumbnail string `json:"thumnail" orm:"column(file_name)"`
+			Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
 		}
 		o:=orm.NewOrm()
 		dbEngine := beego.AppConfig.String("dbEngine")
@@ -214,7 +216,7 @@ func (m *Manager) ItemDetailsHandler(c *client.Client, action string,data []byte
 				return
 			}
 		}
-		datInfo.Thumbnail = util.PathPrefixOfNFT(common.TYPE_NFT_AVATAR,common.PATH_KIND_MARKET) + datInfo.Thumbnail
+		datInfo.Thumbnail = util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC,common.PATH_KIND_MARKET) + datInfo.Thumbnail
 
 		type response struct {
 			SupportedType string `json:"supportedType"`
@@ -247,7 +249,7 @@ func (m *Manager) GetMPListOfAvatar(c *client.Client, action string) {
 		NftPowerIndex int `json:"nftPowerIndex"`
 		NftValue int `json:"nftValue" orm:"column(price)"`
 		Qty int `json:"qty"`
-		Thumbnail string `json:"thumnail" orm:"column(file_name)"`
+		Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
 	}
 	var avatarMKPlaceInfo []nftTranData
 	qb.Select(
@@ -311,7 +313,7 @@ func (m *Manager) GetMPListOfDat(c *client.Client, action string) {
 		LongDesc string `json:"longDesc"`
 		NftValue int `json:"nftValue" orm:"column(price)"`
 		Qty int `json:"qty"`
-		Thumbnail string `json:"thumnail" orm:"column(file_name)"`
+		Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
 	}
 	dbEngine := beego.AppConfig.String("dbEngine")
 	qb,_:=orm.NewQueryBuilder(dbEngine)
@@ -334,7 +336,7 @@ func (m *Manager) GetMPListOfDat(c *client.Client, action string) {
 		On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
 		InnerJoin("dat_nft_info").
 		On("nft_market_place.nft_ldef_index = dat_nft_info.nft_ldef_index").
-		Where("nft_market_info.seller_uuid = ?").OrderBy("timestamp").Desc()
+		Where("nft_info.nft_type = ?").OrderBy("timestamp").Desc()
 	sql := qb.String()
 	num,err:=o.Raw(sql,nftType).QueryRows(&datMKPlaceInfo)
 	if err != nil && err!=orm.ErrNoRows {
@@ -377,7 +379,8 @@ func (m *Manager) GetMPListOfOther(c *client.Client, action string) {
 		LongDesc string `json:"longDesc"`
 		NftValue int `json:"nftValue" orm:"column(price)"`
 		Qty int `json:"qty"`
-		Thumbnail string `json:"thumnail" orm:"column(file_name)"`
+		Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
+		NftParentLdef string `json:"nftParentLdef"`
 	}
 	var otherMKPlaceInfo []nftTranData
 	qb.Select(
@@ -388,6 +391,7 @@ func (m *Manager) GetMPListOfOther(c *client.Client, action string) {
 		"nft_market_info.price",
 		"nft_market_info.qty",
 		"nft_info.file_name",
+		"nft_info.nft_parent_ldef",
 		).
 		From("nft_market_place").
 		InnerJoin("nft_market_info").
@@ -398,7 +402,7 @@ func (m *Manager) GetMPListOfOther(c *client.Client, action string) {
 		On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
 		InnerJoin("other_nft_info").
 		On("nft_market_place.nft_ldef_index = other_nft_info.nft_ldef_index").
-		Where("nft_market_info.seller_uuid = ?").OrderBy("timestamp").Desc()
+		Where("nft_info.nft_type = ?").OrderBy("timestamp").Desc()
 	sql := qb.String()
 	num,err:=o.Raw(sql,nftType).QueryRows(&otherMKPlaceInfo)
 	if err != nil && err!=orm.ErrNoRows {
