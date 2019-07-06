@@ -1,4 +1,4 @@
 {
-	"httpPath": "http://localhost:4000",
+	"httpPath": "http://3.1.35.36:4001",
 	"wsPath": "ws://localhost:4000"
 }

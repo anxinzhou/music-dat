@@ -1,3 +1,4 @@
+<script src="../store.js"></script>
 <template>
 
   <body id="page-top">
