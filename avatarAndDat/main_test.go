@@ -37,6 +37,7 @@ func TestMain(m *testing.M) {
 	//
 	// change to test db
 	beego.AppConfig.Set("dbName", "alphaslot_test")
+	beego.AppConfig.Set("fileBasePath", "resourceTest")
 	// start server
 	beego.InsertFilter("*", beego.BeforeRouter, cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"*"},
@@ -53,12 +54,30 @@ func TestMain(m *testing.M) {
 	go beego.GlobalSessions.GC()
 	createDir()
 	routers.InitRouter()
-	beego.SetStaticPath("/resource", "resource")
 	go beego.Run()
 	models.InitilizeModel(true, false)
 	code := m.Run()
-
-	//// clean test database after finishing test
+	// clear file path
+	fileBasePath := beego.AppConfig.String("fileBasePath")
+	d, err := os.Open(fileBasePath)
+	if err != nil {
+		panic(err)
+	}
+	defer d.Close()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		panic(err)
+	}
+	for _, name := range names {
+		if name == "test" {
+			continue
+		}
+		err = os.RemoveAll(filepath.Join(fileBasePath, name))
+		if err != nil {
+			panic(err)
+		}
+	}
+	// clean test database after finishing test
 	//dbUser:= beego.AppConfig.String("dbUser")
 	//dbPassword:= beego.AppConfig.String("dbPassword")
 	//dbUrls:= beego.AppConfig.String("dbUrls")
@@ -77,10 +96,18 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+type testFunc func(t *testing.T)
+
+func UploadTest(uuid string, httpPath string) testFunc {
+	return func(t *testing.T) {
+
+	}
+}
+
 func TestWebsiteApi(t *testing.T) {
 	// necessary to wait for server starting
 	<-time.After(1 * time.Second)
-
+	fileBasePath := beego.AppConfig.String("fileBasePath")
 	hostaddr := beego.AppConfig.String("hostaddr")
 	httpport := beego.AppConfig.String("httpport")
 	u := url.URL{Scheme: "ws", Host: hostaddr + ":" + httpport, Path: "/ws"}
@@ -114,8 +141,8 @@ func TestWebsiteApi(t *testing.T) {
 	var testOtherInfo nftInfo
 
 	t.Run("upload_dat", func(t *testing.T) {
-		datPath := "./resource/test/dat.mp3"
-		datIconPath := "./resource/test/icon.jpg"
+		datPath := fileBasePath + "/test/dat.mp3"
+		datIconPath := fileBasePath + "/test/icon.jpg"
 		uri := httpPath + "/file" + "/dat"
 		file, err := os.Open(datPath)
 		defer file.Close()
@@ -184,7 +211,7 @@ func TestWebsiteApi(t *testing.T) {
 	})
 	// Test upload avatar
 	t.Run("upload_avatar", func(t *testing.T) {
-		avatarPath := "./resource/test/avatar.jpg"
+		avatarPath := fileBasePath + "/test/avatar.jpg"
 		uri := httpPath + "/file" + "/avatar"
 		file, err := os.Open(avatarPath)
 		defer file.Close()
@@ -232,7 +259,7 @@ func TestWebsiteApi(t *testing.T) {
 	})
 	// Test upoad other
 	t.Run("upload_other", func(t *testing.T) {
-		otherPath := "./resource/test/other.jpg"
+		otherPath := fileBasePath + "/test/other.jpg"
 		uri := httpPath + "/file" + "/other"
 		file, err := os.Open(otherPath)
 		defer file.Close()
@@ -555,6 +582,10 @@ func TestWebsiteApi(t *testing.T) {
 				}
 				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
 					t.Error("fail", respInfo.Reason)
+					return
+				}
+				if len(respInfo.NftTranData)==0 {
+					t.Error("insert fail")
 					return
 				}
 				insertedAvatar := respInfo.NftTranData[0]
@@ -1818,7 +1849,7 @@ func TestWebsiteApi(t *testing.T) {
 				}
 				err = o.Read(&shoppingCartInfo, "nft_ldef_index", "uuid")
 				if err != orm.ErrNoRows {
-					if err!=nil {
+					if err != nil {
 						t.Error(err)
 					} else {
 						t.Error("shopping cart should be empty")
@@ -2132,20 +2163,20 @@ func TestWebsiteApi(t *testing.T) {
 
 	// test token purchase history
 	type tokenPurchaseRequest struct {
-		Action string `json:"action"`
-		Uuid string `json:"uuid"`
-		AppTranId string `json:"appTranId"`
+		Action        string `json:"action"`
+		Uuid          string `json:"uuid"`
+		AppTranId     string `json:"appTranId"`
 		TransactionId string `json:"transactionId"`
-		AppId string `json:"appId"`
-		Amount int `json:"amount"`
-		ActionStatus int `json:"actionStatus"`
+		AppId         string `json:"appId"`
+		Amount        int    `json:"amount"`
+		ActionStatus  int    `json:"actionStatus"`
 	}
 	type tokenPurchaseResponse struct {
-		Status int `json:"status"`
-		Action string `json:"action"`
-		Amount int `json:"amount"`
-		ActionStatus int `json:"actionStatus"`
-		Reason string `json:"reason"`
+		Status        int    `json:"status"`
+		Action        string `json:"action"`
+		Amount        int    `json:"amount"`
+		ActionStatus  int    `json:"actionStatus"`
+		Reason        string `json:"reason"`
 		TransactionId string `json:"transactionId"`
 	}
 	var transactionId string
@@ -2157,12 +2188,12 @@ func TestWebsiteApi(t *testing.T) {
 		}
 		req := &tokenPurchaseRequest{
 			Action:        common.ACTION_TOKENBUY_PAID,
-			Uuid: testMobileUserUuid,
-			AppTranId: "4fffc3b55bd8270df6fd85d1f17b8ec53adfa64d882",
+			Uuid:          testMobileUserUuid,
+			AppTranId:     "4fffc3b55bd8270df6fd85d1f17b8ec53adfa64d882",
 			TransactionId: "",
-			AppId: "XXX@appleid.com",
-			Amount: 4,
-			ActionStatus: common.BERRY_PURCHASE_PENDING,
+			AppId:         "XXX@appleid.com",
+			Amount:        4,
+			ActionStatus:  common.BERRY_PURCHASE_PENDING,
 		}
 		data, err := json.Marshal(req)
 		if err != nil {
@@ -2210,6 +2241,7 @@ func TestWebsiteApi(t *testing.T) {
 			}
 		}
 	})
+	testBuyAmount:=4
 	t.Run(common.ACTION_TOKENBUY_PAID+"_finish", func(t *testing.T) {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 		defer c.Close()
@@ -2218,12 +2250,12 @@ func TestWebsiteApi(t *testing.T) {
 		}
 		req := &tokenPurchaseRequest{
 			Action:        common.ACTION_TOKENBUY_PAID,
-			Uuid: testMobileUserUuid,
-			AppTranId: "4fffc3b55bd8270df6fd85d1f17b8ec53adfa64d882",
+			Uuid:          testMobileUserUuid,
+			AppTranId:     "4fffc3b55bd8270df6fd85d1f17b8ec53adfa64d882",
 			TransactionId: transactionId,
-			AppId: "XXX@appleid.com",
-			Amount: 4,
-			ActionStatus: common.BERRY_PURCHASE_FINISH,
+			AppId:         "XXX@appleid.com",
+			Amount:        testBuyAmount,
+			ActionStatus:  common.BERRY_PURCHASE_FINISH,
 		}
 		data, err := json.Marshal(req)
 		if err != nil {
@@ -2252,7 +2284,7 @@ func TestWebsiteApi(t *testing.T) {
 		}
 
 		currentBalance, err := strconv.Atoi(queryResult.Coin)
-		if err!=nil {
+		if err != nil {
 			t.Error(err)
 		}
 
@@ -2295,11 +2327,11 @@ func TestWebsiteApi(t *testing.T) {
 				}
 
 				afterBalance, err := strconv.Atoi(queryResult.Coin)
-				if err!=nil {
+				if err != nil {
 					t.Error(err)
 				}
-				if afterBalance!= currentBalance+4 {
-					t.Error("uncorrect balance","before:",currentBalance,"after:",afterBalance)
+				if afterBalance != currentBalance+testBuyAmount {
+					t.Error("uncorrect balance", "before:", currentBalance, "after:", afterBalance)
 				}
 				return
 			default:

@@ -26,7 +26,11 @@ func makeDir(dirname string) error {
 func createDir() {
 	var nftKind []string = []string{"avatar","dat","other"}
 	var dirKind []string = []string{"market","public","encryption"}
-	var pathPrefix = "resource"
+	var pathPrefix = beego.AppConfig.String("fileBasePath")
+	err:=makeDir(pathPrefix)
+	if err!=nil {
+		panic(err)
+	}
 	for _,nftPath:=range nftKind {
 		for _,dirPath:=range dirKind {
 			p:=path.Join(pathPrefix,dirPath,nftPath)
@@ -36,7 +40,7 @@ func createDir() {
 			}
 		}
 	}
-	err:=makeDir(path.Join(pathPrefix,"default"))
+	err = makeDir(path.Join(pathPrefix,"default"))
 	if err!=nil {
 		panic(err)
 	}
@@ -64,6 +68,5 @@ func main() {
 	createDir()
 	models.InitilizeModel(false,false)
 	routers.InitRouter()
-	beego.SetStaticPath("/resource","resource")
 	beego.Run()
 }

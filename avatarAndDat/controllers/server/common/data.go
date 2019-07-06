@@ -1,12 +1,15 @@
 package common
 
-import "time"
+import (
+	"github.com/astaxie/beego"
+	"time"
+)
 
-const FILE_SAVING_PATH = "./resource/"
-const ENCRYPTION_FILE_PATH = FILE_SAVING_PATH+ "encryption/"
-const DECRYPTION_FILE_PATH = FILE_SAVING_PATH+"public/"
-const MARKET_PATH = FILE_SAVING_PATH+ "market/"
-const USER_ICON_PATH = FILE_SAVING_PATH+"userIcon/"
+var FILE_SAVING_PATH = beego.AppConfig.String("fileBasePath")+"/"
+var ENCRYPTION_FILE_PATH = FILE_SAVING_PATH+ "encryption/"
+var DECRYPTION_FILE_PATH = FILE_SAVING_PATH+"public/"
+var MARKET_PATH = FILE_SAVING_PATH+ "market/"
+var USER_ICON_PATH = FILE_SAVING_PATH+"userIcon/"
 
 // NFT TYPE
 const (
@@ -25,11 +28,6 @@ const (
 // ACTIVE_TICKER
 const (
 	ACTIVE_TICKER = "berry"
-)
-
-// base file path
-const (
-	BASE_FILE_PATH = "resource"
 )
 
 // purchase nft status

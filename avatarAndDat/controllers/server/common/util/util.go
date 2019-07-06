@@ -41,8 +41,9 @@ func init() {
 }
 
 func PathPrefixOfNFT(nftType string, pathKind string) string {
+	fileBathPath:= beego.AppConfig.String("fileBasePath")
 	pathPrefix := beego.AppConfig.String("prefix") + beego.AppConfig.String("hostaddr") + ":" +
-		beego.AppConfig.String("fileport") +"/resource/"
+		beego.AppConfig.String("fileport") +"/"+fileBathPath+"/"
 	switch pathKind {
 	case common.PATH_KIND_MARKET:
 		pathPrefix = pathPrefix+common.PATH_KIND_MARKET + "/"
