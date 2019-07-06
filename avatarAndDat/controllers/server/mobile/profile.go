@@ -426,7 +426,7 @@ func (m *Manager) AvatarPurchaseHistory(c *client.Client, action string, uuid st
 		NftPowerIndex      int    `json:"nftPowerIndex"`
 		NftValue           int    `json:"nftValue" orm:"column(price)"`
 		Qty                int    `json:"qty"`
-		Thumbnail          string `json:"thumnail" orm:"column(file_name)"`
+		Thumbnail          string `json:"thumbnail" orm:"column(file_name)"`
 		TransactionAddress string `json:"transactionAddress"`
 	}
 	var avatarPurchaseInfo []nftTranData
@@ -472,7 +472,7 @@ func (m *Manager) AvatarPurchaseHistory(c *client.Client, action string, uuid st
 		avatarPurchaseInfo = make([]nftTranData, 0)
 	}
 	for i, _ := range avatarPurchaseInfo {
-		avatarPurchaseInfo[i].Thumbnail = util.PathPrefixOfNFT("", common.PATH_KIND_USER_ICON) + avatarPurchaseInfo[i].Thumbnail
+		avatarPurchaseInfo[i].Thumbnail = util.PathPrefixOfNFT(common.TYPE_NFT_AVATAR, common.PATH_KIND_PUBLIC) + avatarPurchaseInfo[i].Thumbnail
 	}
 	m.wrapperAndSend(c, action, &response{
 		Status:        common.RESPONSE_STATUS_SUCCESS,
@@ -496,7 +496,7 @@ func (m *Manager) DatPurchaseHistory(c *client.Client, action string, uuid strin
 		NftPowerIndex      int    `json:"nftPowerIndex"`
 		NftValue           int    `json:"nftValue" orm:"column(price)"`
 		Qty                int    `json:"qty"`
-		Thumbnail          string `json:"thumnail" orm:"column(file_name)"`
+		Thumbnail          string `json:"thumbnail" orm:"column(file_name)"`
 		DecSource          string `json:"decSource" orm:"column(music_file_name)"`
 		TransactionAddress string `json:"transactionAddress"`
 	}
@@ -542,7 +542,7 @@ func (m *Manager) DatPurchaseHistory(c *client.Client, action string, uuid strin
 		datPurchaseInfo = make([]nftTranData, 0)
 	}
 	for i, _ := range datPurchaseInfo {
-		datPurchaseInfo[i].Thumbnail = util.PathPrefixOfNFT("", common.PATH_KIND_USER_ICON) + datPurchaseInfo[i].Thumbnail
+		datPurchaseInfo[i].Thumbnail = util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC, common.PATH_KIND_PUBLIC) + datPurchaseInfo[i].Thumbnail
 		decryptedFilePath, err := util.DecryptFile(datPurchaseInfo[i].DecSource, common.TYPE_NFT_MUSIC)
 		if err != nil {
 			logs.Error(err.Error())
@@ -574,7 +574,7 @@ func (m *Manager) OtherPurchaseHistory(c *client.Client, action string, uuid str
 		NftPowerIndex      int    `json:"nftPowerIndex"`
 		NftValue           int    `json:"nftValue" orm:"column(price)"`
 		Qty                int    `json:"qty"`
-		Thumbnail          string `json:"thumnail" orm:"column(file_name)"`
+		Thumbnail          string `json:"thumbnail" orm:"column(file_name)"`
 		TransactionAddress string `json:"transactionAddress"`
 	}
 	var otherPurchaseInfo []nftTranData
@@ -599,7 +599,7 @@ func (m *Manager) OtherPurchaseHistory(c *client.Client, action string, uuid str
 		InnerJoin("other_nft_info").
 		On("nft_purchase_info.nft_ldef_index = other_nft_info.nft_ldef_index").
 		Where("nft_purchase_info.uuid = ?").OrderBy("timestamp").Desc()
-	sql := qb.String()
+	sql := qb.String( )
 	num, err := o.Raw(sql, uuid).QueryRows(&otherPurchaseInfo)
 	if err != nil && err != orm.ErrNoRows {
 		logs.Error(err.Error())
@@ -618,7 +618,7 @@ func (m *Manager) OtherPurchaseHistory(c *client.Client, action string, uuid str
 		otherPurchaseInfo = make([]nftTranData, 0)
 	}
 	for i, _ := range otherPurchaseInfo {
-		otherPurchaseInfo[i].Thumbnail = util.PathPrefixOfNFT("", common.PATH_KIND_USER_ICON) + otherPurchaseInfo[i].Thumbnail
+		otherPurchaseInfo[i].Thumbnail = util.PathPrefixOfNFT(common.TYPE_NFT_OTHER, common.PATH_KIND_PUBLIC) + otherPurchaseInfo[i].Thumbnail
 	}
 	m.wrapperAndSend(c, action, &response{
 		Status:        common.RESPONSE_STATUS_SUCCESS,

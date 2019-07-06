@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
@@ -14,6 +15,8 @@ import (
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
 	"github.com/xxRanger/music-dat/avatarAndDat/models"
 	"github.com/xxRanger/music-dat/avatarAndDat/routers"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -21,12 +24,14 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 )
 
 func TestMain(m *testing.M) {
 	logs.SetLogFuncCallDepth(3)
+	//logs.SetLevel( logs.LevelError)
 	//
 	// initialize test database
 	//
@@ -295,11 +300,11 @@ func TestWebsiteApi(t *testing.T) {
 		NumSold       int    `json:"numSold"`
 	}
 	type mpListResponse struct {
-		Status        int       `json:"status"`
-		Action        string    `json:"action"`
-		SupportedType string    `json:"supportedType"`
+		Status        int             `json:"status"`
+		Action        string          `json:"action"`
+		SupportedType string          `json:"supportedType"`
 		NftTranData   []mpListNftInfo `json:"nftTranData"`
-		Reason        string    `json:"reason"`
+		Reason        string          `json:"reason"`
 	}
 	t.Run(common.ACTION_MP_LIST+"_dat", func(t *testing.T) {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -570,8 +575,8 @@ func TestWebsiteApi(t *testing.T) {
 	})
 	// test item details
 	type itemDetailsRequest struct {
-		Action string `json:"action"`
-		NftLdefIndex string `json:"nftLdefIndex"`
+		Action        string `json:"action"`
+		NftLdefIndex  string `json:"nftLdefIndex"`
 		SupportedType string `json:"supportedType"`
 	}
 	type itemDetailsNftInfo struct {
@@ -589,12 +594,12 @@ func TestWebsiteApi(t *testing.T) {
 		NumSold       int    `json:"numSold"`
 	}
 	type itemDetailsResponse struct {
-		Status int `json:"status"`
-		Action string `json:"action"`
-		NftLdefIndex string `json:"nftLdefIndex"`
-		SupportedType string `json:"supportedType"`
-		NftTranData *itemDetailsNftInfo `json:"nftTranData"`
-		Reason string
+		Status        int                 `json:"status"`
+		Action        string              `json:"action"`
+		NftLdefIndex  string              `json:"nftLdefIndex"`
+		SupportedType string              `json:"supportedType"`
+		NftTranData   *itemDetailsNftInfo `json:"nftTranData"`
+		Reason        string
 	}
 	t.Run(common.ACTION_ITEM_DETAILS+"_dat", func(t *testing.T) {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -606,7 +611,7 @@ func TestWebsiteApi(t *testing.T) {
 		reqTestDat := &itemDetailsRequest{
 			Action:        common.ACTION_ITEM_DETAILS,
 			SupportedType: common.TYPE_NFT_MUSIC,
-			NftLdefIndex: testDatInfo.NftLdefIndex,
+			NftLdefIndex:  testDatInfo.NftLdefIndex,
 		}
 		datData, err := json.Marshal(reqTestDat)
 		if err != nil {
@@ -669,7 +674,7 @@ func TestWebsiteApi(t *testing.T) {
 		reqTestAvatar := &itemDetailsRequest{
 			Action:        common.ACTION_ITEM_DETAILS,
 			SupportedType: common.TYPE_NFT_AVATAR,
-			NftLdefIndex: testAvatarInfo.NftLdefIndex,
+			NftLdefIndex:  testAvatarInfo.NftLdefIndex,
 		}
 		avatarData, err := json.Marshal(reqTestAvatar)
 		if err != nil {
@@ -732,7 +737,7 @@ func TestWebsiteApi(t *testing.T) {
 		reqOtherAvatar := &itemDetailsRequest{
 			Action:        common.ACTION_ITEM_DETAILS,
 			SupportedType: common.TYPE_NFT_OTHER,
-			NftLdefIndex: testOtherInfo.NftLdefIndex,
+			NftLdefIndex:  testOtherInfo.NftLdefIndex,
 		}
 		otherData, err := json.Marshal(reqOtherAvatar)
 		if err != nil {
@@ -791,18 +796,18 @@ func TestWebsiteApi(t *testing.T) {
 
 	// test follow list add
 	type followListOperationRequest struct {
-		Action string `json:"action"`
-		Uuid string `json:"uuid"`
+		Action       string `json:"action"`
+		Uuid         string `json:"uuid"`
 		FolloweeUuid string `json:"followeeUuid"`
-		Operation int `json:"operation"`
+		Operation    int    `json:"operation"`
 	}
 
 	type followListOperationResponse struct {
-		Action string `json:"action"`
-		Status int `json:"status"`
-		Operation int `json:"operation"`
+		Action       string `json:"action"`
+		Status       int    `json:"status"`
+		Operation    int    `json:"operation"`
 		FolloweeUuid string `json:"followeeUuid"`
-		Reason string `json:"reason"`
+		Reason       string `json:"reason"`
 	}
 
 	// test follow list add
@@ -813,10 +818,10 @@ func TestWebsiteApi(t *testing.T) {
 			t.Error("can not dail to ", u.String())
 		}
 		req := &followListOperationRequest{
-			Action:        common.ACTION_FOLLOW_LIST_OPERATION,
-			Uuid: testMobileUserUuid,
+			Action:       common.ACTION_FOLLOW_LIST_OPERATION,
+			Uuid:         testMobileUserUuid,
 			FolloweeUuid: testWebSiteUserUuid,
-			Operation: common.FOLLOW_LIST_ADD,
+			Operation:    common.FOLLOW_LIST_ADD,
 		}
 		data, err := json.Marshal(req)
 		if err != nil {
@@ -854,14 +859,14 @@ func TestWebsiteApi(t *testing.T) {
 					return
 				}
 				var followInfo models.FollowTable
-				o:=orm.NewOrm()
-				err=o.QueryTable("follow_table").
-					Filter("followee_uuid",testWebSiteUserUuid).
-					Filter("follower_uuid",testMobileUserUuid).
+				o := orm.NewOrm()
+				err = o.QueryTable("follow_table").
+					Filter("followee_uuid", testWebSiteUserUuid).
+					Filter("follower_uuid", testMobileUserUuid).
 					One(&followInfo)
-				if err!=nil {
-					if err!=nil {
-						t.Error("follow fail",err)
+				if err != nil {
+					if err != nil {
+						t.Error("follow fail", err)
 					}
 				}
 				return
@@ -875,22 +880,21 @@ func TestWebsiteApi(t *testing.T) {
 	// test follow list
 	type followListRequest struct {
 		Action string `json:"action"`
-		Uuid string  `json:"uuid"`
+		Uuid   string `json:"uuid"`
 	}
 
-
 	type followerInfo struct {
-		Uuid string `json:"uuid"`
-		Nickname string `json:"nickname"`
+		Uuid      string `json:"uuid"`
+		Nickname  string `json:"nickname"`
 		Thumbnail string `json:"thumbnail"`
-		Intro string `json:"intro"`
+		Intro     string `json:"intro"`
 	}
 
 	type followListResponse struct {
-		Status int `json:"status"`
-		Action string `json:"action"`
+		Status     int             `json:"status"`
+		Action     string          `json:"action"`
 		FollowList []*followerInfo `json:"followList"`
-		Reason string `json:"reason"`
+		Reason     string          `json:"reason"`
 	}
 
 	t.Run(common.ACTION_FOLLOW_LIST, func(t *testing.T) {
@@ -900,8 +904,8 @@ func TestWebsiteApi(t *testing.T) {
 			t.Error("can not dail to ", u.String())
 		}
 		req := &followListRequest{
-			Action:        common.ACTION_FOLLOW_LIST,
-			Uuid: testMobileUserUuid,
+			Action: common.ACTION_FOLLOW_LIST,
+			Uuid:   testMobileUserUuid,
 		}
 		data, err := json.Marshal(req)
 		if err != nil {
@@ -938,11 +942,11 @@ func TestWebsiteApi(t *testing.T) {
 					t.Error("fail", respInfo.Reason)
 					return
 				}
-				if len(respInfo.FollowList)==0 {
+				if len(respInfo.FollowList) == 0 {
 					t.Error("follow info is not corrected inserted")
 					return
 				}
-				insertedFollowInfo:=  respInfo.FollowList[0]
+				insertedFollowInfo := respInfo.FollowList[0]
 				if insertedFollowInfo.Uuid != testWebSiteUserUuid {
 					t.Error("follow info is not corrected inserted")
 				}
@@ -957,20 +961,20 @@ func TestWebsiteApi(t *testing.T) {
 	// test market user list
 	type marketUserListRequest struct {
 		Action string `json:"action"`
-		Uuid string  `json:"uuid"`
+		Uuid   string `json:"uuid"`
 	}
 	type markerUserInfo struct {
-		Uuid string  `json:"uuid"`
-		Nickname string `json:"nickname"`
-		Count int `json:"count"`
+		Uuid      string `json:"uuid"`
+		Nickname  string `json:"nickname"`
+		Count     int    `json:"count"`
 		Thumbnail string `json:"thumbnail"`
-		Followed bool `json:"followed"`
+		Followed  bool   `json:"followed"`
 	}
 	type marketUserListResponse struct {
-		Status int `json:"status"`
-		Action string `json:"action"`
+		Status       int               `json:"status"`
+		Action       string            `json:"action"`
 		WalletIdList []*markerUserInfo `json:"walletIdList"`
-		Reason string `json:"reason"`
+		Reason       string            `json:"reason"`
 	}
 	t.Run(common.ACTION_MARKET_USER_LIST, func(t *testing.T) {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -980,8 +984,8 @@ func TestWebsiteApi(t *testing.T) {
 		}
 
 		req := &marketUserListRequest{
-			Action:        common.ACTION_MARKET_USER_LIST,
-			Uuid: testMobileUserUuid,
+			Action: common.ACTION_MARKET_USER_LIST,
+			Uuid:   testMobileUserUuid,
 		}
 		data, err := json.Marshal(req)
 		if err != nil {
@@ -1019,26 +1023,26 @@ func TestWebsiteApi(t *testing.T) {
 					return
 				}
 				walletInfo := respInfo.WalletIdList
-				for _,w:=range  walletInfo {
+				for _, w := range walletInfo {
 					if w.Uuid == testWebSiteUserUuid {
-						o:=orm.NewOrm()
+						o := orm.NewOrm()
 						var userMarketInfo models.UserMarketInfo
-						err=o.QueryTable("user_market_info").
-							Filter("uuid",w.Uuid).RelatedSel("UserInfo").
+						err = o.QueryTable("user_market_info").
+							Filter("uuid", w.Uuid).RelatedSel("UserInfo").
 							One(&userMarketInfo)
 
-						if err!=nil {
+						if err != nil {
 							t.Error(err)
 							return
 						}
 						if userMarketInfo.Count != 3 {
 							t.Error("unexpected count")
 						}
-						userIconPath:= util.PathPrefixOfNFT("",common.PATH_KIND_USER_ICON)+userMarketInfo.UserInfo.AvatarFileName+"default.jpg"
-						if userIconPath!= w.Thumbnail {
-							t.Error("wrong user icon path",w.Thumbnail)
+						userIconPath := util.PathPrefixOfNFT("", common.PATH_KIND_USER_ICON) + userMarketInfo.UserInfo.AvatarFileName + "default.jpg"
+						if userIconPath != w.Thumbnail {
+							t.Error("wrong user icon path", w.Thumbnail)
 						}
-						logs.Info("user icon path from market",userIconPath)
+						logs.Info("user icon path from market", userIconPath)
 						if w.Followed != true {
 							t.Error("follow status should be true at this moment")
 						}
@@ -1061,10 +1065,10 @@ func TestWebsiteApi(t *testing.T) {
 			t.Error("can not dail to ", u.String())
 		}
 		req := &followListOperationRequest{
-			Action:        common.ACTION_FOLLOW_LIST_OPERATION,
-			Uuid: testMobileUserUuid,
+			Action:       common.ACTION_FOLLOW_LIST_OPERATION,
+			Uuid:         testMobileUserUuid,
 			FolloweeUuid: testWebSiteUserUuid,
-			Operation: common.FOLLOW_LIST_DELETE,
+			Operation:    common.FOLLOW_LIST_DELETE,
 		}
 		data, err := json.Marshal(req)
 		if err != nil {
@@ -1102,12 +1106,12 @@ func TestWebsiteApi(t *testing.T) {
 					return
 				}
 				var followInfo models.FollowTable
-				o:=orm.NewOrm()
-				err=o.QueryTable("follow_table").
-					Filter("followee_uuid",testWebSiteUserUuid).
-					Filter("follower_uuid",testMobileUserUuid).
+				o := orm.NewOrm()
+				err = o.QueryTable("follow_table").
+					Filter("followee_uuid", testWebSiteUserUuid).
+					Filter("follower_uuid", testMobileUserUuid).
 					One(&followInfo)
-				if err!=orm.ErrNoRows {
+				if err != orm.ErrNoRows {
 					t.Error("now there should be no row")
 				}
 				return
@@ -1119,15 +1123,15 @@ func TestWebsiteApi(t *testing.T) {
 	})
 	// test duplicate nickname
 	type duplicateNicknameRequest struct {
-		Action string `json:"action"`
+		Action   string `json:"action"`
 		Nickname string `json:"nickname"`
 	}
 	type duplicateNicknameResponse struct {
-		Status int `json:"status"`
-		Action string `json:"action"`
-		Reason string `json:"reason"`
-		Duplicated bool `json:"duplicated"`
-		Nickname string `json:"nickname"`
+		Status     int    `json:"status"`
+		Action     string `json:"action"`
+		Reason     string `json:"reason"`
+		Duplicated bool   `json:"duplicated"`
+		Nickname   string `json:"nickname"`
 	}
 	t.Run(common.ACTION_IS_NICKNAME_DUPLICATED, func(t *testing.T) {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -1135,18 +1139,18 @@ func TestWebsiteApi(t *testing.T) {
 		if err != nil {
 			t.Error("can not dail to ", u.String())
 		}
-		o:=orm.NewOrm()
-		userInfo:=models.UserInfo{
+		o := orm.NewOrm()
+		userInfo := models.UserInfo{
 			Uuid: testWebSiteUserUuid,
 		}
 		err = o.Read(&userInfo)
-		if err!=nil {
+		if err != nil {
 			t.Error(err)
 			return
 		}
-		nickname:= userInfo.Nickname
+		nickname := userInfo.Nickname
 		req := &duplicateNicknameRequest{
-			Action:        common.ACTION_IS_NICKNAME_DUPLICATED,
+			Action:   common.ACTION_IS_NICKNAME_DUPLICATED,
 			Nickname: nickname,
 		}
 		data, err := json.Marshal(req)
@@ -1196,36 +1200,36 @@ func TestWebsiteApi(t *testing.T) {
 	})
 	// test set nickname with duplicate insert
 	type setNicknameRequest struct {
-		Action string `json:"action"`
-		Uuid string `json:"uuid"`
+		Action   string `json:"action"`
+		Uuid     string `json:"uuid"`
 		Nickname string `json:"nickname"`
 	}
 	type setNicknameResponse struct {
-		Status int `json:"status"`
-		Action string `json:"action"`
-		Reason string `json:"reason"`
+		Status   int    `json:"status"`
+		Action   string `json:"action"`
+		Reason   string `json:"reason"`
 		Nickname string `json:"nickname"`
 	}
-	testNewUserUuid:= "89043850943860xxxx"
+	testNewUserUuid := "89043850943860xxxx"
 	t.Run(common.ACTION_NFT_SET_NICKNAME, func(t *testing.T) {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 		defer c.Close()
 		if err != nil {
 			t.Error("can not dail to ", u.String())
 		}
-		o:=orm.NewOrm()
-		userInfo:=models.UserInfo{
+		o := orm.NewOrm()
+		userInfo := models.UserInfo{
 			Uuid: testWebSiteUserUuid,
 		}
 		err = o.Read(&userInfo)
-		if err!=nil {
+		if err != nil {
 			t.Error(err)
 			return
 		}
-		nickname:= userInfo.Nickname
+		nickname := userInfo.Nickname
 		req := &setNicknameRequest{
-			Action:        common.ACTION_NFT_SET_NICKNAME,
-			Uuid: testNewUserUuid,
+			Action:   common.ACTION_NFT_SET_NICKNAME,
+			Uuid:     testNewUserUuid,
 			Nickname: nickname,
 		}
 		data, err := json.Marshal(req)
@@ -1274,8 +1278,8 @@ func TestWebsiteApi(t *testing.T) {
 	})
 
 	// test set nickname without duplicate insert
-	testNewUserUuid2:= "890438509438fdsffds"
-	testNickname:= "baobao"
+	testNewUserUuid2 := "890438509438fdsffds"
+	testNickname := "baobao"
 	t.Run(common.ACTION_NFT_SET_NICKNAME, func(t *testing.T) {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 		defer c.Close()
@@ -1283,8 +1287,8 @@ func TestWebsiteApi(t *testing.T) {
 			t.Error("can not dail to ", u.String())
 		}
 		req := &setNicknameRequest{
-			Action:        common.ACTION_NFT_SET_NICKNAME,
-			Uuid: testNewUserUuid2,
+			Action:   common.ACTION_NFT_SET_NICKNAME,
+			Uuid:     testNewUserUuid2,
 			Nickname: testNickname,
 		}
 		data, err := json.Marshal(req)
@@ -1322,12 +1326,12 @@ func TestWebsiteApi(t *testing.T) {
 					t.Error("fail", respInfo.Reason)
 					return
 				}
-				o:=orm.NewOrm()
-				userInfo:=models.UserInfo{
+				o := orm.NewOrm()
+				userInfo := models.UserInfo{
 					Uuid: testNewUserUuid2,
 				}
 				err = o.Read(&userInfo)
-				if err!=nil {
+				if err != nil {
 					t.Error(err.Error())
 					return
 				}
@@ -1346,13 +1350,13 @@ func TestWebsiteApi(t *testing.T) {
 	// test set nickname with duplicate insert
 	type isNicknameSetRequest struct {
 		Action string `json:"action"`
-		Uuid string `json:"uuid"`
+		Uuid   string `json:"uuid"`
 	}
 	type isNicknameSetResponse struct {
-		Status int `json:"status"`
+		Status int    `json:"status"`
 		Action string `json:"action"`
 		Reason string `json:"reason"`
-		Set bool `json:"set"`
+		Set    bool   `json:"set"`
 	}
 	t.Run(common.ACTION_IS_NICKNAME_SET, func(t *testing.T) {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -1360,18 +1364,18 @@ func TestWebsiteApi(t *testing.T) {
 		if err != nil {
 			t.Error("can not dail to ", u.String())
 		}
-		o:=orm.NewOrm()
-		userInfo:=models.UserInfo{
+		o := orm.NewOrm()
+		userInfo := models.UserInfo{
 			Uuid: testWebSiteUserUuid,
 		}
 		err = o.Read(&userInfo)
-		if err!=nil {
+		if err != nil {
 			t.Error(err)
 			return
 		}
 		req := &isNicknameSetRequest{
-			Action:        common.ACTION_IS_NICKNAME_SET,
-			Uuid: testNewUserUuid2,
+			Action: common.ACTION_IS_NICKNAME_SET,
+			Uuid:   testNewUserUuid2,
 		}
 		data, err := json.Marshal(req)
 		if err != nil {
@@ -1421,18 +1425,18 @@ func TestWebsiteApi(t *testing.T) {
 
 	// test bind wallet
 	type bindWalletRequest struct {
-		Action string `json:"action"`
-		Uuid string `json:"uuid"`
+		Action   string `json:"action"`
+		Uuid     string `json:"uuid"`
 		WalletId string `json:"walletId"`
 	}
 	type bindWalletResponse struct {
-		Status int `json:"status"`
-		Action string `json:"action"`
-		Reason string `json:"reason"`
+		Status   int    `json:"status"`
+		Action   string `json:"action"`
+		Reason   string `json:"reason"`
 		WalletId string `json:"walletId"`
-		Set bool `json:"set"`
+		Set      bool   `json:"set"`
 	}
-	testWallet:= "0x3c62aa7913bc303ee4b9c07df87b556b6770e3fc"
+	testWallet := "0x3c62aa7913bc303ee4b9c07df87b556b6770e3fc"
 	t.Run(common.ACTION_NFT_BIND_WALLET, func(t *testing.T) {
 		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 		defer c.Close()
@@ -1440,8 +1444,8 @@ func TestWebsiteApi(t *testing.T) {
 			t.Error("can not dail to ", u.String())
 		}
 		req := &bindWalletRequest{
-			Action:        common.ACTION_NFT_BIND_WALLET,
-			Uuid: testNewUserUuid2,
+			Action:   common.ACTION_NFT_BIND_WALLET,
+			Uuid:     testNewUserUuid2,
 			WalletId: testWallet,
 		}
 		data, err := json.Marshal(req)
@@ -1479,12 +1483,12 @@ func TestWebsiteApi(t *testing.T) {
 					t.Error("fail", respInfo.Reason)
 					return
 				}
-				userMarketInfo:= models.UserMarketInfo{
+				userMarketInfo := models.UserMarketInfo{
 					Uuid: testNewUserUuid2,
 				}
-				o:= orm.NewOrm()
+				o := orm.NewOrm()
 				err = o.Read(&userMarketInfo)
-				if err!= nil {
+				if err != nil {
 					t.Error(err.Error())
 					return
 				}
@@ -1501,16 +1505,16 @@ func TestWebsiteApi(t *testing.T) {
 
 	// test bind wallet
 	type nftTransferRequest struct {
-		Action string `json:"action"`
-		SenderUuid string `json:"senderUuid"`
+		Action       string `json:"action"`
+		SenderUuid   string `json:"senderUuid"`
 		ReceiverUuid string `json:"receiverUuid"`
 		NftLdefIndex string `json:"nftLdefIndex"`
 	}
 	type nftTransferResponse struct {
-		Status int `json:"status"`
-		Action string `json:"action"`
-		Reason string `json:"reason"`
-		SenderUuid string `json:"senderUuid"`
+		Status       int    `json:"status"`
+		Action       string `json:"action"`
+		Reason       string `json:"reason"`
+		SenderUuid   string `json:"senderUuid"`
 		ReceiverUuid string `json:"receiverUuid"`
 		NftLdefIndex string `json:"nftLdefIndex"`
 	}
@@ -1521,8 +1525,8 @@ func TestWebsiteApi(t *testing.T) {
 			t.Error("can not dail to ", u.String())
 		}
 		req := &nftTransferRequest{
-			Action:        common.ACTION_NFT_TRANSFER,
-			SenderUuid: testWebSiteUserUuid,
+			Action:       common.ACTION_NFT_TRANSFER,
+			SenderUuid:   testWebSiteUserUuid,
 			ReceiverUuid: testMobileUserUuid,
 			NftLdefIndex: testAvatarInfo.NftLdefIndex,
 		}
@@ -1561,8 +1565,30 @@ func TestWebsiteApi(t *testing.T) {
 					t.Error("fail", respInfo.Reason)
 					return
 				}
-				// wait for transaction to finish
-				<-time.After(1*time.Second)
+				// check count
+				buyer := models.UserMarketInfo{
+					Uuid: testMobileUserUuid,
+				}
+				seller := models.UserMarketInfo{
+					Uuid: testWebSiteUserUuid,
+				}
+				o := orm.NewOrm()
+				err = o.Read(&buyer)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				err = o.Read(&seller)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if buyer.Count != 1 {
+					t.Error("buyer count should be 1")
+				}
+				if seller.Count != 2 {
+					t.Error("seller count should be 2")
+				}
 				return
 			default:
 				t.Error("wrong action")
@@ -1570,4 +1596,717 @@ func TestWebsiteApi(t *testing.T) {
 			}
 		}
 	})
+	// test shopping cart change add
+	type shoppingCartRequest struct {
+		Action    string   `json:"action"`
+		Operation int      `json:"operation"`
+		Uuid      string   `json:"uuid"`
+		NftList   []string `json:"nftList"`
+	}
+	type shoppingCartChangeResponse struct {
+		Status    int      `json:"status"`
+		Action    string   `json:"action"`
+		Operation int      `json:"operation"`
+		NftList   []string `json:"nftList"`
+		Reason    string   `json:"reason"`
+	}
+	t.Run(common.ACTION_NFT_SHOPPING_CART_CHANGE+"_add", func(t *testing.T) {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &shoppingCartRequest{
+			Action:    common.ACTION_NFT_SHOPPING_CART_CHANGE,
+			Operation: common.SHOPPING_CART_ADD,
+			Uuid:      testMobileUserUuid,
+			NftList: []string{
+				testAvatarInfo.NftLdefIndex,
+			},
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_NFT_SHOPPING_CART_CHANGE:
+				var respInfo shoppingCartChangeResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+				o := orm.NewOrm()
+				shoppingCartInfo := models.NftShoppingCart{
+					NftLdefIndex: testAvatarInfo.NftLdefIndex,
+					Uuid:         testMobileUserUuid,
+				}
+				err = o.Read(&shoppingCartInfo, "nft_ldef_index", "uuid")
+				if err != nil {
+					t.Error(err)
+				}
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
+	// test shopping cart list
+	type shoppingCartListRequest struct {
+		Action string `json:"action"`
+		Uuid   string `json:"uuid"`
+	}
+	type shoppingCartInfo struct {
+		NftLdefIndex  string `json:"nftLdefIndex"`
+		NftType       string `json:"supportedType"`
+		NftName       string `json:"nftName"`
+		ShortDesc     string `json:"shortDesc"`
+		LongDesc      string `json:"longDesc"`
+		FileName      string `json:"thumbnail"`
+		NftParentLdef string `json:"nftParentLdef"`
+		Price         int    `json:"price"`
+	}
+	type shoppingCartListResponse struct {
+		Status  int                 `json:"status"`
+		Action  string              `json:"action"`
+		NftList []*shoppingCartInfo `json:"nftList"`
+		Reason  string              `json:"reason"`
+	}
+	t.Run(common.ACTION_NFT_SHOPPING_CART_LIST, func(t *testing.T) {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &shoppingCartListRequest{
+			Action: common.ACTION_NFT_SHOPPING_CART_LIST,
+			Uuid:   testMobileUserUuid,
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_NFT_SHOPPING_CART_LIST:
+				var respInfo shoppingCartListResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+				if len(respInfo.NftList) == 0 {
+					t.Error("no nft found in shopping cart")
+					return
+				}
+				insertedAvatar := respInfo.NftList[0]
+				if testAvatarInfo.NftLdefIndex != insertedAvatar.NftLdefIndex {
+					t.Error("insert fail")
+				}
+				fileUri := util.PathPrefixOfNFT(common.TYPE_NFT_AVATAR, common.PATH_KIND_MARKET) + testAvatarInfo.FileName
+				if fileUri != insertedAvatar.FileName {
+					t.Error("insert fail, wrong file path", insertedAvatar.FileName)
+				}
+				logs.Info("avatar file uri", fileUri)
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
+
+	t.Run(common.ACTION_NFT_SHOPPING_CART_CHANGE+"_delete", func(t *testing.T) {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &shoppingCartRequest{
+			Action:    common.ACTION_NFT_SHOPPING_CART_CHANGE,
+			Operation: common.SHOPPING_CART_DELETE,
+			Uuid:      testMobileUserUuid,
+			NftList: []string{
+				testAvatarInfo.NftLdefIndex,
+			},
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_NFT_SHOPPING_CART_CHANGE:
+				var respInfo shoppingCartChangeResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+				o := orm.NewOrm()
+				shoppingCartInfo := models.NftShoppingCart{
+					NftLdefIndex: testAvatarInfo.NftLdefIndex,
+					Uuid:         testMobileUserUuid,
+				}
+				err = o.Read(&shoppingCartInfo, "nft_ldef_index", "uuid")
+				if err != orm.ErrNoRows {
+					if err!=nil {
+						t.Error(err)
+					} else {
+						t.Error("shopping cart should be empty")
+					}
+				}
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
+	// test nft purchase
+	type nftPurchaseConfirmRequest struct {
+		Action      string   `json:"action"`
+		Uuid        string   `json:"uuid"`
+		NftTranData []string `json:"nftTranData"`
+	}
+	type nftPurchaseConfirmResponse struct {
+		Status      int      `json:"status"`
+		Action      string   `json:"action"`
+		NftTranData []string `json:"nftTranData"`
+		Reason      string   `json:"reason"`
+	}
+	t.Run(common.ACTION_NFT_PUCHASE_CONFIRM, func(t *testing.T) {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &nftPurchaseConfirmRequest{
+			Action: common.ACTION_NFT_PUCHASE_CONFIRM,
+			Uuid:   testMobileUserUuid,
+			NftTranData: []string{
+				testDatInfo.NftLdefIndex,
+				testAvatarInfo.NftLdefIndex,
+				testOtherInfo.NftLdefIndex,
+			},
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_NFT_PUCHASE_CONFIRM:
+				var respInfo nftPurchaseConfirmResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
+	// test purchase history
+	type nftPurchaseHistoryRequest struct {
+		Action        string `json:"action"`
+		Uuid          string `json:"uuid"`
+		SupportedType string `json:"supportedType"`
+	}
+	type purchaseNftInfo struct {
+		TransactionAddress string `json:"transactionAddress"`
+		NftLdefIndex       string `json:"nftLdefIndex"`
+		SupportedType      string `json:"supportedType"`
+		NftName            string `json:"nftName"`
+		ShortDesc          string `json:"shortDesc"`
+		LongDesc           string `json:"longDesc"`
+		Thumbnail          string `json:"thumbnail"`
+		DecSource          string `json:"decSource"`
+		Qty                int    `json:"qty"`
+		NftLifeIndex       int    `json:"nftLifeIndex"`
+		NftPowerIndex      int    `json:"nftPowerIndex"`
+	}
+	type nftPurchaseHistoryResponse struct {
+		Status        int                `json:"status"`
+		Action        string             `json:"action"`
+		SupportedType string             `json:"supportedType"`
+		Reason        string             `json:"reason"`
+		PurchaseList  []*purchaseNftInfo `json:"purchaseList"`
+	}
+	t.Run(common.ACTION_NFT_PURCHASE_HISTORY+"_avatar", func(t *testing.T) {
+		logs.Info("test")
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &nftPurchaseHistoryRequest{
+			Action:        common.ACTION_NFT_PURCHASE_HISTORY,
+			Uuid:          testMobileUserUuid,
+			SupportedType: common.TYPE_NFT_AVATAR,
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_NFT_PURCHASE_HISTORY:
+				var respInfo nftPurchaseHistoryResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+				if len(respInfo.PurchaseList) == 0 {
+					t.Error("insert fail")
+					return
+				}
+
+				insertedAvatar := respInfo.PurchaseList[0]
+				if testAvatarInfo.NftLdefIndex != insertedAvatar.NftLdefIndex {
+					t.Error("insert fail")
+				}
+				fileUri := util.PathPrefixOfNFT(common.TYPE_NFT_AVATAR, common.PATH_KIND_PUBLIC) + testAvatarInfo.FileName
+				if fileUri != insertedAvatar.Thumbnail {
+					t.Error("insert fail, wrong file path", insertedAvatar.Thumbnail)
+				}
+				logs.Info("avatar file uri", fileUri)
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
+	t.Run(common.ACTION_NFT_PURCHASE_HISTORY+"_dat", func(t *testing.T) {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &nftPurchaseHistoryRequest{
+			Action:        common.ACTION_NFT_PURCHASE_HISTORY,
+			Uuid:          testMobileUserUuid,
+			SupportedType: common.TYPE_NFT_MUSIC,
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_NFT_PURCHASE_HISTORY:
+				var respInfo nftPurchaseHistoryResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+				if len(respInfo.PurchaseList) == 0 {
+					t.Error("insert fail")
+					return
+				}
+				insertedDat := respInfo.PurchaseList[0]
+				if testDatInfo.NftLdefIndex != insertedDat.NftLdefIndex {
+					t.Error("insert fail")
+				}
+				fileUri := util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC, common.PATH_KIND_PUBLIC) + testDatInfo.FileName
+				if fileUri != insertedDat.Thumbnail {
+					t.Error("insert fail, wrong file path", insertedDat.Thumbnail)
+				}
+				logs.Info("dat file uri", fileUri)
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
+	t.Run(common.ACTION_NFT_PURCHASE_HISTORY+"_other", func(t *testing.T) {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &nftPurchaseHistoryRequest{
+			Action:        common.ACTION_NFT_PURCHASE_HISTORY,
+			Uuid:          testMobileUserUuid,
+			SupportedType: common.TYPE_NFT_OTHER,
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_NFT_PURCHASE_HISTORY:
+				var respInfo nftPurchaseHistoryResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+				if len(respInfo.PurchaseList) == 0 {
+					t.Error("insert fail")
+					return
+				}
+				insertedOther := respInfo.PurchaseList[0]
+				if testOtherInfo.NftLdefIndex != insertedOther.NftLdefIndex {
+					t.Error("insert fail")
+				}
+				fileUri := util.PathPrefixOfNFT(common.TYPE_NFT_OTHER, common.PATH_KIND_PUBLIC) + testOtherInfo.FileName
+				if fileUri != insertedOther.Thumbnail {
+					t.Error("insert fail, wrong file path", insertedOther.Thumbnail)
+				}
+				if testOtherInfo.NftParentLdef != testAvatarInfo.NftLdefIndex {
+					t.Error("wrong parent of other nft")
+				}
+				logs.Info("other file uri", fileUri)
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
+
+	// test token purchase history
+	type tokenPurchaseRequest struct {
+		Action string `json:"action"`
+		Uuid string `json:"uuid"`
+		AppTranId string `json:"appTranId"`
+		TransactionId string `json:"transactionId"`
+		AppId string `json:"appId"`
+		Amount int `json:"amount"`
+		ActionStatus int `json:"actionStatus"`
+	}
+	type tokenPurchaseResponse struct {
+		Status int `json:"status"`
+		Action string `json:"action"`
+		Amount int `json:"amount"`
+		ActionStatus int `json:"actionStatus"`
+		Reason string `json:"reason"`
+		TransactionId string `json:"transactionId"`
+	}
+	var transactionId string
+	t.Run(common.ACTION_TOKENBUY_PAID+"_pending", func(t *testing.T) {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &tokenPurchaseRequest{
+			Action:        common.ACTION_TOKENBUY_PAID,
+			Uuid: testMobileUserUuid,
+			AppTranId: "4fffc3b55bd8270df6fd85d1f17b8ec53adfa64d882",
+			TransactionId: "",
+			AppId: "XXX@appleid.com",
+			Amount: 4,
+			ActionStatus: common.BERRY_PURCHASE_PENDING,
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_TOKENBUY_PAID:
+				var respInfo tokenPurchaseResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+				transactionId = respInfo.TransactionId
+				if transactionId == "" {
+					t.Error("empty tansaction id")
+				}
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
+	t.Run(common.ACTION_TOKENBUY_PAID+"_finish", func(t *testing.T) {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &tokenPurchaseRequest{
+			Action:        common.ACTION_TOKENBUY_PAID,
+			Uuid: testMobileUserUuid,
+			AppTranId: "4fffc3b55bd8270df6fd85d1f17b8ec53adfa64d882",
+			TransactionId: transactionId,
+			AppId: "XXX@appleid.com",
+			Amount: 4,
+			ActionStatus: common.BERRY_PURCHASE_FINISH,
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+		// before send count amount
+		// update coin records
+		col := models.MongoDB.Collection("users")
+		// before coin amount
+		type fields struct {
+			Coin string `bson:"coin"`
+		}
+
+		filter := bson.M{
+			"uuid": req.Uuid,
+		}
+
+		var queryResult fields
+
+		err = col.FindOne(context.Background(), filter, options.FindOne().SetProjection(bson.M{
+			"coin": true,
+		})).Decode(&queryResult)
+		if err != nil {
+			t.Error(err)
+		}
+
+		currentBalance, err := strconv.Atoi(queryResult.Coin)
+		if err!=nil {
+			t.Error(err)
+		}
+
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_TOKENBUY_PAID:
+				var respInfo tokenPurchaseResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+
+				err = col.FindOne(context.Background(), filter, options.FindOne().SetProjection(bson.M{
+					"coin": true,
+				})).Decode(&queryResult)
+				if err != nil {
+					t.Error(err)
+				}
+
+				afterBalance, err := strconv.Atoi(queryResult.Coin)
+				if err!=nil {
+					t.Error(err)
+				}
+				if afterBalance!= currentBalance+4 {
+					t.Error("uncorrect balance","before:",currentBalance,"after:",afterBalance)
+				}
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
+	logs.Info("test")
 }

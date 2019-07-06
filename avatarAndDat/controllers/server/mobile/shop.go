@@ -37,7 +37,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 	var userMarketInfo models.UserMarketInfo
 	o := orm.NewOrm()
 	err = o.QueryTable("user_market_info").Filter("uuid", req.Uuid).
-		One(&userMarketInfo, "nickname")
+		One(&userMarketInfo)
 	if err != nil {
 		if err == orm.ErrNoRows {
 			err := errors.New("user has not binded wallet")
@@ -60,7 +60,7 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 	for i, nftLdefIndex := range nftRequestData {
 		var nftMarketPlaceInfo models.NftMarketPlace
 		err:=o.QueryTable("nft_market_place").
-			RelatedSel("nft_market_info").
+			RelatedSel("NftMarketInfo").Filter("nft_ldef_index",nftLdefIndex).
 			One(&nftMarketPlaceInfo)
 		if err != nil {
 			o.Rollback()
@@ -244,6 +244,7 @@ func (m *Manager) ShoppingCartListHandler(c *client.Client, action string, data 
 	qb.Select(
 		"nft_info.nft_ldef_index",
 		"nft_info.nft_name",
+		"nft_info.nft_type",
 		"nft_info.short_desc",
 		"nft_info.long_desc",
 		"nft_market_info.price",
@@ -255,7 +256,7 @@ func (m *Manager) ShoppingCartListHandler(c *client.Client, action string, data 
 		On("nft_shopping_cart.nft_ldef_index = nft_market_info.nft_ldef_index").
 		InnerJoin("nft_info").
 		On("nft_shopping_cart.nft_ldef_index = nft_info.nft_ldef_index").
-		Where("nft_market_info.seller_uuid = ?").OrderBy("nft_shopping_cart.timestamp").Desc()
+		Where("nft_shopping_cart.uuid = ?").OrderBy("nft_shopping_cart.timestamp").Desc()
 	sql := qb.String()
 	o := orm.NewOrm()
 	num, err := o.Raw(sql, req.Uuid).QueryRows(&shoppingInfo)
@@ -353,7 +354,7 @@ func (m *Manager) ShoppingCartChangeHandler(c *client.Client, action string, dat
 					Uuid: req.Uuid,
 				},
 			}
-			_, err := o.Delete(&shoppingCartInfo)
+			_, err := o.Delete(&shoppingCartInfo,"nft_ldef_index","uuid")
 			if err != nil {
 				logs.Error(err.Error())
 				err := errors.New("unexpected error when query db")
@@ -385,7 +386,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, action string, data []by
 		AppTranId     string `json:"appTranId"`
 		TransactionId string `json:"transactionId"`
 		AppId         string `json:"appId"`
-		Amount        int    `json:"amout"`
+		Amount        int    `json:"amount"`
 		ActionStatus  int    `json:"actionStatus"`
 	}
 	type response struct {
@@ -474,7 +475,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, action string, data []by
 			m.errorHandler(c, action, err)
 			return
 		}
-		amount := req.Amount
+		amount := purchaseInfo.NumPurchased
 		update := bson.M{
 			"$set": bson.M{"coin": strconv.Itoa(amount + currentBalance)},
 		}
@@ -504,6 +505,9 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, action string, data []by
 			AppId:         req.AppId,
 			Status:        common.BERRY_PURCHASE_PENDING,
 			Uuid:          req.Uuid,
+			UserInfo: &models.UserInfo{
+				Uuid:req.Uuid,
+			},
 		}
 		o := orm.NewOrm()
 		_, err = o.Insert(&purchaseInfo)
@@ -517,7 +521,7 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, action string, data []by
 			Action:        action,
 			Amount:        req.Amount,
 			ActionStatus:  common.BERRY_PURCHASE_PENDING,
-			TransactionId: req.TransactionId,
+			TransactionId: transactionId,
 		})
 		return
 	} else {

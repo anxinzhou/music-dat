@@ -520,9 +520,9 @@ func (m *Manager) NFTDisplayHandler(c *client.Client, action string, data []byte
 
 func (m *Manager) NFTTransferHandler(c *client.Client, action string, data []byte) {
 	type request struct {
-		SellerUuid string `json:"seller_uuid"`
-		ReceiverUuid string `json:"receiver_uuid"`
-		NftLdefIndex string `json:"nft_ldef_index"`
+		SenderUuid string `json:"senderUuid"`
+		ReceiverUuid string `json:"receiverUuid"`
+		NftLdefIndex string `json:"nftLdefIndex"`
 	}
 	var req request
 	err := json.Unmarshal(data, &req)
@@ -555,13 +555,13 @@ func (m *Manager) NFTTransferHandler(c *client.Client, action string, data []byt
 		}
 	}
 	// reduce count for seller
-	_,err = o.QueryTable("user_market_info").Filter("uuid",req.SellerUuid).Update(orm.Params{
+	_,err = o.QueryTable("user_market_info").Filter("uuid",req.SenderUuid).Update(orm.Params{
 		"count": orm.ColValue(orm.ColMinus,1),
 	})
 	if err!=nil {
 		o.Rollback()
 		if err== orm.ErrNoRows {
-			err:=errors.New("no such user "+req.SellerUuid)
+			err:=errors.New("no such user "+req.SenderUuid)
 			logs.Error(err.Error())
 			m.errorHandler(c, action, err)
 			return
@@ -576,8 +576,8 @@ func (m *Manager) NFTTransferHandler(c *client.Client, action string, data []byt
 	type response struct {
 		Status int  `json:"status"`
 		Action string  `json:"action"`
-		ReceiverUuid string `json:"receiver_uuid"`
-		NftLdefIndex string `json:"nft_ldef_index"`
+		ReceiverUuid string `json:"receiverUuid"`
+		NftLdefIndex string `json:"nftLdefIndex"`
 	}
 	m.wrapperAndSend(c,action,&response{
 		Status: common.RESPONSE_STATUS_SUCCESS,
@@ -588,7 +588,7 @@ func (m *Manager) NFTTransferHandler(c *client.Client, action string, data []byt
 	// TODO use message queue instead of go channel
 	m.TransactionQueue.Append(&transactionQueue.TransferNftTransaction{
 		Uuid: req.ReceiverUuid,
-		SellerUuid: req.SellerUuid,
+		SellerUuid: req.SenderUuid,
 		NftLdefIndex: req.NftLdefIndex,
 	})
 }

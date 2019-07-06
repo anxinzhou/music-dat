@@ -152,7 +152,6 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 	cipherText := util.Aesgcm.Seal(nonce, nonce, data, nil)
 
 	// saving ciphertext
-	logs.Debug("saving ciphertext")
 	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, nameOfNftType, fileName)
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
@@ -160,8 +159,6 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err, 500)
 		return
 	}
-	logs.Debug("saving file", fileName, "to", cipherSavingPath)
-
 	// ---------------------------------------
 	// resize image and save to folder market
 	// ---------------------------------------
@@ -189,7 +186,7 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 	nftLifeIndex:= util.SmallRandInt()
 	nftPowerIndex:= util.SmallRandInt()
 	// nft market info
-	price:= util.SmallRandInt()
+	price:= 1
 	qty:= util.SmallRandInt()
 	// ---------------------------------------
 	// save nft info to database
@@ -657,7 +654,6 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 	fileNamePrefix := util.RandomPathFromFileName("file")
 	fileName:= fileNamePrefix+".jpg"
 	parentNftLdefIndex:= this.GetString("parent")
-	logs.Debug("parent index",parentNftLdefIndex)
 
 	typeOfNft:= common.TYPE_NFT_OTHER
 	nameOfNftType:= common.NAME_NFT_OTHER
@@ -671,7 +667,6 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		return
 	}
 
-	logs.Debug("len of data", len(data))
 	nonce := make([]byte, util.Aesgcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		logs.Error(err.Error())
@@ -681,7 +676,6 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 	cipherText := util.Aesgcm.Seal(nonce, nonce, data, nil)
 
 	// saving ciphertext
-	logs.Debug("saving ciphertext")
 	cipherSavingPath:= path.Join(common.ENCRYPTION_FILE_PATH, nameOfNftType, fileName)
 	err = ioutil.WriteFile(cipherSavingPath, cipherText, 0777)
 	if err != nil {
@@ -689,7 +683,6 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err, 500)
 		return
 	}
-	logs.Debug("saving file", fileName, "to", cipherSavingPath)
 
 	// ---------------------------------------
 	// resize image and save to folder market
@@ -716,7 +709,7 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 	//nft info
 	nftLdefIndex:= util.RandomNftLdefIndex(typeOfNft)
 	// nft market info
-	price:= util.SmallRandInt()
+	price:= 1
 	qty:= util.SmallRandInt()
 	// ---------------------------------------
 	// save nft info to database

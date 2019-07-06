@@ -69,7 +69,8 @@ type BerryPurchaseInfo struct {
 	AppTranId string
 	AppId string
 	Status int
-	Uuid string `orm:"rel(one);on_delete(cascade);"`
+	Uuid string
+	UserInfo *UserInfo `orm:"rel(one);on_delete(cascade);"`
 }
 
 func (this *BerryPurchaseInfo) TableIndex() [][]string {

@@ -64,6 +64,7 @@ func InitilizeModel(force bool, verbose bool) {
 		new(NftShoppingCart),
 		new(UserMarketInfo),
 		new(FollowTable),
+		new(BerryPurchaseInfo),
 	)
 
 	// auto generate table

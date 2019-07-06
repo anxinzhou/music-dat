@@ -94,13 +94,13 @@ func (this *TransactionQueue) SendNftPurchaseTransaction(nftPurchaseInfo *NftPur
 	err:=o.Read(&nftMarketInfo)
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&nftPurchaseInfo)
+		this.Retry(nftPurchaseInfo)
 		return
 	}
 	if nftMarketInfo.Active == false {
 		err:=errors.New(nftPurchaseInfo.NftLdefIndex+" is not active now, retry after seconds")
 		logs.Error(err.Error())
-		this.Retry(&nftPurchaseInfo)
+		this.Retry(nftPurchaseInfo)
 		return
 	}
 
@@ -110,7 +110,7 @@ func (this *TransactionQueue) SendNftPurchaseTransaction(nftPurchaseInfo *NftPur
 	err = o.Read(&buyerMarketInfo)
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&nftPurchaseInfo)
+		this.Retry(nftPurchaseInfo)
 		return
 	}
 	sellerMarketInfo:= models.UserMarketInfo{
@@ -119,7 +119,7 @@ func (this *TransactionQueue) SendNftPurchaseTransaction(nftPurchaseInfo *NftPur
 	o.Read(&sellerMarketInfo)
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&nftPurchaseInfo)
+		this.Retry(nftPurchaseInfo)
 		return
 	}
 	tokenId,err:= util.TokenIdFromNftLdefIndex(nftPurchaseInfo.NftLdefIndex)
@@ -137,7 +137,7 @@ func (this *TransactionQueue) SendNftPurchaseTransaction(nftPurchaseInfo *NftPur
 	err = <-txErr
 	if err != nil {
 		logs.Error(err.Error())
-		this.Retry(&nftPurchaseInfo)
+		this.Retry(nftPurchaseInfo)
 		return
 	}
 	// change status in nft purchaseInfo table
@@ -190,7 +190,7 @@ func (this *TransactionQueue) SendUploadNftTransaction(uploadNftInfo *UploadNftT
 		err:=o.QueryTable("avatar_nft_info").RelatedSel("NftInfo").One(&avatarInfo)
 		if err!=nil {
 			logs.Error(err.Error())
-			this.Retry(&uploadNftInfo)
+			this.Retry(uploadNftInfo)
 			return
 		}
 		nftName = avatarInfo.NftInfo.NftName
@@ -200,7 +200,7 @@ func (this *TransactionQueue) SendUploadNftTransaction(uploadNftInfo *UploadNftT
 		err:=o.QueryTable("other_nft_info").RelatedSel("NftInfo").One(&otherInfo)
 		if err!=nil {
 			logs.Error(err.Error())
-			this.Retry(&uploadNftInfo)
+			this.Retry(uploadNftInfo)
 			return
 		}
 		nftName = otherInfo.NftInfo.NftName
@@ -209,7 +209,7 @@ func (this *TransactionQueue) SendUploadNftTransaction(uploadNftInfo *UploadNftT
 		err:=o.QueryTable("dat_nft_info").RelatedSel("NftInfo").One(&datInfo)
 		if err!=nil {
 			logs.Error(err.Error())
-			this.Retry(&uploadNftInfo)
+			this.Retry(uploadNftInfo)
 			return
 		}
 		nftName = datInfo.NftInfo.NftName
@@ -232,7 +232,7 @@ func (this *TransactionQueue) SendUploadNftTransaction(uploadNftInfo *UploadNftT
 	err = <-txErr
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&uploadNftInfo)
+		this.Retry(uploadNftInfo)
 		return
 	}
 	// send transaction success, modify tag in marketplace table
@@ -256,13 +256,13 @@ func (this *TransactionQueue) SendRewardNftTransaction(RewardNftInfo *RewardNftT
 	err:=o.Read(&nftMarketInfo)
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&RewardNftInfo)
+		this.Retry(RewardNftInfo)
 		return
 	}
 	if nftMarketInfo.Active == false {
 		err:=errors.New(RewardNftInfo.NftLdefIndex+" is not active now, retry after seconds")
 		logs.Error(err.Error())
-		this.Retry(&RewardNftInfo)
+		this.Retry(RewardNftInfo)
 		return
 	}
 
@@ -272,7 +272,7 @@ func (this *TransactionQueue) SendRewardNftTransaction(RewardNftInfo *RewardNftT
 	err = o.Read(&buyerMarketInfo)
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&RewardNftInfo)
+		this.Retry(RewardNftInfo)
 		return
 	}
 	sellerMarketInfo:= models.UserMarketInfo{
@@ -281,7 +281,7 @@ func (this *TransactionQueue) SendRewardNftTransaction(RewardNftInfo *RewardNftT
 	o.Read(&sellerMarketInfo)
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&RewardNftInfo)
+		this.Retry(RewardNftInfo)
 		return
 	}
 	tokenId,err:= util.TokenIdFromNftLdefIndex(RewardNftInfo.NftLdefIndex)
@@ -299,7 +299,7 @@ func (this *TransactionQueue) SendRewardNftTransaction(RewardNftInfo *RewardNftT
 	err = <-txErr
 	if err != nil {
 		logs.Error(err.Error())
-		this.Retry(&RewardNftInfo)
+		this.Retry(RewardNftInfo)
 		return
 	}
 	// change status in nft purchaseInfo table
@@ -323,13 +323,13 @@ func (this *TransactionQueue) SendTransferNftTransaction(transferNftInfo *Transf
 	err:=o.Read(&nftMarketInfo)
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&transferNftInfo)
+		this.Retry(transferNftInfo)
 		return
 	}
 	if nftMarketInfo.Active == false {
 		err:=errors.New(transferNftInfo.NftLdefIndex+" is not active now, retry after seconds")
 		logs.Error(err.Error())
-		this.Retry(&transferNftInfo)
+		this.Retry(transferNftInfo)
 		return
 	}
 	buyerMarketInfo:= models.UserMarketInfo{
@@ -338,7 +338,7 @@ func (this *TransactionQueue) SendTransferNftTransaction(transferNftInfo *Transf
 	err = o.Read(&buyerMarketInfo)
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&transferNftInfo)
+		this.Retry(transferNftInfo)
 		return
 	}
 	sellerMarketInfo:= models.UserMarketInfo{
@@ -347,7 +347,7 @@ func (this *TransactionQueue) SendTransferNftTransaction(transferNftInfo *Transf
 	o.Read(&sellerMarketInfo)
 	if err!=nil {
 		logs.Error(err.Error())
-		this.Retry(&transferNftInfo)
+		this.Retry(transferNftInfo)
 		return
 	}
 
@@ -366,7 +366,7 @@ func (this *TransactionQueue) SendTransferNftTransaction(transferNftInfo *Transf
 	err = <-txErr
 	if err != nil {
 		logs.Error(err.Error())
-		this.Retry(&transferNftInfo)
+		this.Retry(transferNftInfo)
 		return
 	}
 	logs.Info("done with a transfer nft transaction")
