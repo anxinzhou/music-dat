@@ -44,10 +44,10 @@ func NewChainHelper() *ChainHelper {
 	chainKind := sender.CHAIN_KIND_PUBLIC
 	if runmode == "prod" {
 		chainKind = sender.CHAIN_KIND_PUBLIC
-	} else if runmode == "dev" || runmode == "master" {
+	} else if runmode == "dev" || runmode == "master" || runmode == "test" {
 		chainKind = sender.CHAIN_KIND_PRIVATE
 	} else {
-		panic("unknown chain kind")
+		panic("unknown run mode")
 	}
 
 	account.BindEthClient(c, chainKind)
