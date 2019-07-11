@@ -179,7 +179,7 @@ func TestWebsiteApi(t *testing.T) {
 			_ = writer.WriteField(key, val)
 		}
 		_ = writer.WriteField("allowAirdrop", "1")
-		_ = writer.WriteField("number", "1")
+		_ = writer.WriteField("number", "100")
 		_ = writer.WriteField("price", "1")
 		_ = writer.WriteField("creatorPercent", "10")
 		_ = writer.WriteField("lyricsWriterPercent", "20")
@@ -2340,5 +2340,7 @@ func TestWebsiteApi(t *testing.T) {
 			}
 		}
 	})
+	// wait for transaction to finish
+	<-time.After(5*time.Second)
 	logs.Info("test")
 }

@@ -58,10 +58,10 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 	transactionList:= make([]*transactionQueue.NftPurchaseTransaction, len(nftRequestData))
 	o.Begin() // begin transaction
 	for i, nftLdefIndex := range nftRequestData {
-		var nftMarketPlaceInfo models.NftMarketPlace
-		err:=o.QueryTable("nft_market_place").
-			RelatedSel("NftMarketInfo").Filter("nft_ldef_index",nftLdefIndex).
-			One(&nftMarketPlaceInfo)
+		nftMarketPlaceInfo:=models.NftMarketPlace {
+			NftLdefIndex: nftLdefIndex,
+		}
+		err:=o.Read(&nftMarketPlaceInfo)
 		if err != nil {
 			o.Rollback()
 			if err == orm.ErrNoRows {
@@ -72,7 +72,46 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 			} else {
 				logs.Error(err.Error())
 				err := errors.New("unexpected error when query db")
+				m.errorHandler(c, action, err)
+				return
+			}
+		}
+		nftMarketInfo:= models.NftMarketInfo{
+			NftLdefIndex:nftLdefIndex,
+		}
+		err = o.Read(&nftMarketInfo)
+		if err!=nil {
+			o.Rollback()
+			logs.Error(err.Error())
+			err := errors.New("unexpected error when query db")
+			m.errorHandler(c, action, err)
+			return
+		}
+		err = o.Read(nftMarketInfo.NftInfo)
+		if err!=nil {
+			o.Rollback()
+			logs.Error(err.Error())
+			err := errors.New("unexpected error when query db")
+			m.errorHandler(c, action, err)
+			return
+		}
+		// add numsold
+		nftMarketInfo.NumSold += 1
+		_,err = o.Update(&nftMarketInfo,"num_sold")
+		if err!=nil {
+			o.Rollback()
+			logs.Error(err.Error())
+			err := errors.New("unexpected error when query db")
+			m.errorHandler(c, action, err)
+			return
+		}
+		// delete from market
+		if nftMarketInfo.NumSold == nftMarketInfo.Qty {
+			_,err := o.Delete(&nftMarketPlaceInfo)
+			if err!=nil {
+				o.Rollback()
 				logs.Error(err.Error())
+				err := errors.New("unexpected error when query db")
 				m.errorHandler(c, action, err)
 				return
 			}
@@ -80,14 +119,17 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 		needToPay += nftMarketPlaceInfo.NftMarketInfo.Price
 
 		// insert into purchase info
+		distributionLdefIndex:= util.RandomNftLdefIndex(nftMarketInfo.NftInfo.NftType)
 		purchaseId:= util.RandomPurchaseId()
 		nftPuchaseInfo:= models.NftPurchaseInfo{
+			TotalPaid: nftMarketInfo.Price,
 			PurchaseId: purchaseId,
 			Uuid: req.Uuid,
-			SellerUuid: nftMarketPlaceInfo.NftMarketInfo.SellerUuid,
+			DistributionIndex: distributionLdefIndex ,
+			SellerUuid: nftMarketInfo.SellerUuid,
 			TransactionAddress: "", // determined after send transaction
 			ActiveTicker: nftMarketPlaceInfo.ActiveTicker,
-			NftLdefIndex: nftMarketPlaceInfo.NftLdefIndex,
+			NftLdefIndex: nftMarketPlaceInfo.NftLdefIndex ,
 			Status: common.PURCHASE_PENDING, // change to finish after send transaction
 			UserInfo: &models.UserInfo{
 				Uuid: req.Uuid,
@@ -122,7 +164,8 @@ func (m *Manager) PurchaseConfirmHandler(c *client.Client, action string, data [
 		transactionList[i] = &transactionQueue.NftPurchaseTransaction{
 			Uuid: req.Uuid,
 			SellerUuid: nftMarketPlaceInfo.NftMarketInfo.SellerUuid,
-			NftLdefIndex:nftLdefIndex,
+			NftLdefIndex: nftMarketPlaceInfo.NftLdefIndex,
+			DistIndex: distributionLdefIndex,
 			PurchaseId: purchaseId,
 		}
 	}

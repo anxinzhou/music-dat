@@ -9,7 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
+	"net/url"
 )
 
 var MongoDB *mongo.Database   //TODO add logic to guranttee concurrency of mongodb
@@ -25,7 +25,7 @@ func InitilizeModel(force bool, verbose bool) {
 	dbName:=beego.AppConfig.String("dbName")
 	dbEngine:= beego.AppConfig.String("dbEngine")
 	dbPath:= dbUser+":"+dbPassword+"@"+"tcp("+dbUrls+":"+dbPort+")"+"/"
-	dataSource:=dbPath+dbName
+	dataSource:=dbPath+dbName+"?charset=utf8&loc="+url.QueryEscape("Asia/shanghai")
 
 	// create db if not exist
 	db,err:=sql.Open(dbEngine,dbPath)
@@ -39,15 +39,6 @@ func InitilizeModel(force bool, verbose bool) {
 
 	orm.RegisterDriver("mysql",orm.DRMySQL)
 	err=orm.RegisterDataBase("default",dbEngine,dataSource)
-	tz,err:= time.LoadLocation("Asia/Chongqing")
-	if err!=nil {
-		panic(err)
-	}
-	orm.SetDataBaseTZ("default",tz)
-	if err!=nil {
-		panic(err)
-	}
-
 	orm.RegisterModel(
 		new(UserInfo),
 		new(CreatorInfo),

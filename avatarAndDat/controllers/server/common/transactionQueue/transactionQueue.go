@@ -19,6 +19,7 @@ type NftPurchaseTransaction struct {
 	Uuid string
 	SellerUuid string
 	NftLdefIndex string
+	DistIndex string
 	PurchaseId string
 }
 
@@ -38,6 +39,7 @@ type RewardNftTransaction struct {
 	Uuid string
 	SellerUuid string
 	NftLdefIndex string
+	DistIndex string
 	PurchaseId string
 }
 
@@ -122,18 +124,32 @@ func (this *TransactionQueue) SendNftPurchaseTransaction(nftPurchaseInfo *NftPur
 		this.Retry(nftPurchaseInfo)
 		return
 	}
-	tokenId,err:= util.TokenIdFromNftLdefIndex(nftPurchaseInfo.NftLdefIndex)
+	tokenId,err:= util.TokenIdFromNftLdefIndex(nftPurchaseInfo.DistIndex)
 	if err!=nil {
 		panic(err.Error())
 	}
-	txErr := this.ChainHandler.ManagerAccount.SendFunction(
+	tx,err:= this.ChainHandler.ManagerAccount.PackTransaction(
 		this.ChainHandler.Contract,
 		nil,
-		nft.FuncDelegateTransfer,
-		common.HexToAddress(sellerMarketInfo.Wallet),
+		nft.FuncMint,
 		common.HexToAddress(buyerMarketInfo.Wallet),
 		tokenId,
-	)
+		"",
+		"",
+		nftPurchaseInfo.NftLdefIndex,
+		nftPurchaseInfo.DistIndex,
+		big.NewInt(0),
+		big.NewInt(0),
+		"",
+		[]byte("1"),)
+	if err!=nil {
+		panic(err)
+	}
+	signedTx,err:= this.ChainHandler.ManagerAccount.SignTransaction(tx)
+	if err!=nil {
+		panic(err)
+	}
+	txErr:=this.ChainHandler.ManagerAccount.SendTransaction(signedTx)
 	err = <-txErr
 	if err != nil {
 		logs.Error(err.Error())
@@ -143,9 +159,10 @@ func (this *TransactionQueue) SendNftPurchaseTransaction(nftPurchaseInfo *NftPur
 	// change status in nft purchaseInfo table
 	userPurchaseInfo:= models.NftPurchaseInfo{
 		PurchaseId: nftPurchaseInfo.PurchaseId,
+		TransactionAddress: signedTx.Hash().Hex(),
 		Status: common2.PURCHASE_CONFIRMED,
 	}
-	_,err=o.Update(&userPurchaseInfo,"status")   //TODO fault recovery process
+	_,err=o.Update(&userPurchaseInfo,"status","transaction_address")   //TODO fault recovery process
 	if err!=nil {
 		logs.Emergency(err.Error())
 	}
@@ -284,18 +301,32 @@ func (this *TransactionQueue) SendRewardNftTransaction(RewardNftInfo *RewardNftT
 		this.Retry(RewardNftInfo)
 		return
 	}
-	tokenId,err:= util.TokenIdFromNftLdefIndex(RewardNftInfo.NftLdefIndex)
+	tokenId,err:= util.TokenIdFromNftLdefIndex(RewardNftInfo.DistIndex)
 	if err!=nil {
 		panic(err)
 	}
-	txErr := this.ChainHandler.ManagerAccount.SendFunction(
+	tx,err:= this.ChainHandler.ManagerAccount.PackTransaction(
 		this.ChainHandler.Contract,
 		nil,
-		nft.FuncDelegateTransfer,
-		common.HexToAddress(sellerMarketInfo.Wallet),
+		nft.FuncMint,
 		common.HexToAddress(buyerMarketInfo.Wallet),
 		tokenId,
-	)
+		"",
+		"",
+		RewardNftInfo.NftLdefIndex,
+		RewardNftInfo.DistIndex,
+		big.NewInt(0),
+		big.NewInt(0),
+		"",
+		[]byte("1"),)
+	if err!=nil {
+		panic(err)
+	}
+	signedTx,err:= this.ChainHandler.ManagerAccount.SignTransaction(tx)
+	if err!=nil {
+		panic(err)
+	}
+	txErr:=this.ChainHandler.ManagerAccount.SendTransaction(signedTx)
 	err = <-txErr
 	if err != nil {
 		logs.Error(err.Error())
@@ -306,8 +337,9 @@ func (this *TransactionQueue) SendRewardNftTransaction(RewardNftInfo *RewardNftT
 	userPurchaseInfo:= models.NftPurchaseInfo{
 		PurchaseId: RewardNftInfo.PurchaseId,
 		Status: common2.PURCHASE_CONFIRMED,
+		TransactionAddress: signedTx.Hash().Hex(),
 	}
-	_,err=o.Update(&userPurchaseInfo,"status")   //TODO fault recovery process
+	_,err=o.Update(&userPurchaseInfo,"status","transaction_address")   //TODO fault recovery process
 	if err!=nil {
 		logs.Emergency(err.Error())
 	}

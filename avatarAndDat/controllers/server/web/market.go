@@ -205,7 +205,7 @@ func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
 			from nft_purchase_info as ni
 			inner join user_info as buyer on ni.uuid = buyer.uuid 
 			inner join user_info as seller on ni.seller_uuid = seller.uuid
-			where ni.uuid = ? or ni.seller_uuid = ?
+			where ni.uuid = ? or ni.seller_uuid = ? order by ni.timestamp desc
 			`,uuid,uuid).QueryRows(&nftTranData)
 	if err!=nil && err!=orm.ErrNoRows {
 		logs.Error(err.Error())
@@ -341,6 +341,7 @@ func (this *RewardController) RewardDat() {
 	sellerMarketInfo.Count-=1
 	_,err=o.Update(&buyerMarketInfo,"count")
 	if err!=nil {
+		o.Rollback()
 		logs.Error(err.Error())
 		err:=errors.New("unexpected error when query database")
 		sendError(&this.Controller, err, 500)
@@ -348,41 +349,80 @@ func (this *RewardController) RewardDat() {
 	}
 	o.Update(&sellerMarketInfo,"count")
 	if err!=nil {
+		o.Rollback()
 		logs.Error(err.Error())
 		err:=errors.New("unexpected error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
 
-	// delete from marketplace
-	//
-	_,err=o.Delete(&models.NftMarketPlace{
+	nftMarketPlaceInfo:= models.NftMarketPlace{
 		NftLdefIndex: nftMarketInfo.NftLdefIndex,
-	})
+	}
+	err = o.Read(&nftMarketPlaceInfo)
 	if err!=nil {
 		o.Rollback()
-		if err == orm.ErrNoRows {
-			err:=errors.New("item not exist!")
+		logs.Error(err.Error())
+		err:=errors.New("unexpected error when query database")
+		sendError(&this.Controller, err, 500)
+		return
+	}
+
+	nftInfo:= models.NftMarketInfo{
+		NftLdefIndex: nftMarketInfo.NftLdefIndex,
+	}
+	err = o.Read(&nftInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("unexpected error when query database")
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	err = o.Read(nftInfo.NftInfo)
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("unexpected error when query database")
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	// add numsold
+	nftInfo.NumSold += 1
+	_,err = o.Update(&nftInfo,"num_sold")
+	if err!=nil {
+		o.Rollback()
+		logs.Error(err.Error())
+		err:=errors.New("unexpected error when query database")
+		sendError(&this.Controller, err, 500)
+		return
+	}
+	// delete from market
+	if nftInfo.NumSold == nftInfo.Qty {
+		_,err := o.Delete(&nftMarketPlaceInfo)
+		if err!=nil {
+			o.Rollback()
 			logs.Error(err.Error())
-			sendError(&this.Controller, err, 500)
-			return
-		} else {
-			logs.Error(err.Error())
-			err:= errors.New("unexpected error when query databas")
+			err:=errors.New("unexpected error when query database")
 			sendError(&this.Controller, err, 500)
 			return
 		}
+	} else {
+
 	}
 	//
 	// insert into purchase history
 	//
+	distributionLdefIndex:= util.RandomNftLdefIndex(common.TYPE_NFT_MUSIC)
 	purchaseId:= util.RandomPurchaseId()
 	nftPuchaseInfo:= models.NftPurchaseInfo{
+		TotalPaid: nftMarketInfo.Price,
 		PurchaseId: purchaseId,
 		Uuid: uuid,
 		SellerUuid: nftMarketInfo.SellerUuid,
 		TransactionAddress: "", // determined after send transaction
 		ActiveTicker: nftMarketInfo.ActiveTicker,
+		DistributionIndex:distributionLdefIndex ,
 		NftLdefIndex: nftMarketInfo.NftLdefIndex,
 		Status: common.PURCHASE_PENDING, // change to finish after send transaction
 		UserInfo: &models.UserInfo{
@@ -417,6 +457,7 @@ func (this *RewardController) RewardDat() {
 		Uuid:uuid,
 		SellerUuid: nftMarketInfo.SellerUuid,
 		NftLdefIndex: nftMarketInfo.NftLdefIndex,
+		DistIndex: distributionLdefIndex,
 		PurchaseId: purchaseId,
 	})
 }
