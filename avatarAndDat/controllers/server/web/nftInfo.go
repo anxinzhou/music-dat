@@ -187,7 +187,7 @@ func (this *UploadController) uploadAvatar(reqBaseInfo *uplodBaseInfo) {
 	nftPowerIndex:= util.SmallRandInt()
 	// nft market info
 	price:= 1
-	qty:= util.SmallRandInt()
+	qty:= 1
 	// ---------------------------------------
 	// save nft info to database
 	// ---------------------------------------
@@ -710,7 +710,7 @@ func (this *UploadController) uploadOther(reqBaseInfo *uplodBaseInfo) {
 	nftLdefIndex:= util.RandomNftLdefIndex(typeOfNft)
 	// nft market info
 	price:= 1
-	qty:= util.SmallRandInt()
+	qty:= 1
 	// ---------------------------------------
 	// save nft info to database
 	// ---------------------------------------
