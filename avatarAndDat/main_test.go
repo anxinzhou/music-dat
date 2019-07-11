@@ -2340,6 +2340,86 @@ func TestWebsiteApi(t *testing.T) {
 			}
 		}
 	})
+	// test token purchase history
+	type marketUserRequest struct {
+		Action        string `json:"action"`
+		Uuid          string `json:"uuid"`
+		SupportedType string `json:"supportedType"`
+	}
+	type marketUserResponse struct {
+		Status        int    `json:"status"`
+		Action        string `json:"action"`
+		NftTranData []*mpListNftInfo`json:"nftTranData"`
+		Reason        string `json:"reason"`
+	}
+	t.Run(common.ACTION_USER_MARKET_INFO+"_dat", func(t *testing.T) {
+		c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+		defer c.Close()
+		if err != nil {
+			t.Error("can not dail to ", u.String())
+		}
+		req := &marketUserRequest{
+			Action:        common.ACTION_USER_MARKET_INFO,
+			Uuid:          testWebSiteUserUuid,
+			SupportedType: common.TYPE_NFT_MUSIC,
+		}
+		data, err := json.Marshal(req)
+		if err != nil {
+			t.Error(err.Error())
+			return
+		}
+
+		err = c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for {
+			_, data, err := c.ReadMessage()
+			if err != nil {
+				logs.Error(err.Error())
+				break;
+			}
+			var kvs map[string]interface{}
+			json.Unmarshal(data, &kvs)
+			action, ok := kvs["action"]
+			if !ok {
+				t.Error("action not exist")
+				return
+			}
+			switch action {
+			case common.ACTION_USER_MARKET_INFO:
+				var respInfo marketUserResponse
+				err = json.Unmarshal(data, &respInfo)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if respInfo.Status == common.RESPONSE_STATUS_FAIL {
+					t.Error("fail", respInfo.Reason)
+					return
+				}
+
+				if len(respInfo.NftTranData) == 0 {
+					t.Error("insert fail")
+					return
+				}
+				insertedDat := respInfo.NftTranData[0]
+				if testDatInfo.NftLdefIndex != insertedDat.NftLdefIndex {
+					t.Error("insert fail")
+				}
+				fileUri := util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC, common.PATH_KIND_MARKET) + testDatInfo.FileName
+				if fileUri != insertedDat.FileName {
+					t.Error("insert fail, wrong file path", insertedDat.FileName)
+				}
+				logs.Info("dat file uri", fileUri)
+				return
+			default:
+				t.Error("wrong action")
+				return
+			}
+		}
+	})
 	// wait for transaction to finish
 	<-time.After(5*time.Second)
 	logs.Info("test")

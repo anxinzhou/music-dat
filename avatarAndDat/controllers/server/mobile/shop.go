@@ -593,30 +593,35 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []
 		m.errorHandler(c, action, err)
 		return
 	}
-
+	nftType:= req.SupportedType
 	switch req.SupportedType {
 	case common.TYPE_NFT_MUSIC:
 		o := orm.NewOrm()
 		dbEngine := beego.AppConfig.String("dbEngine")
 		qb, _ := orm.NewQueryBuilder(dbEngine)
 		type nftTranData struct {
-			common.AvatarNftMarketInfo
-			common.MarketPlaceInfo
+			NftLdefIndex string `json:"nftLdefIndex"`
+			NftName string `json:"nftName"`
+			ShortDesc string `json:"shortDesc"`
+			LongDesc string `json:"longDesc"`
+			NftValue int `json:"nftValue" orm:"column(price)"`
+			Qty int `json:"qty"`
+			Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
 		}
-		var avatarMKPlaceInfo []nftTranData
+		var datMKPlaceInfo []nftTranData
 		qb.Select("*").
 			From("nft_market_place").
 			InnerJoin("nft_market_info").
 			On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
-			InnerJoin("avatar_nft_market_info").
-			On("nft_market_place.nft_ldef_index = avatar_nft_market_info.nft_ldef_index").
+			InnerJoin("dat_nft_market_info").
+			On("nft_market_place.nft_ldef_index = dat_nft_market_info.nft_ldef_index").
 			InnerJoin("nft_info").
 			On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
-			InnerJoin("avatar_nft_info").
-			On("nft_market_place.nft_ldef_index = avatar_nft_info.nft_ldef_index").
+			InnerJoin("dat_nft_info").
+			On("nft_market_place.nft_ldef_index = dat_nft_info.nft_ldef_index").
 			Where("nft_market_info.seller_uuid = ?").OrderBy("timestamp").Desc()
 		sql := qb.String()
-		num, err := o.Raw(sql, req.Uuid).QueryRows(&avatarMKPlaceInfo)
+		num, err := o.Raw(sql, req.Uuid).QueryRows(&datMKPlaceInfo)
 		if err != nil && err != orm.ErrNoRows {
 			logs.Error(err.Error())
 			err := errors.New("unknown error when query database")
@@ -625,21 +630,37 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []
 		}
 		logs.Debug("get", num, "from database")
 		type response struct {
+			Action string `json:"action"`
+			Status int `json:"status"`
 			NftTranData []nftTranData `json:"nftTranData"`
+			SupportedType string `json:"supportedType"`
 		}
+		logs.Info("dat num",num)
 		if num == 0 {
-			avatarMKPlaceInfo = make([]nftTranData, 0)
+			datMKPlaceInfo = make([]nftTranData, 0)
+		}
+		for i,_:= range datMKPlaceInfo {
+			datMKPlaceInfo[i].Thumbnail = util.PathPrefixOfNFT(nftType,common.PATH_KIND_MARKET) + datMKPlaceInfo[i].Thumbnail
 		}
 		m.wrapperAndSend(c, action, &response{
-			NftTranData: avatarMKPlaceInfo,
+			NftTranData: datMKPlaceInfo,
+			Action: action,
+			Status: common.RESPONSE_STATUS_SUCCESS,
+			SupportedType: req.SupportedType,
 		})
 	case common.TYPE_NFT_OTHER:
 		o := orm.NewOrm()
 		dbEngine := beego.AppConfig.String("dbEngine")
 		qb, _ := orm.NewQueryBuilder(dbEngine)
 		type nftTranData struct {
-			common.OtherNftMarketInfo
-			common.MarketPlaceInfo
+			NftLdefIndex string `json:"nftLdefIndex"`
+			NftName string `json:"nftName"`
+			ShortDesc string `json:"shortDesc"`
+			LongDesc string `json:"longDesc"`
+			NftValue int `json:"nftValue" orm:"column(price)"`
+			Qty int `json:"qty"`
+			Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
+			NftParentLdef string `json:"nftParentLdef"`
 		}
 		var otherMKPlaceInfo []nftTranData
 		qb.Select("*").
@@ -663,21 +684,37 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []
 		}
 		logs.Debug("get", num, "from database")
 		type response struct {
+			Action string `json:"action"`
+			Status int `json:"status"`
 			NftTranData []nftTranData `json:"nftTranData"`
+			SupportedType string `json:"supportedType"`
 		}
 		if num == 0 {
 			otherMKPlaceInfo = make([]nftTranData, 0)
 		}
+		for i,_:= range otherMKPlaceInfo {
+			otherMKPlaceInfo[i].Thumbnail = util.PathPrefixOfNFT(nftType,common.PATH_KIND_MARKET) + otherMKPlaceInfo[i].Thumbnail
+		}
 		m.wrapperAndSend(c, action, &response{
+			Action: action,
+			Status: common.RESPONSE_STATUS_SUCCESS,
 			NftTranData: otherMKPlaceInfo,
+			SupportedType: req.SupportedType,
 		})
 	case common.TYPE_NFT_AVATAR:
 		o := orm.NewOrm()
 		dbEngine := beego.AppConfig.String("dbEngine")
 		qb, _ := orm.NewQueryBuilder(dbEngine)
 		type nftTranData struct {
-			common.AvatarNftMarketInfo
-			common.MarketPlaceInfo
+			NftLdefIndex string `json:"nftLdefIndex"`
+			NftName string `json:"nftName"`
+			ShortDesc string `json:"shortDesc"`
+			LongDesc string `json:"longDesc"`
+			NftLifeIndex int `json:"nftLifeIndex"`
+			NftPowerIndex int `json:"nftPowerIndex"`
+			NftValue int `json:"nftValue" orm:"column(price)"`
+			Qty int `json:"qty"`
+			Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
 		}
 		var avatarMKPlaceInfo []nftTranData
 		qb.Select("*").
@@ -701,13 +738,22 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []
 		}
 		logs.Debug("get", num, "from database")
 		type response struct {
+			Action string `json:"action"`
+			Status int `json:"status"`
 			NftTranData []nftTranData `json:"nftTranData"`
+			SupportedType string `json:"supportedType"`
 		}
 		if num == 0 {
 			avatarMKPlaceInfo = make([]nftTranData, 0)
 		}
+		for i,_:= range avatarMKPlaceInfo {
+			avatarMKPlaceInfo[i].Thumbnail = util.PathPrefixOfNFT(nftType,common.PATH_KIND_MARKET) + avatarMKPlaceInfo[i].Thumbnail
+		}
 		m.wrapperAndSend(c, action, &response{
+			Action: action,
+			Status: common.RESPONSE_STATUS_SUCCESS,
 			NftTranData: avatarMKPlaceInfo,
+			SupportedType: req.SupportedType,
 		})
 	}
 }
