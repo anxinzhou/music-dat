@@ -78,6 +78,7 @@ func (m *Manager) Init() {
 	m.RegisterHandler(common.ACTION_FOLLOW_LIST,m.FollowListHandler)
 	m.RegisterHandler(common.ACTION_FOLLOW_LIST_OPERATION,m.FollowListOperationHandler)
 	m.RegisterHandler(common.ACTION_IS_NICKNAME_SET,m.IsNicknameSetHandler)
+	m.RegisterHandler(common.ACTION_USER_MARKET_INFO,m.UserMarketInfoHandler)
 }
 
 func (m *Manager) errorHandler(c *client.Client, action string, err error) {

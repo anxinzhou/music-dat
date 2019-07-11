@@ -3,7 +3,7 @@ Error
 {
 	"status": 1,  // 0 for success 1 for fail 
 	"action": "mp_list", // string
-	"reason": "can not marshal data", // string 
+	"reason": "can not marshal data" // string
 }
 
 
@@ -15,7 +15,7 @@ Request
 
 {
 	"action": "mp_list", //string
-	"supportedType": "721-04", // string, "721-05" for other "721-04" for music "721-02" for avatar 区分 音乐还是图片 
+	"supportedType": "721-04" // string, "721-05" for other "721-04" for music "721-02" for avatar 区分 音乐还是图片
 }
 
 Response
@@ -43,7 +43,7 @@ Response
 				"longDesc": "Great Heart color logo from ", //string
 				"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
 				"qty": 100, // int 
-				"timeStamp": "2004 07 21", // time to buy this nft
+				"timeStamp": "2004 07 21" // time to buy this nft
 	]
 }
 
@@ -56,7 +56,7 @@ Request
 {
 	"action": "item_details", //string
 	"nftLdefIndex": "AM001I0095",
-	"supportedType": "721-04",
+	"supportedType": "721-04"
 }
 
 Response
@@ -78,7 +78,7 @@ Response
 			"shortDesc": "Heart", //string
 			"longDesc": "Great Heart color logo from ", //string
 			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
-			"qty": 100, // int 
+			"qty": 100 // int
 		},
 		// if for dat and other nft
 		{
@@ -89,7 +89,7 @@ Response
 			"shortDesc": "Heart", //string
 			"longDesc": "Great Heart color logo from ", //string
 			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
-			"qty": 100, // int 
+			"qty": 100 // int
 		}
 	]
 }
@@ -424,4 +424,38 @@ Response {
 	"status": 0,
 	"action": "is_nickname_set", // string
 	"set": true, // bool    true or false
+}
+
+API 17 user_market_info
+
+Request
+
+{
+	"action": "user_market_info", //string
+	"uuid": "", //string
+				"supportedType":"",
+}
+
+Response
+
+{
+	"action": "user_market_info", //string
+	"totalNFT": 1, // int
+	"nftTranData": [
+	// array of object
+		{
+			"supportedType": "721-04", // string "721-04" for music "721-02" for avatar
+			"nftName": "heart", // string
+			"nftValue": 1, // int
+			"activeTicker": "berry", //string
+			"nftLifeIndex": 7, // int
+			"nftPowerIndex": 23, //int
+			"nftLdefIndex": "AM00132134", // string
+			"nftCharacId": "def", //string
+			"shortDesc": "Heart", //string
+			"longDesc": "Great Heart color logo from ", //string
+			"thumbnail": "10.21.23.3/tem/xxx.jpg", //string path to img
+			"qty": 100, // int
+		},
+	]
 }

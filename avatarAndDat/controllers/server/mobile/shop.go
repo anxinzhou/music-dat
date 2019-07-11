@@ -574,3 +574,140 @@ func (m *Manager) TokenBuyPaidHandler(c *client.Client, action string, data []by
 		return
 	}
 }
+
+func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []byte) {
+	type request struct {
+		Uuid      string   `json:"uuid"`
+		SupportedType   string `json:"supportedType"`
+	}
+	var req request
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		logs.Error(err.Error())
+		err := errors.New("wrong request data format")
+		m.errorHandler(c, action, err)
+		return
+	}
+	if err := util.ValidNftType(req.SupportedType); err != nil {
+		logs.Error(err.Error())
+		m.errorHandler(c, action, err)
+		return
+	}
+
+	switch req.SupportedType {
+	case common.TYPE_NFT_MUSIC:
+		o := orm.NewOrm()
+		dbEngine := beego.AppConfig.String("dbEngine")
+		qb, _ := orm.NewQueryBuilder(dbEngine)
+		type nftTranData struct {
+			common.AvatarNftMarketInfo
+			common.MarketPlaceInfo
+		}
+		var avatarMKPlaceInfo []nftTranData
+		qb.Select("*").
+			From("nft_market_place").
+			InnerJoin("nft_market_info").
+			On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
+			InnerJoin("avatar_nft_market_info").
+			On("nft_market_place.nft_ldef_index = avatar_nft_market_info.nft_ldef_index").
+			InnerJoin("nft_info").
+			On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
+			InnerJoin("avatar_nft_info").
+			On("nft_market_place.nft_ldef_index = avatar_nft_info.nft_ldef_index").
+			Where("nft_market_info.seller_uuid = ?").OrderBy("timestamp").Desc()
+		sql := qb.String()
+		num, err := o.Raw(sql, req.Uuid).QueryRows(&avatarMKPlaceInfo)
+		if err != nil && err != orm.ErrNoRows {
+			logs.Error(err.Error())
+			err := errors.New("unknown error when query database")
+			m.errorHandler(c, action, err)
+			return
+		}
+		logs.Debug("get", num, "from database")
+		type response struct {
+			NftTranData []nftTranData `json:"nftTranData"`
+		}
+		if num == 0 {
+			avatarMKPlaceInfo = make([]nftTranData, 0)
+		}
+		m.wrapperAndSend(c, action, &response{
+			NftTranData: avatarMKPlaceInfo,
+		})
+	case common.TYPE_NFT_OTHER:
+		o := orm.NewOrm()
+		dbEngine := beego.AppConfig.String("dbEngine")
+		qb, _ := orm.NewQueryBuilder(dbEngine)
+		type nftTranData struct {
+			common.OtherNftMarketInfo
+			common.MarketPlaceInfo
+		}
+		var otherMKPlaceInfo []nftTranData
+		qb.Select("*").
+			From("nft_market_place").
+			InnerJoin("nft_market_info").
+			On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
+			InnerJoin("other_nft_market_info").
+			On("nft_market_place.nft_ldef_index = other_nft_market_info.nft_ldef_index").
+			InnerJoin("nft_info").
+			On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
+			InnerJoin("other_nft_info").
+			On("nft_market_place.nft_ldef_index = other_nft_info.nft_ldef_index").
+			Where("nft_market_info.seller_uuid = ?").OrderBy("timestamp").Desc()
+		sql := qb.String()
+		num, err := o.Raw(sql, req.Uuid).QueryRows(&otherMKPlaceInfo)
+		if err != nil && err != orm.ErrNoRows {
+			logs.Error(err.Error())
+			err := errors.New("unknown error when query database")
+			m.errorHandler(c, action, err)
+			return
+		}
+		logs.Debug("get", num, "from database")
+		type response struct {
+			NftTranData []nftTranData `json:"nftTranData"`
+		}
+		if num == 0 {
+			otherMKPlaceInfo = make([]nftTranData, 0)
+		}
+		m.wrapperAndSend(c, action, &response{
+			NftTranData: otherMKPlaceInfo,
+		})
+	case common.TYPE_NFT_AVATAR:
+		o := orm.NewOrm()
+		dbEngine := beego.AppConfig.String("dbEngine")
+		qb, _ := orm.NewQueryBuilder(dbEngine)
+		type nftTranData struct {
+			common.AvatarNftMarketInfo
+			common.MarketPlaceInfo
+		}
+		var avatarMKPlaceInfo []nftTranData
+		qb.Select("*").
+			From("nft_market_place").
+			InnerJoin("nft_market_info").
+			On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
+			InnerJoin("avatar_nft_market_info").
+			On("nft_market_place.nft_ldef_index = avatar_nft_market_info.nft_ldef_index").
+			InnerJoin("nft_info").
+			On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
+			InnerJoin("avatar_nft_info").
+			On("nft_market_place.nft_ldef_index = avatar_nft_info.nft_ldef_index").
+			Where("nft_market_info.seller_uuid = ?").OrderBy("timestamp").Desc()
+		sql := qb.String()
+		num, err := o.Raw(sql, req.Uuid).QueryRows(&avatarMKPlaceInfo)
+		if err != nil && err != orm.ErrNoRows {
+			logs.Error(err.Error())
+			err := errors.New("unknown error when query database")
+			m.errorHandler(c, action, err)
+			return
+		}
+		logs.Debug("get", num, "from database")
+		type response struct {
+			NftTranData []nftTranData `json:"nftTranData"`
+		}
+		if num == 0 {
+			avatarMKPlaceInfo = make([]nftTranData, 0)
+		}
+		m.wrapperAndSend(c, action, &response{
+			NftTranData: avatarMKPlaceInfo,
+		})
+	}
+}

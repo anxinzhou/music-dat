@@ -101,6 +101,7 @@ const (
 	ACTION_FOLLOW_LIST = "follow_list"
 	ACTION_FOLLOW_LIST_OPERATION = "follow_list_operation"
 	ACTION_IS_NICKNAME_SET = "is_nickname_set"
+	ACTION_USER_MARKET_INFO = "user_market_info"
 )
 
 type NftInfo struct {
