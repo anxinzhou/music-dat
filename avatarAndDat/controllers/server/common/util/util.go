@@ -173,7 +173,7 @@ func DecryptFile(fileName string, nftType string) (string,error) {
 			return "",err
 		}
 	}
-	return decryptedFilePath,nil
+	return fileName,nil
 }
 
 func ChinaTimeFromTimeStamp(timestamp time.Time) string {
