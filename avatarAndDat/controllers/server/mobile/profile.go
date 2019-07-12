@@ -207,7 +207,7 @@ func (m *Manager) FollowListHandler(c *client.Client, action string, data []byte
 	type followeeInfo struct {
 		Uuid      string `json:"uuid" orm:"column(followee_uuid)"`
 		Nickname  string `json:"nickname"`
-		Thumbnail string `json:"thumnail" orm:"column(avatar_file_name)"`
+		Thumbnail string `json:"thumbnail" orm:"column(avatar_file_name)"`
 		Intro     string `json:"intro"`
 	}
 	o := orm.NewOrm()
