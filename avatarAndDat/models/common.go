@@ -28,8 +28,6 @@ func GenerateTestCreator(num int)  {
 	password:= "123456"
 	username:="alphaslottest"
 	intro:= "this is alphabrain "
-	o:=orm.NewOrm()
-	o.Begin()
 	for i:=0;i<num;i++ {
 		postPrefix:=""
 		if i!=0 {
@@ -39,64 +37,72 @@ func GenerateTestCreator(num int)  {
 		nickname:=nickname+postPrefix
 		username:=username+postPrefix
 		intro:=intro+postPrefix
-		userInfo:= UserInfo{
-			Uuid:uuid,
-			Nickname:nickname,
-			AvatarFileName:"",
-			Intro: intro,
-		}
-		err:=o.Read(&userInfo,"uuid")
-		if err!=nil && err!=orm.ErrNoRows {
+		createUser(uuid,nickname,password,username,intro,"0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	}
+	createUser("48320958456gfdgz","YulieSu","YulieSu","YulieSu2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("4832095845z6gfdg","Kemin","Kemin","Kemin2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("4832095812z6gfdc","Cassette","Cassette","Cassette2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("48320z5812z6gfdc","AlexLung","AlexLung","AlexLung2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+}
+
+func createUser(uuid , nickname ,  username,password, intro, wallet string)  {
+	o:=orm.NewOrm()
+	userInfo:= UserInfo{
+		Uuid:uuid,
+		Nickname:nickname,
+		AvatarFileName:"",
+		Intro: intro,
+	}
+	err:=o.Read(&userInfo,"uuid")
+	if err!=nil && err!=orm.ErrNoRows {
+		o.Rollback()
+		panic(err)
+	}
+	if err == orm.ErrNoRows {
+		_,err:=o.Insert(&userInfo)
+		if err!=nil {
 			o.Rollback()
 			panic(err)
-		}
-		if err == orm.ErrNoRows {
-			_,err:=o.Insert(&userInfo)
-			if err!=nil {
-				o.Rollback()
-				panic(err)
-			}
-		}
-		creatorInfo:= CreatorInfo{
-			Uuid: uuid,
-			Username: username,
-			Password: password,
-		}
-		err=o.Read(&creatorInfo,"uuid")
-		if err!=nil && err!=orm.ErrNoRows {
-			o.Rollback()
-			panic(err)
-		}
-		if err == orm.ErrNoRows {
-			creatorInfo.UserInfo = &UserInfo {
-				Uuid:uuid,
-			}
-			_,err:=o.Insert(&creatorInfo)
-			if err!=nil {
-				o.Rollback()
-				panic(err)
-			}
-		}
-		mkInfo:= UserMarketInfo{
-			Uuid: uuid,
-			Wallet: "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9",
-			Count: 0,
-		}
-		err=o.Read(&mkInfo,"uuid")
-		if err!=nil && err!=orm.ErrNoRows {
-			o.Rollback()
-			panic(err)
-		}
-		if err == orm.ErrNoRows {
-			mkInfo.UserInfo = &UserInfo {
-				Uuid:uuid,
-			}
-			_,err:=o.Insert(&mkInfo)
-			if err!=nil {
-				o.Rollback()
-				panic(err)
-			}
 		}
 	}
-	o.Commit()
+	creatorInfo:= CreatorInfo{
+		Uuid: uuid,
+		Username: username,
+		Password: password,
+	}
+	err=o.Read(&creatorInfo,"uuid")
+	if err!=nil && err!=orm.ErrNoRows {
+		o.Rollback()
+		panic(err)
+	}
+	if err == orm.ErrNoRows {
+		creatorInfo.UserInfo = &UserInfo {
+			Uuid:uuid,
+		}
+		_,err:=o.Insert(&creatorInfo)
+		if err!=nil {
+			o.Rollback()
+			panic(err)
+		}
+	}
+	mkInfo:= UserMarketInfo{
+		Uuid: uuid,
+		Wallet: "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9",
+		Count: 0,
+	}
+	err=o.Read(&mkInfo,"uuid")
+	if err!=nil && err!=orm.ErrNoRows {
+		o.Rollback()
+		panic(err)
+	}
+	if err == orm.ErrNoRows {
+		mkInfo.UserInfo = &UserInfo {
+			Uuid:uuid,
+		}
+		_,err:=o.Insert(&mkInfo)
+		if err!=nil {
+			o.Rollback()
+			panic(err)
+		}
+	}
 }
