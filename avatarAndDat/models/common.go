@@ -37,7 +37,7 @@ func GenerateTestCreator(num int)  {
 		nickname:=nickname+postPrefix
 		username:=username+postPrefix
 		intro:=intro+postPrefix
-		createUser(uuid,nickname,password,username,intro,"0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+		createUser(uuid,nickname,username,password,intro,"0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
 	}
 	createUser("48320958456gfdgz","YulieSu","YulieSu","YulieSu2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
 	createUser("4832095845z6gfdg","Kemin","Kemin","Kemin2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
