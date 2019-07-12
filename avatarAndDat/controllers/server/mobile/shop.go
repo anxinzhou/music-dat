@@ -273,7 +273,7 @@ func (m *Manager) ShoppingCartListHandler(c *client.Client, action string, data 
 	type nftTranData struct {
 		SupportedType string `json:"supportedType" orm:"column(nft_type)"`
 		NftName       string `json:"nftName"`
-		Price         int    `json:"price"`
+		Price         int    `json:"nftValue" orm:"column(price)"`
 		ActiveTicker  string `json:"activeTicker"`
 		NftLdefIndex  string `json:"nftLdefIndex"`
 		ShortDesc     string `json:"shortDesc"`
