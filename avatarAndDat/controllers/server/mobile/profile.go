@@ -238,6 +238,9 @@ func (m *Manager) FollowListHandler(c *client.Client, action string, data []byte
 	}
 
 	for i, _ := range followInfo {
+		if followInfo[i].Thumbnail == "" {
+			followInfo[i].Thumbnail = "default.jpg"
+		}
 		followInfo[i].Thumbnail = util.PathPrefixOfNFT("", common.PATH_KIND_USER_ICON) + followInfo[i].Thumbnail
 	}
 
