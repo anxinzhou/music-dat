@@ -755,5 +755,133 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []
 			NftTranData: avatarMKPlaceInfo,
 			SupportedType: req.SupportedType,
 		})
+	default:
+		o := orm.NewOrm()
+		type nftTranData struct {
+			NftLdefIndex string `json:"nftLdefIndex"`
+			NftName string `json:"nftName"`
+			ShortDesc string `json:"shortDesc"`
+			LongDesc string `json:"longDesc"`
+			NftLifeIndex int `json:"nftLifeIndex"`
+			NftPowerIndex int `json:"nftPowerIndex"`
+			NftValue int `json:"nftValue" orm:"column(price)"`
+			Qty int `json:"qty"`
+			Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
+		}
+		var nftMarketplaceInfo []models.NftMarketPlace
+		num,err:=o.QueryTable("nft_market_place").All(&nftMarketplaceInfo)
+		if err != nil && err != orm.ErrNoRows {
+			logs.Error(err.Error())
+			err := errors.New("unknown error when query database")
+			m.errorHandler(c, action, err)
+			return
+		}
+		if num==0 {
+			nftMarketplaceInfo = make([]models.NftMarketPlace,0)
+		}
+		nftMKPlaceInfo:= make([]nftTranData,0)
+		for _, mkInfo:= range nftMarketplaceInfo {
+			nftLdefIndex:=mkInfo.NftLdefIndex
+			nftInfo:=models.NftInfo {
+				NftLdefIndex:nftLdefIndex,
+			}
+			err = o.Read(&nftInfo)
+			if err!=nil {
+				logs.Error(err.Error())
+				err := errors.New("unknown error when query database")
+				m.errorHandler(c, action, err)
+				return
+			}
+			dbEngine := beego.AppConfig.String("dbEngine")
+			qb, _ := orm.NewQueryBuilder(dbEngine)
+			var nftData nftTranData
+			switch nftInfo.NftType {
+			case common.TYPE_NFT_MUSIC:
+				qb.Select("*").
+					From("nft_market_place").
+					InnerJoin("nft_market_info").
+					On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
+					InnerJoin("dat_nft_market_info").
+					On("nft_market_place.nft_ldef_index = dat_nft_market_info.nft_ldef_index").
+					InnerJoin("nft_info").
+					On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
+					InnerJoin("dat_nft_info").
+					On("nft_market_place.nft_ldef_index = dat_nft_info.nft_ldef_index").
+					Where("nft_info.nft_ldef_index = ?").OrderBy("timestamp").Desc()
+				sql := qb.String()
+				err := o.Raw(sql, nftLdefIndex).QueryRow(&nftData)
+				if err != nil && err != orm.ErrNoRows {
+					logs.Error(err.Error())
+					err := errors.New("unknown error when query database")
+					m.errorHandler(c, action, err)
+					return
+				}
+				if err == orm.ErrNoRows {
+					continue
+				}
+			case common.TYPE_NFT_AVATAR:
+				qb.Select("*").
+					From("nft_market_place").
+					InnerJoin("nft_market_info").
+					On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
+					InnerJoin("avatar_nft_market_info").
+					On("nft_market_place.nft_ldef_index = avatar_nft_market_info.nft_ldef_index").
+					InnerJoin("nft_info").
+					On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
+					InnerJoin("avatar_nft_info").
+					On("nft_market_place.nft_ldef_index = avatar_nft_info.nft_ldef_index").
+					Where("nft_info.nft_ldef_index = ?").OrderBy("timestamp").Desc()
+				sql := qb.String()
+				err := o.Raw(sql, req.Uuid).QueryRow(&nftData)
+				if err != nil && err != orm.ErrNoRows {
+					logs.Error(err.Error())
+					err := errors.New("unknown error when query database")
+					m.errorHandler(c, action, err)
+					return
+				}
+				if err == orm.ErrNoRows {
+					continue
+				}
+			case common.TYPE_NFT_OTHER:
+				qb.Select("*").
+					From("nft_market_place").
+					InnerJoin("nft_market_info").
+					On("nft_market_place.nft_ldef_index = nft_market_info.nft_ldef_index").
+					InnerJoin("other_nft_market_info").
+					On("nft_market_place.nft_ldef_index = other_nft_market_info.nft_ldef_index").
+					InnerJoin("nft_info").
+					On("nft_market_place.nft_ldef_index = nft_info.nft_ldef_index").
+					InnerJoin("other_nft_info").
+					On("nft_market_place.nft_ldef_index = other_nft_info.nft_ldef_index").
+					Where("nft_info.nft_ldef_index = ?").OrderBy("timestamp").Desc()
+				sql := qb.String()
+				err := o.Raw(sql, nftLdefIndex).QueryRow(&nftData)
+				if err != nil && err != orm.ErrNoRows {
+					logs.Error(err.Error())
+					err := errors.New("unknown error when query database")
+					m.errorHandler(c, action, err)
+					return
+				}
+				if err == orm.ErrNoRows {
+					continue
+				}
+			}
+			nftMKPlaceInfo= append(nftMKPlaceInfo,nftData)
+		}
+		type response struct {
+			Action string `json:"action"`
+			Status int `json:"status"`
+			NftTranData []nftTranData `json:"nftTranData"`
+			SupportedType string `json:"supportedType"`
+		}
+		for i,_:= range nftMKPlaceInfo {
+			nftMKPlaceInfo[i].Thumbnail = util.PathPrefixOfNFT(nftType,common.PATH_KIND_MARKET) + nftMKPlaceInfo[i].Thumbnail
+		}
+		m.wrapperAndSend(c, action, &response{
+			Action: action,
+			Status: common.RESPONSE_STATUS_SUCCESS,
+			NftTranData: nftMKPlaceInfo,
+			SupportedType: req.SupportedType,
+		})
 	}
 }
