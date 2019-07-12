@@ -367,6 +367,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, action string, data []
 		Count     int    `json:"count"`
 		Thumbnail string `json:"thumbnail" orm:"column(avatar_file_name)"`
 		Followed  bool   `json:"followed" orm:"column(followed)"`
+		Intro string `json:"intro"`
 	}
 	err := json.Unmarshal(data, &req)
 	if err != nil {
@@ -378,7 +379,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, action string, data []
 	o := orm.NewOrm()
 	var ui []userInfo
 	num, err := o.Raw(`
-		select ui.uuid,ui.nickname,umi.count,ui.avatar_file_name,!isnull(ft.followee_uuid) as followed from 
+		select ui.intro, ui.uuid,ui.nickname,umi.count,ui.avatar_file_name,!isnull(ft.followee_uuid) as followed from 
 		user_market_info as umi inner join user_info as ui on umi.uuid = ui.uuid
 		left join (
 			select followee_uuid, follower_uuid from follow_table
