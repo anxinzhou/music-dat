@@ -770,7 +770,7 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []
 			Thumbnail string `json:"thumbnail" orm:"column(file_name)"`
 		}
 		var nftMarketplaceInfo []models.NftMarketPlace
-		num,err:=o.QueryTable("nft_market_place").All(&nftMarketplaceInfo)
+		num,err:=o.QueryTable("nft_market_place").Filter("NftMarketInfo__SellerUuid",req.Uuid).All(&nftMarketplaceInfo)
 		if err != nil && err != orm.ErrNoRows {
 			logs.Error(err.Error())
 			err := errors.New("unknown error when query database")

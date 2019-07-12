@@ -2079,7 +2079,7 @@ func TestWebsiteApi(t *testing.T) {
 				if testDatInfo.NftLdefIndex != insertedDat.NftLdefIndex {
 					t.Error("insert fail")
 				}
-				fileUri := util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC, common.PATH_KIND_PUBLIC) + testDatInfo.FileName
+				fileUri := util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC, common.PATH_KIND_MARKET) + testDatInfo.FileName
 				if fileUri != insertedDat.Thumbnail {
 					t.Error("insert fail, wrong file path", insertedDat.Thumbnail)
 				}
