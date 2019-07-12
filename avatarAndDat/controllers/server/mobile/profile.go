@@ -546,7 +546,7 @@ func (m *Manager) DatPurchaseHistory(c *client.Client, action string, uuid strin
 		datPurchaseInfo = make([]nftTranData, 0)
 	}
 	for i, _ := range datPurchaseInfo {
-		datPurchaseInfo[i].Thumbnail = util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC, common.PATH_KIND_PUBLIC) + datPurchaseInfo[i].Thumbnail
+		datPurchaseInfo[i].Thumbnail = util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC, common.PATH_KIND_MARKET) + datPurchaseInfo[i].Thumbnail
 		decryptedFilePath, err := util.DecryptFile(datPurchaseInfo[i].DecSource, common.TYPE_NFT_MUSIC)
 		if err != nil {
 			logs.Error(err.Error())
