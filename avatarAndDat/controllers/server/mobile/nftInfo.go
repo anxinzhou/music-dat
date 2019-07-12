@@ -483,16 +483,18 @@ func (m *Manager) NFTDisplayHandler(c *client.Client, action string, data []byte
 	}
 	o:=orm.NewOrm()
 	err=o.Read(&nftInfo)
-	if err == orm.ErrNoRows {
-		err:=errors.New("nft "+req.NftLdefIndex+" not exists")
-		logs.Error(err.Error())
-		m.errorHandler(c, action, err)
-		return
-	} else {
-		logs.Error(err.Error())
-		err := errors.New("unexpected error when query db")
-		m.errorHandler(c, action, err)
-		return
+	if err!=nil {
+		if err == orm.ErrNoRows {
+			err:=errors.New("nft "+req.NftLdefIndex+" not exists")
+			logs.Error(err.Error())
+			m.errorHandler(c, action, err)
+			return
+		} else {
+			logs.Error(err.Error())
+			err := errors.New("unexpected error when query db")
+			m.errorHandler(c, action, err)
+			return
+		}
 	}
 
 	nftType:= nftInfo.NftType
