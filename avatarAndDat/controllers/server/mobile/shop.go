@@ -588,11 +588,11 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []
 		m.errorHandler(c, action, err)
 		return
 	}
-	if err := util.ValidNftType(req.SupportedType); err != nil {
-		logs.Error(err.Error())
-		m.errorHandler(c, action, err)
-		return
-	}
+	//if err := util.ValidNftType(req.SupportedType); err != nil {
+	//	logs.Error(err.Error())
+	//	m.errorHandler(c, action, err)
+	//	return
+	//}
 	nftType:= req.SupportedType
 	switch req.SupportedType {
 	case common.TYPE_NFT_MUSIC:
@@ -758,6 +758,7 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []
 	default:
 		o := orm.NewOrm()
 		type nftTranData struct {
+			SupportedType string `json:"supportedType" orm:"column(nft_type)"`
 			NftLdefIndex string `json:"nftLdefIndex"`
 			NftName string `json:"nftName"`
 			ShortDesc string `json:"shortDesc"`
@@ -875,7 +876,7 @@ func (m *Manager) UserMarketInfoHandler(c *client.Client, action string, data []
 			SupportedType string `json:"supportedType"`
 		}
 		for i,_:= range nftMKPlaceInfo {
-			nftMKPlaceInfo[i].Thumbnail = util.PathPrefixOfNFT(nftType,common.PATH_KIND_MARKET) + nftMKPlaceInfo[i].Thumbnail
+			nftMKPlaceInfo[i].Thumbnail = util.PathPrefixOfNFT(nftMKPlaceInfo[i].SupportedType,common.PATH_KIND_MARKET) + nftMKPlaceInfo[i].Thumbnail
 		}
 		m.wrapperAndSend(c, action, &response{
 			Action: action,
