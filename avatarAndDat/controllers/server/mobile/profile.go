@@ -38,14 +38,36 @@ func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte
 		},
 	}
 	o := orm.NewOrm()
-	_, err = o.InsertOrUpdate(&userMarketInfo, "wallet")
-	if err != nil {
-		logs.Error(err.Error())
-		err := errors.New("unexpected error when query db")
-		m.errorHandler(c, action, err)
-		return
+	o.Begin()
+	err = o.ReadForUpdate(&userMarketInfo)
+	if err!=nil {
+		if err == orm.ErrNoRows {
+			_,err:= o.Insert(&userMarketInfo)
+			if err!=nil {
+				o.Rollback()
+				logs.Error(err.Error())
+				err := errors.New("unexpected error when query db")
+				m.errorHandler(c, action, err)
+				return
+			}
+		} else {
+			o.Rollback()
+			logs.Error(err.Error())
+			err := errors.New("unexpected error when query db")
+			m.errorHandler(c, action, err)
+			return
+		}
+	} else {
+		_,err:= o.Update(&userMarketInfo,"wallet")
+		if err!=nil {
+			o.Rollback()
+			logs.Error(err.Error())
+			err := errors.New("unexpected error when query db")
+			m.errorHandler(c, action, err)
+			return
+		}
 	}
-
+	o.Commit()
 	type response struct {
 		Status   int    `json:"status"`
 		Action   string `json:"action"`
