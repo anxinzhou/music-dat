@@ -79,6 +79,7 @@ func (m *Manager) Init() {
 	m.RegisterHandler(common.ACTION_FOLLOW_LIST_OPERATION,m.FollowListOperationHandler)
 	m.RegisterHandler(common.ACTION_IS_NICKNAME_SET,m.IsNicknameSetHandler)
 	m.RegisterHandler(common.ACTION_USER_MARKET_INFO,m.UserMarketInfoHandler)
+	m.RegisterHandler(common.ACTION_GET_WALLET,m.GetWalletHandler)
 }
 
 func (m *Manager) errorHandler(c *client.Client, action string, err error) {
