@@ -2,7 +2,6 @@ package models
 
 import (
 	"github.com/astaxie/beego/orm"
-	"strconv"
 )
 
 func GetNftFullInfo(nftLdefIndex string, nftInfo interface{}) error {
@@ -23,22 +22,22 @@ func GetNftFullInfo(nftLdefIndex string, nftInfo interface{}) error {
 }
 
 func GenerateTestCreator(num int)  {
-	uuid:= "4298349238490234456sa"
-	nickname:= "AlphaBrain"
-	password:= "123456"
-	username:="alphaslottest"
-	intro:= "this is alphabrain "
-	for i:=0;i<num;i++ {
-		postPrefix:=""
-		if i!=0 {
-			postPrefix= strconv.FormatInt(int64(i), 10)
-		}
-		uuid:=uuid+postPrefix
-		nickname:=nickname+postPrefix
-		username:=username+postPrefix
-		intro:=intro+postPrefix
-		createUser(uuid,nickname,username,password,intro,"0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
-	}
+	//uuid:= "4298349238490234456sa"
+	//nickname:= "AlphaBrain"
+	//password:= "123456"
+	//username:="alphaslottest"
+	//intro:= "this is alphabrain "
+	//for i:=0;i<num;i++ {
+	//	postPrefix:=""
+	//	if i!=0 {
+	//		postPrefix= strconv.FormatInt(int64(i), 10)
+	//	}
+	//	uuid:=uuid+postPrefix
+	//	nickname:=nickname+postPrefix
+	//	username:=username+postPrefix
+	//	intro:=intro+postPrefix
+	//	createUser(uuid,nickname,username,password,intro,"0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	//}
 	createUser("48320958456gfdgz","YulieSu","YulieSu","YulieSu2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
 	createUser("4832095845z6gfdg","Kemin","Kemin","Kemin2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
 	createUser("4832095812z6gfdc","Cassette","Cassette","Cassette2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")

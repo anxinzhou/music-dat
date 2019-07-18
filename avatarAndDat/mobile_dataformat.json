@@ -434,7 +434,7 @@ Request
 {
 	"action": "user_market_info", //string
 	"uuid": "", //string
-				"supportedType":"",
+	"supportedType":"",
 }
 
 Response
@@ -459,4 +459,17 @@ Response
 			"qty": 100, // int
 		},
 	]
+}
+
+API 18 get_wallet
+
+Request {
+	"action": "get_wallet",
+	"uuid":"",
+}
+
+Reponse {
+	"action": "user_market_info", //string
+	"status": 0,
+	"walletId": "",
 }

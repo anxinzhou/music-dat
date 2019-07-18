@@ -15,6 +15,49 @@ import (
 	"strings"
 )
 
+func (m *Manager) GetWalletHandler(c *client.Client, action string, data []byte) {
+	type request struct {
+		Uuid          string `json:"uuid"`
+		SupportedType string `json:"supportedType"`
+	}
+	var req request
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		logs.Error(err.Error())
+		err := errors.New("wrong request data format")
+		m.errorHandler(c, action, err)
+		return
+	}
+	userMarketInfo := models.UserMarketInfo{
+		Uuid: req.Uuid,
+	}
+	o := orm.NewOrm()
+	err = o.Read(&userMarketInfo)
+	if err != nil {
+		if err == orm.ErrNoRows {
+			logs.Error(err.Error())
+			err := errors.New("user has not binded wallet")
+			m.errorHandler(c, action, err)
+			return
+		} else {
+			logs.Error(err.Error())
+			err := errors.New("unexpected error when query db")
+			m.errorHandler(c, action, err)
+			return
+		}
+	}
+	type response struct {
+		Status   int    `json:"status"`
+		Action   string `json:"action"`
+		WalletId string `json:"walletId"`
+	}
+	m.wrapperAndSend(c, action, &response{
+		Status:   common.RESPONSE_STATUS_SUCCESS,
+		Action:   action,
+		WalletId: userMarketInfo.Wallet,
+	})
+}
+
 func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte) {
 	type request struct {
 		Uuid     string `json:"uuid"`
@@ -40,10 +83,10 @@ func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte
 	o := orm.NewOrm()
 	o.Begin()
 	err = o.ReadForUpdate(&userMarketInfo)
-	if err!=nil {
+	if err != nil {
 		if err == orm.ErrNoRows {
-			_,err:= o.Insert(&userMarketInfo)
-			if err!=nil {
+			_, err := o.Insert(&userMarketInfo)
+			if err != nil {
 				o.Rollback()
 				logs.Error(err.Error())
 				err := errors.New("unexpected error when query db")
@@ -58,8 +101,8 @@ func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte
 			return
 		}
 	} else {
-		_,err:= o.Update(&userMarketInfo,"wallet")
-		if err!=nil {
+		_, err := o.Update(&userMarketInfo, "wallet")
+		if err != nil {
 			o.Rollback()
 			logs.Error(err.Error())
 			err := errors.New("unexpected error when query db")
@@ -71,7 +114,7 @@ func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte
 	type response struct {
 		Status   int    `json:"status"`
 		Action   string `json:"action"`
-		WalletId string `json:"wallet_id"`
+		WalletId string `json:"walletId"`
 	}
 	m.wrapperAndSend(c, action, &response{
 		Status:   common.RESPONSE_STATUS_SUCCESS,
@@ -101,16 +144,16 @@ func (m *Manager) SetNicknameHandler(c *client.Client, action string, data []byt
 	}
 	o := orm.NewOrm()
 	o.Begin()
-	err=o.Read(&userInfo)
-	if err!=nil {
+	err = o.Read(&userInfo)
+	if err != nil {
 		if err == orm.ErrNoRows {
 			// not exist insert one
-			_,err :=o.Insert(&userInfo)
-			if err!=nil {
+			_, err := o.Insert(&userInfo)
+			if err != nil {
 				if strings.Contains(err.Error(), common.DUPLICATE_ENTRY) {
 					logs.Error(err.Error())
-					err:=errors.New("nickname has been registered")
-					m.errorHandler(c,action,err)
+					err := errors.New("nickname has been registered")
+					m.errorHandler(c, action, err)
 					return
 				} else {
 					logs.Error(err.Error())
@@ -127,12 +170,12 @@ func (m *Manager) SetNicknameHandler(c *client.Client, action string, data []byt
 		}
 	} else {
 		// exist update
-		_,err:=o.Update(&userInfo,"nickname")
-		if err!=nil {
+		_, err := o.Update(&userInfo, "nickname")
+		if err != nil {
 			if strings.Contains(err.Error(), common.DUPLICATE_ENTRY) {
 				logs.Error(err.Error())
-				err:=errors.New("nickname has been registered")
-				m.errorHandler(c,action,err)
+				err := errors.New("nickname has been registered")
+				m.errorHandler(c, action, err)
 				return
 			} else {
 				logs.Error(err.Error())
@@ -144,17 +187,17 @@ func (m *Manager) SetNicknameHandler(c *client.Client, action string, data []byt
 	}
 	// update mongodb
 	col := models.MongoDB.Collection("users")
-	filter:= bson.M {
+	filter := bson.M{
 		"uuid": req.Uuid,
 	}
-	update:= bson.M {
-		"$set": bson.M {"nickname":req.Nickname},
+	update := bson.M{
+		"$set": bson.M{"nickname": req.Nickname},
 	}
-	_,err=col.UpdateOne(context.Background(),filter,update)
-	if err!=nil {
+	_, err = col.UpdateOne(context.Background(), filter, update)
+	if err != nil {
 		o.Rollback()
 		logs.Error(err.Error())
-		err:=errors.New("can not set nickname in mongodb")
+		err := errors.New("can not set nickname in mongodb")
 		m.errorHandler(c, action, err)
 		return
 	}
@@ -292,33 +335,33 @@ func (m *Manager) FollowListOperationHandler(c *client.Client, action string, da
 		m.errorHandler(c, action, err)
 		return
 	}
-	if err:= util.ValidFollowListOperation(req.Operation);err!=nil {
+	if err := util.ValidFollowListOperation(req.Operation); err != nil {
 		logs.Error(err.Error())
 		m.errorHandler(c, action, err)
 		return
 	}
-	followInfo:= models.FollowTable{
+	followInfo := models.FollowTable{
 		FollowerUuid: req.Uuid,
 		FolloweeUuid: req.FolloweeUuid,
 	}
 	switch req.Operation {
 	case common.FOLLOW_LIST_ADD:
-		o:=orm.NewOrm()
-		_,err:=o.Insert(&followInfo)
-		if err!=nil {
+		o := orm.NewOrm()
+		_, err := o.Insert(&followInfo)
+		if err != nil {
 			logs.Error(err.Error())
-			if !strings.Contains(err.Error(),common.DUPLICATE_ENTRY) {
-				err:= errors.New("unexpected error when query database")
+			if !strings.Contains(err.Error(), common.DUPLICATE_ENTRY) {
+				err := errors.New("unexpected error when query database")
 				m.errorHandler(c, action, err)
 				return
 			}
 		}
 	case common.FOLLOW_LIST_DELETE:
-		o:=orm.NewOrm()
-		_,err:=o.Delete(&followInfo,"followee_uuid","follower_uuid")
-		if err!=nil {
+		o := orm.NewOrm()
+		_, err := o.Delete(&followInfo, "followee_uuid", "follower_uuid")
+		if err != nil {
 			logs.Error(err.Error())
-			err:= errors.New("unexpected error when query database")
+			err := errors.New("unexpected error when query database")
 			m.errorHandler(c, action, err)
 			return
 		}
@@ -326,22 +369,22 @@ func (m *Manager) FollowListOperationHandler(c *client.Client, action string, da
 		panic("unexpected follow list operation")
 	}
 	type response struct {
-		Status int `json:"status"`
-		Action string `json:"action"`
+		Status     int    `json:"status"`
+		Action     string `json:"action"`
 		FollowUuid string `json:"followUuid"`
-		Operation int `json:"operation"`
+		Operation  int    `json:"operation"`
 	}
-	m.wrapperAndSend(c,action,&response{
-		Status: common.RESPONSE_STATUS_SUCCESS,
-		Action: action,
+	m.wrapperAndSend(c, action, &response{
+		Status:     common.RESPONSE_STATUS_SUCCESS,
+		Action:     action,
 		FollowUuid: req.FolloweeUuid,
-		Operation: req.Operation,
+		Operation:  req.Operation,
 	})
 }
 
 func (m *Manager) IsNicknameSetHandler(c *client.Client, action string, data []byte) {
 	type request struct {
-		Uuid         string `json:"uuid"`
+		Uuid string `json:"uuid"`
 	}
 	var req request
 	err := json.Unmarshal(data, &req)
@@ -354,7 +397,7 @@ func (m *Manager) IsNicknameSetHandler(c *client.Client, action string, data []b
 
 	set := true
 	o := orm.NewOrm()
-	userInfo:= models.UserInfo{
+	userInfo := models.UserInfo{
 		Uuid: req.Uuid,
 	}
 	err = o.Read(&userInfo)
@@ -363,21 +406,21 @@ func (m *Manager) IsNicknameSetHandler(c *client.Client, action string, data []b
 			set = false
 		} else {
 			logs.Error(err.Error())
-			err:= errors.New("unexpected error when query database")
+			err := errors.New("unexpected error when query database")
 			m.errorHandler(c, action, err)
 			return
 		}
 	}
 
 	type response struct {
-		Status int `json:"status"`
+		Status int    `json:"status"`
 		Action string `json:"action"`
-		Set bool `json:"set"`
+		Set    bool   `json:"set"`
 	}
 	m.wrapperAndSend(c, action, &response{
 		Status: common.RESPONSE_STATUS_SUCCESS,
 		Action: action,
-		Set:set,
+		Set:    set,
 	})
 }
 
@@ -392,7 +435,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, action string, data []
 		Count     int    `json:"count"`
 		Thumbnail string `json:"thumbnail" orm:"column(avatar_file_name)"`
 		Followed  bool   `json:"followed" orm:"column(followed)"`
-		Intro string `json:"intro"`
+		Intro     string `json:"intro"`
 	}
 	err := json.Unmarshal(data, &req)
 	if err != nil {
@@ -625,7 +668,7 @@ func (m *Manager) OtherPurchaseHistory(c *client.Client, action string, uuid str
 		InnerJoin("other_nft_info").
 		On("nft_purchase_info.nft_ldef_index = other_nft_info.nft_ldef_index").
 		Where("nft_purchase_info.uuid = ?").OrderBy("timestamp").Desc()
-	sql := qb.String( )
+	sql := qb.String()
 	num, err := o.Raw(sql, uuid).QueryRows(&otherPurchaseInfo)
 	if err != nil && err != orm.ErrNoRows {
 		logs.Error(err.Error())
