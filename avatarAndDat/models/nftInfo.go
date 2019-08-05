@@ -20,18 +20,18 @@ type AvatarNftInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	NftLifeIndex int
 	NftPowerIndex int
-	NftInfo * NftInfo `orm:"rel(one);cascade;"`
+	NftInfo * NftInfo `orm:"rel(one);"`
 }
 
 type DatNftInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	MusicFileName string
-	NftInfo * NftInfo `orm:"rel(one);cascade;"`
+	NftInfo * NftInfo `orm:"rel(one);"`
 }
 
 type OtherNftInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
-	NftInfo * NftInfo `orm:"rel(one);cascade;"`
+	NftInfo * NftInfo `orm:"rel(one);"`
 }
 
 type NftMarketInfo struct {
@@ -42,7 +42,7 @@ type NftMarketInfo struct {
 	Qty int
 	NumSold int
 	Active bool
-	NftInfo *NftInfo `orm:"rel(one);cascade;"`
+	NftInfo *NftInfo `orm:"rel(one);"`
 	AvatarNftMarketInfo *AvatarNftMarketInfo `orm:"reverse(one)"`
 	DatNftMarketInfo *DatNftMarketInfo `orm:"reverse(one)"`
 	OtherNftMarketInfo *OtherNftMarketInfo `orm:"reverse(one)"`
@@ -64,17 +64,17 @@ type DatNftMarketInfo struct {
 	SongComposerPercent float64
 	PublisherPercent float64
 	UserPercent float64
-	NftMarketInfo *NftMarketInfo `orm:"rel(one);cascade;"`
+	NftMarketInfo *NftMarketInfo `orm:"rel(one);"`
 }
 
 type AvatarNftMarketInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
-	NftMarketInfo *NftMarketInfo `orm:"rel(one);cascade;"`
+	NftMarketInfo *NftMarketInfo `orm:"rel(one);"`
 }
 
 type OtherNftMarketInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
-	NftMarketInfo *NftMarketInfo `orm:"rel(one);cascade;"`
+	NftMarketInfo *NftMarketInfo `orm:"rel(one);"`
 }
 
 type NftMarketPlace struct {
@@ -82,5 +82,5 @@ type NftMarketPlace struct {
 	MpId string
 	ActiveTicker string
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
-	NftMarketInfo *NftMarketInfo `orm:"rel(one);cascade;"`
+	NftMarketInfo *NftMarketInfo `orm:"rel(one);"`
 }
