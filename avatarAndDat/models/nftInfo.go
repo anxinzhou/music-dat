@@ -6,8 +6,8 @@ type NftInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	NftType string
 	NftName string
-	ShortDesc string
-	LongDesc string
+	ShortDesc string `orm:"short_desc;type(text)"`
+	LongDesc string `orm:"long_desc;type(text)"`
 	FileName string
 	NftParentLdef string
 	AvatarNftInfoNftLdefIndex *AvatarNftInfo`orm:"reverse(one)"`
@@ -20,18 +20,18 @@ type AvatarNftInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	NftLifeIndex int
 	NftPowerIndex int
-	NftInfo * NftInfo `orm:"rel(one);on_delete(cascade);"`
+	NftInfo * NftInfo `orm:"rel(one);cascade;"`
 }
 
 type DatNftInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
 	MusicFileName string
-	NftInfo * NftInfo `orm:"rel(one);on_delete(cascade);"`
+	NftInfo * NftInfo `orm:"rel(one);cascade;"`
 }
 
 type OtherNftInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
-	NftInfo * NftInfo `orm:"rel(one);on_delete(cascade);"`
+	NftInfo * NftInfo `orm:"rel(one);cascade;"`
 }
 
 type NftMarketInfo struct {
@@ -42,7 +42,7 @@ type NftMarketInfo struct {
 	Qty int
 	NumSold int
 	Active bool
-	NftInfo *NftInfo `orm:"rel(one);on_delete(cascade);"`
+	NftInfo *NftInfo `orm:"rel(one);cascade;"`
 	AvatarNftMarketInfo *AvatarNftMarketInfo `orm:"reverse(one)"`
 	DatNftMarketInfo *DatNftMarketInfo `orm:"reverse(one)"`
 	OtherNftMarketInfo *OtherNftMarketInfo `orm:"reverse(one)"`
@@ -64,17 +64,17 @@ type DatNftMarketInfo struct {
 	SongComposerPercent float64
 	PublisherPercent float64
 	UserPercent float64
-	NftMarketInfo *NftMarketInfo `orm:"rel(one);on_delete(cascade);"`
+	NftMarketInfo *NftMarketInfo `orm:"rel(one);cascade;"`
 }
 
 type AvatarNftMarketInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
-	NftMarketInfo *NftMarketInfo `orm:"rel(one);on_delete(cascade);"`
+	NftMarketInfo *NftMarketInfo `orm:"rel(one);cascade;"`
 }
 
 type OtherNftMarketInfo struct {
 	NftLdefIndex string `orm:"pk;unique"`
-	NftMarketInfo *NftMarketInfo `orm:"rel(one);on_delete(cascade);"`
+	NftMarketInfo *NftMarketInfo `orm:"rel(one);cascade;"`
 }
 
 type NftMarketPlace struct {
@@ -82,5 +82,5 @@ type NftMarketPlace struct {
 	MpId string
 	ActiveTicker string
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
-	NftMarketInfo *NftMarketInfo `orm:"rel(one);on_delete(cascade);"`
+	NftMarketInfo *NftMarketInfo `orm:"rel(one);cascade;"`
 }

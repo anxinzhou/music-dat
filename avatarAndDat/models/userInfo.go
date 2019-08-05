@@ -9,7 +9,7 @@ type CreatorInfo struct {
 	Username string `orm:"unique"`
 	Password string
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
-	UserInfo *UserInfo `orm:"rel(one);on_delete(cascade);"`
+	UserInfo *UserInfo `orm:"rel(one);cascade;"`
 }
 
 func (this *CreatorInfo) TableIndex() [][]string {
@@ -38,7 +38,7 @@ type UserMarketInfo struct {
 	Uuid string `orm:"pk;"`
 	Wallet string
 	Count int
-	UserInfo *UserInfo `orm:"rel(one);on_delete(cascade);"`
+	UserInfo *UserInfo `orm:"rel(one);cascade;"`
 }
 
 type FollowTable struct {
@@ -70,7 +70,7 @@ type BerryPurchaseInfo struct {
 	AppId string
 	Status int
 	Uuid string
-	UserInfo *UserInfo `orm:"rel(fk);on_delete(cascade);"`
+	UserInfo *UserInfo `orm:"rel(fk);cascade;"`
 }
 
 func (this *BerryPurchaseInfo) TableIndex() [][]string {
@@ -91,7 +91,7 @@ type NftPurchaseInfo struct {
 	DistributionIndex string
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
 	Status int
-	UserInfo *UserInfo `orm:"rel(fk);on_delete(cascade);"`
+	UserInfo *UserInfo `orm:"rel(fk);cascade;"`
 }
 
 func (this *NftPurchaseInfo) TableIndex() [][]string {
@@ -107,8 +107,8 @@ type NftShoppingCart struct {
 	NftLdefIndex string
 	Uuid string
 	Timestamp time.Time `orm:"auto_now_add;type(datetime)"`
-	NftMarketPlace *NftMarketPlace `orm:"rel(fk);on_delete(cascade);"`
-	UserInfo *UserInfo `orm:"rel(fk);on_delete(cascade);"`
+	NftMarketPlace *NftMarketPlace `orm:"rel(fk);cascade;"`
+	UserInfo *UserInfo `orm:"rel(fk);cascade;"`
 }
 
 func (this *NftShoppingCart) TableIndex() [][]string {
