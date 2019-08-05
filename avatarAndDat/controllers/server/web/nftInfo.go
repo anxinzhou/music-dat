@@ -363,22 +363,20 @@ func (this *UploadController) uploadDat(reqBaseInfo *uplodBaseInfo) {
 		sendError(&this.Controller,err,400)
 		return
 	}
-	numberF,err:= this.GetFloat("number")
+	number,err:= this.GetInt("number")
 	if err!=nil {
 		err:=errors.New("value of number should be int")
 		logs.Error(err.Error())
 		sendError(&this.Controller,err,400)
 		return
 	}
-	number:=int(numberF)
-	priceF,err:= this.GetFloat("price")
+	price,err:= this.GetInt("price")
 	if err!=nil {
 		err:=errors.New("value of price should be int")
 		logs.Error(err.Error())
 		sendError(&this.Controller,err,400)
 		return
 	}
-	price:=int(priceF)
 	creatorPercent,err:= this.GetFloat("creatorPercent")
 	if err!=nil {
 		err:=errors.New("value of creator percent should be float")
