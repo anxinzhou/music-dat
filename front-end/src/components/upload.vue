@@ -812,6 +812,8 @@
       this.uploadOtherPath = httpPath + "/file/other";
       let uploadBaseObject = {
         uuid: uuid,
+        number: 0,
+        price: 0,
       };
 
       this.uploadDatAdditionalData = Object.assign({}, uploadBaseObject);
