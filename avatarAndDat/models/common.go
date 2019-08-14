@@ -43,6 +43,7 @@ func GenerateTestCreator(num int)  {
 	createUser("48320z581256gfdc","Kaze.P.C","Kaze.P.C","Kaze.P.C2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
 	createUser("58320z581256gfdc","LazyCat","LazyCat","12345678","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
 	createUser("58320z581256gfd3","Carrier","Carrier","12345678","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("58320z581256gfd4","PruneDeer","PruneDeer","12345678","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
 }
 
 func createUser(uuid , nickname ,  username,password, intro, wallet string)  {
