@@ -3,13 +3,13 @@ package web
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/astaxie/beego"
+	"github.com/beego/beego/v2/server/web"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/xxRanger/blockchainUtil/chain"
 	"github.com/xxRanger/blockchainUtil/contract"
 	"github.com/xxRanger/blockchainUtil/contract/nft"
 	"github.com/xxRanger/blockchainUtil/sender"
-	"github.com/xxRanger/go-ethereum/crypto"
 	"io"
 	"math/rand"
 	"strconv"
@@ -17,7 +17,7 @@ import (
 )
 
 type ContractController struct {
-	beego.Controller
+	web.Controller
 	C *ChainHelper
 }
 
@@ -27,20 +27,21 @@ type ChainHelper struct {
 }
 
 func NewChainHelper() *ChainHelper {
-	address := common.HexToAddress(beego.AppConfig.String("masterAddress"))
-	privateKey := beego.AppConfig.String("masterPrivateKey")
+	addressStr, _ := web.AppConfig.String("masterAddress")
+	address := common.HexToAddress(addressStr)
+	privateKey, _ := web.AppConfig.String("masterPrivateKey")
 	pk, err := crypto.HexToECDSA(privateKey)
 	if err != nil {
 		panic(err)
 	}
 	account := sender.NewUser(address, pk)
-	port := beego.AppConfig.String("chainWS")
+	port, _ := web.AppConfig.String("chainWS")
 	c, err := chain.NewEthClient(port)
 	if err != nil {
 		panic(err)
 	}
 
-	runmode := beego.AppConfig.String("runmode")
+	runmode, _ := web.AppConfig.String("runmode")
 	chainKind := sender.CHAIN_KIND_PUBLIC
 	if runmode == "prod" {
 		chainKind = sender.CHAIN_KIND_PUBLIC
@@ -51,7 +52,7 @@ func NewChainHelper() *ChainHelper {
 	}
 
 	account.BindEthClient(c, chainKind)
-	contractAddress := beego.AppConfig.String("contractAddress")
+	contractAddress, _ := web.AppConfig.String("contractAddress")
 	smartContract := nft.NewNFT(common.HexToAddress(contractAddress))
 	smartContract.BindClient(c)
 	return &ChainHelper{
@@ -60,11 +61,11 @@ func NewChainHelper() *ChainHelper {
 	}
 }
 
-func sendError(c beego.ControllerInterface, err error, statusCode int) {
+func sendError(c web.ControllerInterface, err error, statusCode int) {
 	type ErrorResponse struct {
 		Reason string `json:"reason"`
 	}
-	controller := c.(*beego.Controller)
+	controller := c.(*web.Controller)
 	controller.Ctx.ResponseWriter.ResponseWriter.WriteHeader(statusCode)
 	controller.Data["json"] = &ErrorResponse{
 		Reason: err.Error(),

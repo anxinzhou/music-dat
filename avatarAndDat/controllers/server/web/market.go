@@ -2,9 +2,9 @@ package web
 
 import (
 	"errors"
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/v2/client/orm"
+	"github.com/beego/beego/v2/core/logs"
+	"github.com/beego/beego/v2/server/web"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/transactionQueue"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
@@ -17,9 +17,9 @@ type NftListController struct {
 }
 
 func (this *NftListController) GetAvatar(uuid string) {
-	o:=orm.NewOrm()
-	dbEngine := beego.AppConfig.String("dbEngine")
-	qb,_:=orm.NewQueryBuilder(dbEngine)
+	o := orm.NewOrm()
+	dbEngine, _ := web.AppConfig.String("dbEngine")
+	qb, _ := orm.NewQueryBuilder(dbEngine)
 	type nftTranData struct {
 		common.AvatarNftMarketInfo
 		common.MarketPlaceInfo
@@ -37,21 +37,21 @@ func (this *NftListController) GetAvatar(uuid string) {
 		On("nft_market_place.nft_ldef_index = avatar_nft_info.nft_ldef_index").
 		Where("nft_market_info.seller_uuid = ?").OrderBy("timestamp").Desc()
 	sql := qb.String()
-	num,err:=o.Raw(sql,uuid).QueryRows(&avatarMKPlaceInfo)
-	if err != nil && err!=orm.ErrNoRows {
+	num, err := o.Raw(sql, uuid).QueryRows(&avatarMKPlaceInfo)
+	if err != nil && err != orm.ErrNoRows {
 		logs.Error(err.Error())
-		err:= errors.New("unknown error when query database")
+		err := errors.New("unknown error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
-	logs.Debug("get",num,"from database")
+	logs.Debug("get", num, "from database")
 	type response struct {
 		NftTranData []nftTranData `json:"nftTranData"`
 	}
 	if num == 0 {
-		avatarMKPlaceInfo= make([]nftTranData,0)
+		avatarMKPlaceInfo = make([]nftTranData, 0)
 	}
-	res:= response{
+	res := response{
 		NftTranData: avatarMKPlaceInfo,
 	}
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
@@ -60,9 +60,9 @@ func (this *NftListController) GetAvatar(uuid string) {
 }
 
 func (this *NftListController) GetOther(uuid string) {
-	o:=orm.NewOrm()
-	dbEngine := beego.AppConfig.String("dbEngine")
-	qb,_:=orm.NewQueryBuilder(dbEngine)
+	o := orm.NewOrm()
+	dbEngine, _ := web.AppConfig.String("dbEngine")
+	qb, _ := orm.NewQueryBuilder(dbEngine)
 	type nftTranData struct {
 		common.OtherNftMarketInfo
 		common.MarketPlaceInfo
@@ -80,21 +80,21 @@ func (this *NftListController) GetOther(uuid string) {
 		On("nft_market_place.nft_ldef_index = other_nft_info.nft_ldef_index").
 		Where("nft_market_info.seller_uuid = ?").OrderBy("timestamp").Desc()
 	sql := qb.String()
-	num,err:=o.Raw(sql,uuid).QueryRows(&otherMKPlaceInfo)
-	if err != nil && err!=orm.ErrNoRows {
+	num, err := o.Raw(sql, uuid).QueryRows(&otherMKPlaceInfo)
+	if err != nil && err != orm.ErrNoRows {
 		logs.Error(err.Error())
-		err:= errors.New("unknown error when query database")
+		err := errors.New("unknown error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
-	logs.Debug("get",num,"from database")
+	logs.Debug("get", num, "from database")
 	type response struct {
 		NftTranData []nftTranData `json:"nftTranData"`
 	}
 	if num == 0 {
-		otherMKPlaceInfo= make([]nftTranData,0)
+		otherMKPlaceInfo = make([]nftTranData, 0)
 	}
-	res:= response{
+	res := response{
 		NftTranData: otherMKPlaceInfo,
 	}
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
@@ -103,13 +103,13 @@ func (this *NftListController) GetOther(uuid string) {
 }
 
 func (this *NftListController) GetDat(uuid string) {
-	o:=orm.NewOrm()
+	o := orm.NewOrm()
 	type nftTranData struct {
 		common.DatNftMarketInfo
 		common.MarketPlaceInfo
 	}
-	dbEngine := beego.AppConfig.String("dbEngine")
-	qb,_:=orm.NewQueryBuilder(dbEngine)
+	dbEngine, _ := web.AppConfig.String("dbEngine")
+	qb, _ := orm.NewQueryBuilder(dbEngine)
 	var datMKPlaceInfo []nftTranData
 	qb.Select("*").
 		From("nft_market_place").
@@ -123,21 +123,21 @@ func (this *NftListController) GetDat(uuid string) {
 		On("nft_market_place.nft_ldef_index = dat_nft_info.nft_ldef_index").
 		Where("nft_market_info.seller_uuid = ?").OrderBy("timestamp").Desc()
 	sql := qb.String()
-	num,err:=o.Raw(sql,uuid).QueryRows(&datMKPlaceInfo)
-	if err != nil && err!=orm.ErrNoRows {
+	num, err := o.Raw(sql, uuid).QueryRows(&datMKPlaceInfo)
+	if err != nil && err != orm.ErrNoRows {
 		logs.Error(err.Error())
-		err:= errors.New("unknown error when query database")
+		err := errors.New("unknown error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
-	logs.Debug("get",num,"from database")
+	logs.Debug("get", num, "from database")
 	type response struct {
 		NftTranData []nftTranData `json:"nftTranData"`
 	}
 	if num == 0 {
-		datMKPlaceInfo= make([]nftTranData,0)
+		datMKPlaceInfo = make([]nftTranData, 0)
 	}
-	res:= response{
+	res := response{
 		NftTranData: datMKPlaceInfo,
 	}
 	this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
@@ -146,13 +146,13 @@ func (this *NftListController) GetDat(uuid string) {
 }
 
 func (this *NftListController) Get() {
-	kind:= this.Ctx.Input.Param(":kind")
-	if err:= util.ValidNftName(kind); err!=nil {
+	kind := this.Ctx.Input.Param(":kind")
+	if err := util.ValidNftName(kind); err != nil {
 		logs.Error(err.Error())
 		sendError(&this.Controller, err, 400)
 		return
 	}
-	uuid:= this.Ctx.Input.Param(":uuid")
+	uuid := this.Ctx.Input.Param(":uuid")
 	userMarketInfo := models.UserMarketInfo{
 		Uuid: uuid,
 	}
@@ -188,17 +188,17 @@ type MarketTransactionHistoryController struct {
 }
 
 func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
-	uuid:= this.Ctx.Input.Param(":uuid")
+	uuid := this.Ctx.Input.Param(":uuid")
 	type purchaseNftInfo struct {
-		BuyerNickname string  `json:"buyerNickname"`
-		SellerNickname string `json:"sellerNickname" `
+		BuyerNickname      string `json:"buyerNickname"`
+		SellerNickname     string `json:"sellerNickname" `
 		TransactionAddress string `json:"transactionAddress" `
-		NftLdefIndex string `json:"nftLdefIndex" orm:"nft_ldef_index"`
-		Timestamp string `json:"timestamp"`
+		NftLdefIndex       string `json:"nftLdefIndex" orm:"nft_ldef_index"`
+		Timestamp          string `json:"timestamp"`
 	}
 	var nftTranData []*purchaseNftInfo
-	o:=orm.NewOrm()
-	num,err:=o.Raw(
+	o := orm.NewOrm()
+	num, err := o.Raw(
 		`
 			select ni.transaction_address, ni.nft_ldef_index, ni.timestamp,
 			buyer.nickname as buyer_nickname, seller.nickname as seller_nickname 
@@ -206,10 +206,10 @@ func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
 			inner join user_info as buyer on ni.uuid = buyer.uuid 
 			inner join user_info as seller on ni.seller_uuid = seller.uuid
 			where ni.uuid = ? or ni.seller_uuid = ? order by ni.timestamp desc
-			`,uuid,uuid).QueryRows(&nftTranData)
-	if err!=nil && err!=orm.ErrNoRows {
+			`, uuid, uuid).QueryRows(&nftTranData)
+	if err != nil && err != orm.ErrNoRows {
 		logs.Error(err.Error())
-		err:=errors.New("unexpected error when query db")
+		err := errors.New("unexpected error when query db")
 		sendError(&this.Controller, err, 500)
 		return
 	}
@@ -217,9 +217,9 @@ func (this *MarketTransactionHistoryController) MarketTransactionHistory() {
 		NftTranData []*purchaseNftInfo `json:"nftTranData"`
 	}
 	if num == 0 {
-		nftTranData = make([]*purchaseNftInfo,num)
+		nftTranData = make([]*purchaseNftInfo, num)
 	}
-	res:= response{
+	res := response{
 		NftTranData: nftTranData,
 	}
 	this.Data["json"] = &res
@@ -237,14 +237,14 @@ func (this *RewardController) RewardDat() {
 	//
 	// get nft info from database
 	//
-	o:=orm.NewOrm()
-	dbEngine := beego.AppConfig.String("dbEngine")
-	qb,_:=orm.NewQueryBuilder(dbEngine)
+	o := orm.NewOrm()
+	dbEngine, _ := web.AppConfig.String("dbEngine")
+	qb, _ := orm.NewQueryBuilder(dbEngine)
 	type nftRewardInfo struct {
-		NftLdefIndex string `json:"nftLdefIndex"`
+		NftLdefIndex  string `json:"nftLdefIndex"`
 		SupportedType string `json:"supportedType";orm:"nft_type"`
-		NftName string `json:"nftName"`
-		Thumbnail string `json:"thumbnail";orm:"music_file_name"`
+		NftName       string `json:"nftName"`
+		Thumbnail     string `json:"thumbnail";orm:"music_file_name"`
 	}
 	type response struct {
 		NftTranData []nftRewardInfo `json:"nftTranData"`
@@ -252,14 +252,14 @@ func (this *RewardController) RewardDat() {
 
 	type queryInfo struct {
 		NftLdefIndex string
-		NftType string
-		NftName string
+		NftType      string
+		NftName      string
 		IconFileName string
-		SellerUuid string
+		SellerUuid   string
 		SellerWallet string
 		ActiveTicker string
-		Price int
-		Timestamp time.Time
+		Price        int
+		Timestamp    time.Time
 	}
 	var nftMarketInfo queryInfo
 	qb.Select("nft_info.nft_ldef_index",
@@ -283,127 +283,134 @@ func (this *RewardController) RewardDat() {
 		Where("dat_nft_market_info.allow_airdrop = true").
 		Limit(1)
 	sql := qb.String()
-	err:=o.Raw(sql).QueryRow(&nftMarketInfo)
-	if err!=nil {
+	err := o.Raw(sql).QueryRow(&nftMarketInfo)
+	if err != nil {
 		if err == orm.ErrNoRows {
 			logs.Debug("no dat in marketplace now")
 			this.Ctx.ResponseWriter.ResponseWriter.WriteHeader(200)
-			res:= &response{
-				NftTranData: make([]nftRewardInfo,0),
+			res := &response{
+				NftTranData: make([]nftRewardInfo, 0),
 			}
 			this.Data["json"] = res
 			this.ServeJSON()
 			return
 		} else {
 			logs.Error(err.Error())
-			err:=errors.New("unexpected error when query database")
+			err := errors.New("unexpected error when query database")
 			sendError(&this.Controller, err, 500)
 			return
 		}
 	}
 
-	o.Begin()
+	to, err := o.Begin()
+	if err != nil {
+		logs.Error(err.Error())
+		err := errors.New("start the transaction failed")
+		sendError(&this.Controller, err, 500)
+		return
+	}
+
 	//
 	// change nft count in database
 	//
 
-	buyerMarketInfo:= models.UserMarketInfo{
-		Uuid:uuid,
+	buyerMarketInfo := models.UserMarketInfo{
+		Uuid: uuid,
 	}
-	err=o.ReadForUpdate(&buyerMarketInfo)
-	if err!=nil {
-		o.Rollback()
+	err = o.ReadForUpdate(&buyerMarketInfo)
+	if err != nil {
+		to.Rollback()
 		if err == orm.ErrNoRows {
-			err:=errors.New("User "+uuid+" has not binded wallet")
+			err := errors.New("User " + uuid + " has not binded wallet")
 			logs.Error(err.Error())
 			sendError(&this.Controller, err, 500)
 			return
 		} else {
 			logs.Error(err.Error())
-			err:=errors.New("unexpected error when query database")
+			err := errors.New("unexpected error when query database")
 			sendError(&this.Controller, err, 500)
 			return
 		}
 	}
-	sellerMarketInfo:= models.UserMarketInfo{
+	sellerMarketInfo := models.UserMarketInfo{
 		Uuid: nftMarketInfo.SellerUuid,
 	}
 	//
-	err=o.ReadForUpdate(&sellerMarketInfo)
-	if err!=nil {
-		o.Rollback()
+	err = o.ReadForUpdate(&sellerMarketInfo)
+	if err != nil {
+		to.Rollback()
 		logs.Error(err.Error())
-		err:=errors.New("unexpected error when query database")
+		err := errors.New("unexpected error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
-	buyerMarketInfo.Count +=1
-	sellerMarketInfo.Count-=1
-	_,err=o.Update(&buyerMarketInfo,"count")
-	if err!=nil {
-		o.Rollback()
+	buyerMarketInfo.Count += 1
+	sellerMarketInfo.Count -= 1
+	_, err = o.Update(&buyerMarketInfo, "count")
+	if err != nil {
+		to.Rollback()
 		logs.Error(err.Error())
-		err:=errors.New("unexpected error when query database")
+		err := errors.New("unexpected error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
-	o.Update(&sellerMarketInfo,"count")
-	if err!=nil {
-		o.Rollback()
+	o.Update(&sellerMarketInfo, "count")
+	if err != nil {
+		to.Rollback()
 		logs.Error(err.Error())
-		err:=errors.New("unexpected error when query database")
+		err := errors.New("unexpected error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
 
-	nftMarketPlaceInfo:= models.NftMarketPlace{
+	nftMarketPlaceInfo := models.NftMarketPlace{
 		NftLdefIndex: nftMarketInfo.NftLdefIndex,
 	}
 	err = o.Read(&nftMarketPlaceInfo)
-	if err!=nil {
-		o.Rollback()
+	if err != nil {
+		to.Rollback()
 		logs.Error(err.Error())
-		err:=errors.New("unexpected error when query database")
+		err := errors.New("unexpected error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
 
-	nftInfo:= models.NftMarketInfo{
+	nftInfo := models.NftMarketInfo{
 		NftLdefIndex: nftMarketInfo.NftLdefIndex,
 	}
 	err = o.Read(&nftInfo)
-	if err!=nil {
-		o.Rollback()
+	if err != nil {
+		to.Rollback()
 		logs.Error(err.Error())
-		err:=errors.New("unexpected error when query database")
+		err := errors.New("unexpected error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
 	err = o.Read(nftInfo.NftInfo)
-	if err!=nil {
-		o.Rollback()
+	if err != nil {
+		to.Rollback()
 		logs.Error(err.Error())
-		err:=errors.New("unexpected error when query database")
+		err := errors.New("unexpected error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
 	// add numsold
 	nftInfo.NumSold += 1
-	_,err = o.Update(&nftInfo,"num_sold")
-	if err!=nil {
-		o.Rollback()
+	_, err = o.Update(&nftInfo, "num_sold")
+	if err != nil {
+		to.Rollback()
 		logs.Error(err.Error())
-		err:=errors.New("unexpected error when query database")
+		err := errors.New("unexpected error when query database")
 		sendError(&this.Controller, err, 500)
 		return
 	}
 	// delete from market
 	if nftInfo.NumSold == nftInfo.Qty {
-		_,err := o.Delete(&nftMarketPlaceInfo)
-		if err!=nil {
-			o.Rollback()
+		_, err := o.Delete(&nftMarketPlaceInfo)
+		if err != nil {
+			to.Rollback()
 			logs.Error(err.Error())
-			err:=errors.New("unexpected error when query database")
+			err := errors.New("unexpected error when query database")
 			sendError(&this.Controller, err, 500)
 			return
 		}
@@ -413,51 +420,51 @@ func (this *RewardController) RewardDat() {
 	//
 	// insert into purchase history
 	//
-	distributionLdefIndex:= util.RandomNftLdefIndex(common.TYPE_NFT_MUSIC)
-	purchaseId:= util.RandomPurchaseId()
-	nftPuchaseInfo:= models.NftPurchaseInfo{
-		TotalPaid: nftMarketInfo.Price,
-		PurchaseId: purchaseId,
-		Uuid: uuid,
-		SellerUuid: nftMarketInfo.SellerUuid,
+	distributionLdefIndex := util.RandomNftLdefIndex(common.TYPE_NFT_MUSIC)
+	purchaseId := util.RandomPurchaseId()
+	nftPuchaseInfo := models.NftPurchaseInfo{
+		TotalPaid:          nftMarketInfo.Price,
+		PurchaseId:         purchaseId,
+		Uuid:               uuid,
+		SellerUuid:         nftMarketInfo.SellerUuid,
 		TransactionAddress: "", // determined after send transaction
-		ActiveTicker: nftMarketInfo.ActiveTicker,
-		DistributionIndex:distributionLdefIndex ,
-		NftLdefIndex: nftMarketInfo.NftLdefIndex,
-		Status: common.PURCHASE_PENDING, // change to finish after send transaction
+		ActiveTicker:       nftMarketInfo.ActiveTicker,
+		DistributionIndex:  distributionLdefIndex,
+		NftLdefIndex:       nftMarketInfo.NftLdefIndex,
+		Status:             common.PURCHASE_PENDING, // change to finish after send transaction
 		UserInfo: &models.UserInfo{
-			Uuid:uuid,
+			Uuid: uuid,
 		},
 	}
-	_,err=o.Insert(&nftPuchaseInfo)
-	if err!=nil {
-		o.Rollback()
+	_, err = o.Insert(&nftPuchaseInfo)
+	if err != nil {
+		to.Rollback()
 		logs.Error(err.Error())
-		err:= errors.New("unexpected error when query databas")
+		err := errors.New("unexpected error when query databas")
 		sendError(&this.Controller, err, 500)
 		return
 	}
-	rewardNftInfos:= make([]nftRewardInfo,1)
-	rewardNftInfos[0]= nftRewardInfo{
-		NftLdefIndex: nftMarketInfo.NftLdefIndex,
+	rewardNftInfos := make([]nftRewardInfo, 1)
+	rewardNftInfos[0] = nftRewardInfo{
+		NftLdefIndex:  nftMarketInfo.NftLdefIndex,
 		SupportedType: nftMarketInfo.NftType,
-		NftName: nftMarketInfo.NftName,
-		Thumbnail: util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC,common.PATH_KIND_MARKET)+nftMarketInfo.IconFileName,
+		NftName:       nftMarketInfo.NftName,
+		Thumbnail:     util.PathPrefixOfNFT(common.TYPE_NFT_MUSIC, common.PATH_KIND_MARKET) + nftMarketInfo.IconFileName,
 	}
-	res:=&response{
+	res := &response{
 		NftTranData: rewardNftInfos,
 	}
 
-	o.Commit()
+	to.Commit()
 	this.Data["json"] = res
 	this.ServeJSON()
 
 	// todo use message queue instead go channel
 	this.TransactionQueue.Append(&transactionQueue.RewardNftTransaction{
-		Uuid:uuid,
-		SellerUuid: nftMarketInfo.SellerUuid,
+		Uuid:         uuid,
+		SellerUuid:   nftMarketInfo.SellerUuid,
 		NftLdefIndex: nftMarketInfo.NftLdefIndex,
-		DistIndex: distributionLdefIndex,
-		PurchaseId: purchaseId,
+		DistIndex:    distributionLdefIndex,
+		PurchaseId:   purchaseId,
 	})
 }

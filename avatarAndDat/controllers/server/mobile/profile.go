@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/v2/client/orm"
+	"github.com/beego/beego/v2/core/logs"
+	"github.com/beego/beego/v2/server/web"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/client"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common/util"
@@ -81,20 +81,26 @@ func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte
 		},
 	}
 	o := orm.NewOrm()
-	o.Begin()
+	to, err :=o.Begin()
+	if err != nil {
+		logs.Error(err.Error())
+		err:=errors.New("start the transaction failed")
+		m.errorHandler(c, action, err)
+		return
+	}
 	err = o.ReadForUpdate(&userMarketInfo)
 	if err != nil {
 		if err == orm.ErrNoRows {
 			_, err := o.Insert(&userMarketInfo)
 			if err != nil {
-				o.Rollback()
+				to.Rollback()
 				logs.Error(err.Error())
 				err := errors.New("unexpected error when query db")
 				m.errorHandler(c, action, err)
 				return
 			}
 		} else {
-			o.Rollback()
+			to.Rollback()
 			logs.Error(err.Error())
 			err := errors.New("unexpected error when query db")
 			m.errorHandler(c, action, err)
@@ -103,14 +109,14 @@ func (m *Manager) BindWalletHandler(c *client.Client, action string, data []byte
 	} else {
 		_, err := o.Update(&userMarketInfo, "wallet")
 		if err != nil {
-			o.Rollback()
+			to.Rollback()
 			logs.Error(err.Error())
 			err := errors.New("unexpected error when query db")
 			m.errorHandler(c, action, err)
 			return
 		}
 	}
-	o.Commit()
+	to.Commit()
 	type response struct {
 		Status   int    `json:"status"`
 		Action   string `json:"action"`
@@ -143,7 +149,14 @@ func (m *Manager) SetNicknameHandler(c *client.Client, action string, data []byt
 		Nickname: req.Nickname,
 	}
 	o := orm.NewOrm()
-	o.Begin()
+	to, err :=o.Begin()
+	if err != nil {
+		logs.Error(err.Error())
+		err:=errors.New("start the transaction failed")
+		m.errorHandler(c, action, err)
+		return
+	}
+
 	err = o.Read(&userInfo)
 	if err != nil {
 		if err == orm.ErrNoRows {
@@ -195,13 +208,13 @@ func (m *Manager) SetNicknameHandler(c *client.Client, action string, data []byt
 	}
 	_, err = col.UpdateOne(context.Background(), filter, update)
 	if err != nil {
-		o.Rollback()
+		to.Rollback()
 		logs.Error(err.Error())
 		err := errors.New("can not set nickname in mongodb")
 		m.errorHandler(c, action, err)
 		return
 	}
-	o.Commit()
+	to.Commit()
 	type response struct {
 		Status   int    `json:"status"`
 		Action   string `json:"action"`
@@ -276,7 +289,7 @@ func (m *Manager) FollowListHandler(c *client.Client, action string, data []byte
 		Intro     string `json:"intro"`
 	}
 	o := orm.NewOrm()
-	dbEngine := beego.AppConfig.String("dbEngine")
+	dbEngine,_ := web.AppConfig.String("dbEngine")
 	qb, _ := orm.NewQueryBuilder(dbEngine)
 
 	var followInfo []followeeInfo
@@ -483,7 +496,7 @@ func (m *Manager) MarketUserListHandler(c *client.Client, action string, data []
 
 func (m *Manager) AvatarPurchaseHistory(c *client.Client, action string, uuid string) {
 	o := orm.NewOrm()
-	dbEngine := beego.AppConfig.String("dbEngine")
+	dbEngine,_ := web.AppConfig.String("dbEngine")
 	qb, _ := orm.NewQueryBuilder(dbEngine)
 	type nftTranData struct {
 		NftLdefIndex       string `json:"nftLdefIndex"`
@@ -553,7 +566,7 @@ func (m *Manager) AvatarPurchaseHistory(c *client.Client, action string, uuid st
 
 func (m *Manager) DatPurchaseHistory(c *client.Client, action string, uuid string) {
 	o := orm.NewOrm()
-	dbEngine := beego.AppConfig.String("dbEngine")
+	dbEngine,_ := web.AppConfig.String("dbEngine")
 	qb, _ := orm.NewQueryBuilder(dbEngine)
 	type nftTranData struct {
 		NftLdefIndex       string `json:"nftLdefIndex"`
@@ -631,7 +644,7 @@ func (m *Manager) DatPurchaseHistory(c *client.Client, action string, uuid strin
 
 func (m *Manager) OtherPurchaseHistory(c *client.Client, action string, uuid string) {
 	o := orm.NewOrm()
-	dbEngine := beego.AppConfig.String("dbEngine")
+	dbEngine,_ := web.AppConfig.String("dbEngine")
 	qb, _ := orm.NewQueryBuilder(dbEngine)
 	type nftTranData struct {
 		NftLdefIndex       string `json:"nftLdefIndex"`

@@ -6,8 +6,8 @@ import (
 	"crypto/cipher"
 	"crypto/md5"
 	"errors"
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
+	"github.com/beego/beego/v2/core/logs"
+	"github.com/beego/beego/v2/server/web"
 	"github.com/xxRanger/music-dat/avatarAndDat/controllers/server/common"
 	"image"
 	"image/jpeg"
@@ -41,9 +41,13 @@ func init() {
 }
 
 func PathPrefixOfNFT(nftType string, pathKind string) string {
-	fileBathPath:= beego.AppConfig.String("fileBasePath")
-	pathPrefix := beego.AppConfig.String("prefix") + beego.AppConfig.String("hostaddr") + ":" +
-		beego.AppConfig.String("fileport") +"/"+fileBathPath+"/"
+
+	fileBathPath, _:= web.AppConfig.String("fileBasePath")
+	prefix,_:=web.AppConfig.String("prefix")
+	hostAddr,_:= web.AppConfig.String("hostaddr")
+	filePort,_:= web.AppConfig.String("fileport")
+	pathPrefix := prefix + hostAddr + ":" +
+		filePort +"/"+fileBathPath+"/"
 	switch pathKind {
 	case common.PATH_KIND_MARKET:
 		pathPrefix = pathPrefix+common.PATH_KIND_MARKET + "/"

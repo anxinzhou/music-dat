@@ -1,15 +1,21 @@
 package common
 
 import (
-	"github.com/astaxie/beego"
+	"github.com/beego/beego/v2/server/web"
 	"time"
 )
 
-var FILE_SAVING_PATH = beego.AppConfig.String("fileBasePath")+"/"
-var ENCRYPTION_FILE_PATH = FILE_SAVING_PATH+ "encryption/"
-var DECRYPTION_FILE_PATH = FILE_SAVING_PATH+"public/"
-var MARKET_PATH = FILE_SAVING_PATH+ "market/"
-var USER_ICON_PATH = FILE_SAVING_PATH+"userIcon/"
+var FILE_SAVING_PATH, ENCRYPTION_FILE_PATH, DECRYPTION_FILE_PATH, MARKET_PATH, USER_ICON_PATH string
+
+func init() {
+	FILE_SAVING_PATH, _ = web.AppConfig.String("fileBasePath")
+	FILE_SAVING_PATH += "/"
+	ENCRYPTION_FILE_PATH = FILE_SAVING_PATH+ "encryption/"
+	DECRYPTION_FILE_PATH = FILE_SAVING_PATH+"public/"
+	MARKET_PATH = FILE_SAVING_PATH+ "market/"
+	USER_ICON_PATH = FILE_SAVING_PATH+"userIcon/"
+}
+
 
 // NFT TYPE
 const (

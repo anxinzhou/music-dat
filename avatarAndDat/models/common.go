@@ -1,11 +1,11 @@
 package models
 
 import (
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/v2/client/orm"
 )
 
 func GetNftFullInfo(nftLdefIndex string, nftInfo interface{}) error {
-	o:= orm.NewOrm()
+	o := orm.NewOrm()
 	r := o.Raw(`
 		select ni.nft_type, ni.nft_name, 
 		mk.price,mk.active_ticker, mk.qty,
@@ -21,7 +21,7 @@ func GetNftFullInfo(nftLdefIndex string, nftInfo interface{}) error {
 	return err
 }
 
-func GenerateTestCreator(num int)  {
+func GenerateTestCreator(num int) {
 	//uuid:= "4298349238490234456sa"
 	//nickname:= "AlphaBrain"
 	//password:= "123456"
@@ -38,71 +38,65 @@ func GenerateTestCreator(num int)  {
 	//	intro:=intro+postPrefix
 	//	createUser(uuid,nickname,username,password,intro,"0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
 	//}
-	createUser("48320958456gfdgz","YulieSu","YulieSu","YulieSu2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
-	createUser("4832095812z6gfdc","Cassette","Cassette","Cassette2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
-	createUser("48320z581256gfdc","Kaze.P.C","Kaze.P.C","Kaze.P.C2019","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
-	createUser("58320z581256gfdc","LazyCat","LazyCat","12345678","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
-	createUser("58320z581256gfd3","Carrier","Carrier","12345678","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
-	createUser("58320z581256gfd4","PruneDeer","PruneDeer","12345678","","0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("48320958456gfdgz", "YulieSu", "YulieSu", "YulieSu2019", "", "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("4832095812z6gfdc", "Cassette", "Cassette", "Cassette2019", "", "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("48320z581256gfdc", "Kaze.P.C", "Kaze.P.C", "Kaze.P.C2019", "", "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("58320z581256gfdc", "LazyCat", "LazyCat", "12345678", "", "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("58320z581256gfd3", "Carrier", "Carrier", "12345678", "", "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
+	createUser("58320z581256gfd4", "PruneDeer", "PruneDeer", "12345678", "", "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9")
 }
 
-func createUser(uuid , nickname ,  username,password, intro, wallet string)  {
-	o:=orm.NewOrm()
-	userInfo:= UserInfo{
-		Uuid:uuid,
-		Nickname:nickname,
-		AvatarFileName:"",
-		Intro: intro,
+func createUser(uuid, nickname, username, password, intro, wallet string) {
+	o := orm.NewOrm()
+	userInfo := UserInfo{
+		Uuid:           uuid,
+		Nickname:       nickname,
+		AvatarFileName: "",
+		Intro:          intro,
 	}
-	err:=o.Read(&userInfo,"uuid")
-	if err!=nil && err!=orm.ErrNoRows {
-		o.Rollback()
+	err := o.Read(&userInfo, "uuid")
+	if err != nil && err != orm.ErrNoRows {
 		panic(err)
 	}
 	if err == orm.ErrNoRows {
-		_,err:=o.Insert(&userInfo)
-		if err!=nil {
-			o.Rollback()
+		_, err := o.Insert(&userInfo)
+		if err != nil {
 			panic(err)
 		}
 	}
-	creatorInfo:= CreatorInfo{
-		Uuid: uuid,
+	creatorInfo := CreatorInfo{
+		Uuid:     uuid,
 		Username: username,
 		Password: password,
 	}
-	err=o.Read(&creatorInfo,"uuid")
-	if err!=nil && err!=orm.ErrNoRows {
-		o.Rollback()
+	err = o.Read(&creatorInfo, "uuid")
+	if err != nil && err != orm.ErrNoRows {
 		panic(err)
 	}
 	if err == orm.ErrNoRows {
-		creatorInfo.UserInfo = &UserInfo {
-			Uuid:uuid,
+		creatorInfo.UserInfo = &UserInfo{
+			Uuid: uuid,
 		}
-		_,err:=o.Insert(&creatorInfo)
-		if err!=nil {
-			o.Rollback()
+		_, err := o.Insert(&creatorInfo)
+		if err != nil {
 			panic(err)
 		}
 	}
-	mkInfo:= UserMarketInfo{
-		Uuid: uuid,
+	mkInfo := UserMarketInfo{
+		Uuid:   uuid,
 		Wallet: "0xaC39b311DCEb2A4b2f5d8461c1cdaF756F4F7Ae9",
-		Count: 0,
+		Count:  0,
 	}
-	err=o.Read(&mkInfo,"uuid")
-	if err!=nil && err!=orm.ErrNoRows {
-		o.Rollback()
+	err = o.Read(&mkInfo, "uuid")
+	if err != nil && err != orm.ErrNoRows {
 		panic(err)
 	}
 	if err == orm.ErrNoRows {
-		mkInfo.UserInfo = &UserInfo {
-			Uuid:uuid,
+		mkInfo.UserInfo = &UserInfo{
+			Uuid: uuid,
 		}
-		_,err:=o.Insert(&mkInfo)
-		if err!=nil {
-			o.Rollback()
+		_, err := o.Insert(&mkInfo)
+		if err != nil {
 			panic(err)
 		}
 	}
